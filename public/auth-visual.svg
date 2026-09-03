@@ -1,0 +1,40 @@
+<svg width="1280" height="960" viewBox="0 0 1280 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="960" fill="#10231F"/>
+  <path d="M0 0H1280V960H0V0Z" fill="url(#paint0_linear)"/>
+  <circle cx="1032" cy="120" r="188" fill="#3153B7" fill-opacity="0.34"/>
+  <circle cx="202" cy="836" r="246" fill="#0F766E" fill-opacity="0.38"/>
+  <path d="M196 238C196 201.549 225.549 172 262 172H1018C1054.45 172 1084 201.549 1084 238V722C1084 758.451 1054.45 788 1018 788H262C225.549 788 196 758.451 196 722V238Z" fill="#F8FAF6"/>
+  <path d="M196 238C196 201.549 225.549 172 262 172H1018C1054.45 172 1084 201.549 1084 238V306H196V238Z" fill="#17201D"/>
+  <circle cx="262" cy="240" r="14" fill="#F97316"/>
+  <circle cx="308" cy="240" r="14" fill="#FBBF24"/>
+  <circle cx="354" cy="240" r="14" fill="#34D399"/>
+  <rect x="254" y="362" width="276" height="86" rx="18" fill="#D1FAE5"/>
+  <rect x="254" y="480" width="276" height="86" rx="18" fill="#DBEAFE"/>
+  <rect x="254" y="598" width="276" height="86" rx="18" fill="#FEF3C7"/>
+  <rect x="576" y="362" width="448" height="322" rx="20" fill="#FFFFFF"/>
+  <rect x="620" y="408" width="182" height="18" rx="9" fill="#CBD5C7"/>
+  <rect x="620" y="450" width="352" height="14" rx="7" fill="#E3E7DB"/>
+  <rect x="620" y="486" width="304" height="14" rx="7" fill="#E3E7DB"/>
+  <rect x="620" y="542" width="352" height="76" rx="16" fill="#F6F7EF"/>
+  <rect x="652" y="566" width="148" height="14" rx="7" fill="#0F766E"/>
+  <rect x="652" y="590" width="248" height="10" rx="5" fill="#CBD5C7"/>
+  <rect x="884" y="398" width="72" height="72" rx="20" fill="#0F766E"/>
+  <path d="M900 434L915 449L944 416" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="391" cy="405" r="26" fill="#0F766E"/>
+  <circle cx="391" cy="523" r="26" fill="#3153B7"/>
+  <circle cx="391" cy="641" r="26" fill="#B45309"/>
+  <path d="M706 746C728.091 746 746 728.091 746 706C746 683.909 728.091 666 706 666C683.909 666 666 683.909 666 706C666 728.091 683.909 746 706 746Z" fill="#F97316"/>
+  <path d="M788 784C788 738.713 751.287 702 706 702C660.713 702 624 738.713 624 784H788Z" fill="#0F766E"/>
+  <path d="M866 746C888.091 746 906 728.091 906 706C906 683.909 888.091 666 866 666C843.909 666 826 683.909 826 706C826 728.091 843.909 746 866 746Z" fill="#FBBF24"/>
+  <path d="M948 784C948 738.713 911.287 702 866 702C820.713 702 784 738.713 784 784H948Z" fill="#3153B7"/>
+  <path d="M362 730C387.405 730 408 709.405 408 684C408 658.595 387.405 638 362 638C336.595 638 316 658.595 316 684C316 709.405 336.595 730 362 730Z" fill="#FBBF24"/>
+  <path d="M456 812C456 760.085 413.915 718 362 718C310.085 718 268 760.085 268 812H456Z" fill="#17201D"/>
+  <path d="M838 238H990" stroke="#CBD5C7" stroke-width="16" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="paint0_linear" x1="166" y1="48" x2="1110" y2="894" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F766E"/>
+      <stop offset="0.48" stop-color="#17201D"/>
+      <stop offset="1" stop-color="#3153B7"/>
+    </linearGradient>
+  </defs>
+</svg>

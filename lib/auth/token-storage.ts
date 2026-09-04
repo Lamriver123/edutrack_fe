@@ -3,6 +3,7 @@ import type { User } from "@/types/user";
 const ACCESS_TOKEN_KEY = "edutrack.accessToken";
 const USER_KEY = "edutrack.user";
 const PENDING_EMAIL_KEY = "edutrack.pendingEmail";
+const SAVED_CREDS_KEY = "edutrack.savedCreds";
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -67,5 +68,36 @@ export const tokenStorage = {
     }
 
     return window.localStorage.getItem(PENDING_EMAIL_KEY) ?? "";
+  },
+
+  setSavedCredentials(email: string, password?: string) {
+    if (!isBrowser()) {
+      return;
+    }
+
+    if (!password) {
+      window.localStorage.removeItem(SAVED_CREDS_KEY);
+      return;
+    }
+
+    // Mã hóa base64 cơ bản để tránh nhìn thấy plain text ngay lập tức
+    const creds = btoa(JSON.stringify({ email, password }));
+    window.localStorage.setItem(SAVED_CREDS_KEY, creds);
+  },
+
+  getSavedCredentials() {
+    if (!isBrowser()) {
+      return null;
+    }
+
+    const raw = window.localStorage.getItem(SAVED_CREDS_KEY);
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(atob(raw)) as { email: string; password?: string };
+    } catch {
+      window.localStorage.removeItem(SAVED_CREDS_KEY);
+      return null;
+    }
   },
 };

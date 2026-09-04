@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -21,8 +21,20 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const saved = tokenStorage.getSavedCredentials();
+    if (saved) {
+      setEmail(saved.email);
+      if (saved.password) {
+        setPassword(saved.password);
+        setRememberPassword(true);
+      }
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,6 +44,13 @@ export function LoginForm() {
     try {
       const result = await authApi.login({ email, password });
       tokenStorage.setSession(result.accessToken, result.user);
+      
+      if (rememberPassword) {
+        tokenStorage.setSavedCredentials(email, password);
+      } else {
+        tokenStorage.setSavedCredentials(email); // Clear password
+      }
+
       router.replace("/dashboard");
     } catch (err) {
       if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED") {
@@ -97,7 +116,32 @@ export function LoginForm() {
         />
       </div>
 
-      <div className="-mt-2 flex justify-end">
+      <div className="-mt-2 flex items-center justify-between">
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <div className="relative flex items-center justify-center">
+            <input
+              type="checkbox"
+              className="peer appearance-none size-4 rounded-sm border border-[var(--neutral-300)] bg-white checked:border-[var(--brand-600)] checked:bg-[var(--brand-600)] hover:border-[var(--brand-400)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-1"
+              checked={rememberPassword}
+              onChange={(e) => setRememberPassword(e.target.checked)}
+            />
+            <svg 
+              className="absolute pointer-events-none opacity-0 peer-checked:opacity-100 text-white w-3 h-3" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="3.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <span className="text-[14px] text-[var(--neutral-600)] group-hover:text-[var(--neutral-900)] transition-colors select-none">
+            Lưu mật khẩu
+          </span>
+        </label>
+
         <Link
           className="text-[14px] font-semibold text-[var(--brand-600)] transition-colors hover:text-[var(--brand-500)]"
           href="/forgot-password"

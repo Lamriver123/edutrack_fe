@@ -28,9 +28,12 @@ export function LoginForm() {
   useEffect(() => {
     const saved = tokenStorage.getSavedCredentials();
     if (saved) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(saved.email);
       if (saved.password) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPassword(saved.password);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRememberPassword(true);
       }
     }

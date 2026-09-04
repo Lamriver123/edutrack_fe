@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
 
   // Danh sách các route public (không yêu cầu đăng nhập)
   const publicPaths = ['/login', '/register', '/verify-otp', '/forgot-password'];
-  
+
   // Bỏ qua các file tĩnh, ảnh, API và Next.js internals để tối ưu hiệu suất
   if (
     pathname.startsWith('/_next') ||
@@ -45,6 +45,6 @@ export const config = {
      * - _next/image (file tối ưu ảnh của Next.js)
      * - favicon.ico (icon website)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|logo.png).*)',
   ],
 };

@@ -45,6 +45,6 @@ export const config = {
      * - _next/image (file tối ưu ảnh của Next.js)
      * - favicon.ico (icon website)
      */
-    '/((?!api|_next/static|_next/image|logo.png).*)',
+    '/((?!api|_next/static|_next/image|icon.png).*)',
   ],
 };

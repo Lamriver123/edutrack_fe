@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
 
   // Kiểm tra xem user có cookie refresh token chưa (chứng tỏ đã đăng nhập)
-  const hasRefreshToken = request.cookies.has('edutrack_refresh_token');
+  const hasRefreshToken = request.cookies.has('edutrack_is_logged_in');
 
   // TRƯỜNG HỢP 1: Chưa đăng nhập mà truy cập đường dẫn lạ hoặc đường dẫn bảo vệ
   // (Đây là phần giải quyết vấn đề: bạn bè nhận được link nhưng chưa đăng nhập sẽ bị đẩy về login thay vì 404)

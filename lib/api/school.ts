@@ -35,7 +35,12 @@ import type {
   ReceiptDownloadResponse,
   ReceiptListItem,
   ReceiptPreviewResponse,
+  StudentBillingOverview,
   UpdateReceiptPaymentPayload,
+  ScheduleConflictResult,
+  ScheduleAvailabilityPayload,
+  ScheduleAvailability,
+  ScheduleTimeSlot,
 } from "@/types/school";
 import { apiRequest } from "./client";
 
@@ -43,10 +48,20 @@ function getToken() {
   return tokenStorage.getAccessToken();
 }
 
-function buildQuery(params: Record<string, string | undefined>) {
+function buildQuery(params: Record<string, string | string[] | undefined>) {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      const normalizedValue = value.map((item) => item.trim()).filter(Boolean);
+
+      if (normalizedValue.length) {
+        searchParams.set(key, normalizedValue.join(","));
+      }
+
+      return;
+    }
+
     if (value?.trim()) {
       searchParams.set(key, value.trim());
     }
@@ -58,6 +73,24 @@ function buildQuery(params: Record<string, string | undefined>) {
 }
 
 export const schoolApi = {
+  checkFixedSchedule(classId: string, payload: SaveFixedSchedulePayload) {
+    return apiRequest<ScheduleConflictResult>("/schedules/conflicts/check-fixed", {
+      method: "POST", token: getToken(), body: JSON.stringify({ ...payload, classId }),
+    });
+  },
+  checkTemporarySchedule(classId: string, payload: CreateTemporarySchedulePayload, ignoreOverrideId?: string) {
+    return apiRequest<ScheduleConflictResult>("/schedules/conflicts/check-temporary", {
+      method: "POST", token: getToken(), body: JSON.stringify({ ...payload, classId, ignoreOverrideId }),
+    });
+  },
+  getScheduleAvailability(payload: ScheduleAvailabilityPayload) {
+    return apiRequest<ScheduleAvailability>("/schedules/availability", {
+      method: "POST", token: getToken(), body: JSON.stringify(payload),
+    });
+  },
+  getScheduleSourceSlots(classId: string, date: string, ignoreOverrideId?: string) {
+    return apiRequest<ScheduleTimeSlot[]>(`/schedules/source-slots${buildQuery({ classId, date, ignoreOverrideId })}`, { token: getToken() });
+  },
   listClasses(search?: string) {
     const params = new URLSearchParams();
 
@@ -414,6 +447,30 @@ export const schoolApi = {
     );
   },
 
+  getStudentBillingOverview(
+    studentId: string,
+    filters: { classIds?: string[]; fromDate?: string; toDate?: string } = {},
+  ) {
+    return apiRequest<StudentBillingOverview>(
+      `/students/${studentId}/billing/overview${buildQuery(filters)}`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
+  getStudentBillingCandidates(
+    studentId: string,
+    filters: { classIds?: string[]; fromDate?: string; toDate?: string } = {},
+  ) {
+    return apiRequest<BillingCandidates>(
+      `/students/${studentId}/billing-candidates${buildQuery(filters)}`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
   previewReceipt(
     classId: string,
     studentId: string,
@@ -438,6 +495,25 @@ export const schoolApi = {
         body: JSON.stringify(payload),
       },
     );
+  },
+
+  previewStudentReceipt(studentId: string, payload: IssueReceiptPayload) {
+    return apiRequest<ReceiptPreviewResponse>(
+      `/students/${studentId}/receipts/preview`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  issueStudentReceipt(studentId: string, payload: IssueReceiptPayload) {
+    return apiRequest<ReceiptDetail>(`/students/${studentId}/receipts`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
   },
 
   listReceipts(

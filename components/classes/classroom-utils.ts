@@ -21,6 +21,12 @@ export const CLASS_COLOR_OPTIONS = [
 export const DEFAULT_CLASS_COLOR_HEX = CLASS_COLOR_OPTIONS[0].accent;
 const hexColorPattern = /^#([0-9a-f]{6})$/i;
 const vndSuffix = "VND";
+const vietnamDateInputFormatter = new Intl.DateTimeFormat("en-CA", {
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Asia/Ho_Chi_Minh",
+  year: "numeric",
+});
 
 export function formatMoney(value: number) {
   if (!Number.isFinite(value)) {
@@ -50,6 +56,34 @@ export function parseCurrencyInput(value: string) {
   const parsedValue = Number(digits);
 
   return Number.isSafeInteger(parsedValue) ? parsedValue : null;
+}
+
+export function getVietnamTodayInputDate() {
+  const parts = vietnamDateInputFormatter.formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
+export function toVietnamDateInputValue(value?: string | Date | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const parts = vietnamDateInputFormatter.formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return year && month && day ? `${year}-${month}-${day}` : "";
 }
 
 function getCurrencyDigits(value: string) {

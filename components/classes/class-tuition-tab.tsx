@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   RefreshCw,
   RotateCcw,
+  Save,
   Search,
   Upload,
   XCircle,
@@ -25,18 +26,22 @@ import type {
   BillingCandidates,
   BillingOverview,
   BillingOverviewStudent,
+  Classroom,
   ClassroomDetail,
   IssueReceiptPayload,
   PaymentStatus,
   ReceiptListItem,
   Student,
+  StudentBillingOverview,
 } from "@/types/school";
 import {
   formatCurrencyInput,
   formatMoney,
   getErrorMessage,
   getStudentAvatar,
+  getVietnamTodayInputDate,
   parseCurrencyInput,
+  toVietnamDateInputValue,
 } from "./classroom-utils";
 import formStyles from "./classroom-manager.module.css";
 import {
@@ -76,11 +81,19 @@ type PaymentFormState = {
   proofFile: File | null;
 };
 
+type PriceFormState = {
+  regularPrice: string;
+  makeupPrice: string;
+  priceEffectiveFrom: string;
+};
+
 type SelectOption = {
   icon?: ReactNode;
   label: string;
   value: string;
 };
+
+type IssueMode = "class" | "multi_class";
 
 const initialFilters: BillingFilterState = {
   fromDate: "",
@@ -136,11 +149,15 @@ async function downloadPdfFromUrl(url: string, fileName: string) {
 
 export function ClassTuitionTab({
   classroom,
+  initialIssueMode = "class",
   initialIssueStudent,
+  onClassUpdated,
   onInitialIssueHandled,
 }: {
   classroom: ClassroomDetail;
+  initialIssueMode?: IssueMode;
   initialIssueStudent?: Student | null;
+  onClassUpdated?: (classroom: Classroom) => void;
   onInitialIssueHandled?: () => void;
 }) {
   const [filters, setFilters] = useState<BillingFilterState>(initialFilters);
@@ -149,6 +166,12 @@ export function ClassTuitionTab({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [issueMode, setIssueMode] = useState<IssueMode>("class");
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([
+    classroom.id,
+  ]);
+  const [studentBillingOverview, setStudentBillingOverview] =
+    useState<StudentBillingOverview | null>(null);
   const [candidates, setCandidates] = useState<BillingCandidates | null>(null);
   const [selectedTuitionIds, setSelectedTuitionIds] = useState<string[]>([]);
   const [issueForm, setIssueForm] =
@@ -170,6 +193,11 @@ export function ClassTuitionTab({
   });
   const [isPaymentConfirmOpen, setIsPaymentConfirmOpen] = useState(false);
   const [isMutatingReceipt, setIsMutatingReceipt] = useState("");
+  const [priceForm, setPriceForm] = useState<PriceFormState>(() =>
+    buildPriceForm(classroom),
+  );
+  const [isPriceConfirmOpen, setIsPriceConfirmOpen] = useState(false);
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
   const loadBillingData = useCallback(async () => {
     setIsLoading(true);
@@ -198,6 +226,10 @@ export function ClassTuitionTab({
   }, [loadBillingData]);
 
   useEffect(() => {
+    setPriceForm(buildPriceForm(classroom));
+  }, [classroom]);
+
+  useEffect(() => {
     if (!initialIssueStudent) {
       return;
     }
@@ -208,9 +240,16 @@ export function ClassTuitionTab({
       toDate: filters.toDate,
     };
 
+    setIssueMode(initialIssueMode);
     setSelectedStudent(initialIssueStudent);
     setIssueForm(nextForm);
-    void loadCandidates(initialIssueStudent, nextForm);
+    setSelectedClassIds([classroom.id]);
+    void loadCandidates(
+      initialIssueStudent,
+      nextForm,
+      initialIssueMode,
+      initialIssueMode === "multi_class" ? [] : [classroom.id],
+    );
     onInitialIssueHandled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialIssueStudent]);
@@ -238,35 +277,77 @@ export function ClassTuitionTab({
     [selectedTuitionEntries],
   );
 
-  async function openIssueModal(row: BillingOverviewStudent) {
+  async function openIssueModal(
+    row: BillingOverviewStudent,
+    mode: IssueMode = "class",
+  ) {
     const nextForm = {
       ...initialIssueForm,
       fromDate: filters.fromDate,
       toDate: filters.toDate,
     };
 
+    setIssueMode(mode);
     setSelectedStudent(row.student);
     setIssueForm(nextForm);
-    await loadCandidates(row.student, nextForm);
+    setSelectedClassIds([classroom.id]);
+    await loadCandidates(
+      row.student,
+      nextForm,
+      mode,
+      mode === "multi_class" ? [] : [classroom.id],
+    );
   }
 
   async function loadCandidates(
     student: Student,
     form: IssueFormState = issueForm,
+    mode: IssueMode = issueMode,
+    classIds: string[] = selectedClassIds,
   ) {
     setIsCandidateLoading(true);
     setCandidates(null);
     setSelectedTuitionIds([]);
 
     try {
-      const nextCandidates = await schoolApi.getBillingCandidates(
-        classroom.id,
-        student.id,
-        {
-          fromDate: form.fromDate || undefined,
-          toDate: form.toDate || undefined,
-        },
-      );
+      const candidateFilters = {
+        fromDate: form.fromDate || undefined,
+        toDate: form.toDate || undefined,
+      };
+      let nextCandidates: BillingCandidates;
+
+      if (mode === "multi_class") {
+        const nextOverview = await schoolApi.getStudentBillingOverview(
+          student.id,
+          candidateFilters,
+        );
+        const defaultClassIds = nextOverview.classes
+          .filter((item) => item.unbilledLessonCount > 0)
+          .map((item) => item.class.id);
+        const effectiveClassIds = classIds.length
+          ? classIds
+          : defaultClassIds.length
+            ? defaultClassIds
+            : [classroom.id];
+
+        setStudentBillingOverview(nextOverview);
+        setSelectedClassIds(effectiveClassIds);
+        nextCandidates = await schoolApi.getStudentBillingCandidates(
+          student.id,
+          {
+            ...candidateFilters,
+            classIds: effectiveClassIds,
+          },
+        );
+      } else {
+        setStudentBillingOverview(null);
+        setSelectedClassIds([classroom.id]);
+        nextCandidates = await schoolApi.getBillingCandidates(
+          classroom.id,
+          student.id,
+          candidateFilters,
+        );
+      }
 
       const defaultSelectedIds = nextCandidates.suggestedTuitionEntryIds.length
         ? nextCandidates.suggestedTuitionEntryIds
@@ -307,6 +388,9 @@ export function ClassTuitionTab({
     setSelectedStudent(null);
     setCandidates(null);
     setSelectedTuitionIds([]);
+    setSelectedClassIds([classroom.id]);
+    setStudentBillingOverview(null);
+    setIssueMode("class");
     setIssueForm(initialIssueForm);
     setIsIssueConfirmOpen(false);
   }
@@ -339,11 +423,14 @@ export function ClassTuitionTab({
     previewWindow.document.close();
 
     try {
-      const response = await schoolApi.previewReceipt(
-        classroom.id,
-        selectedStudent.id,
-        payload,
-      );
+      const response =
+        issueMode === "multi_class"
+          ? await schoolApi.previewStudentReceipt(selectedStudent.id, payload)
+          : await schoolApi.previewReceipt(
+              classroom.id,
+              selectedStudent.id,
+              payload,
+            );
       previewWindow.document.open();
       previewWindow.document.write(response.html);
       previewWindow.document.close();
@@ -374,11 +461,14 @@ export function ClassTuitionTab({
     setNotice(null);
 
     try {
-      const receipt = await schoolApi.issueReceipt(
-        classroom.id,
-        selectedStudent.id,
-        payload,
-      );
+      const receipt =
+        issueMode === "multi_class"
+          ? await schoolApi.issueStudentReceipt(selectedStudent.id, payload)
+          : await schoolApi.issueReceipt(
+              classroom.id,
+              selectedStudent.id,
+              payload,
+            );
       closeIssueModal();
       await loadBillingData();
       setNotice({
@@ -397,6 +487,14 @@ export function ClassTuitionTab({
   }
 
   function buildIssuePayload(): IssueReceiptPayload | null {
+    if (issueMode === "multi_class" && !selectedClassIds.length) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng chọn ít nhất một lớp để xuất hóa đơn gộp.",
+      });
+      return null;
+    }
+
     if (!selectedTuitionIds.length) {
       setNotice({
         type: "error",
@@ -406,6 +504,8 @@ export function ClassTuitionTab({
     }
 
     return {
+      scopeType: issueMode,
+      classIds: issueMode === "multi_class" ? selectedClassIds : undefined,
       fromDate: issueForm.fromDate || undefined,
       toDate: issueForm.toDate || undefined,
       dueDate: issueForm.dueDate || undefined,
@@ -564,6 +664,84 @@ export function ClassTuitionTab({
     );
   }
 
+  function toggleIssueClass(classId: string) {
+    if (!selectedStudent || issueMode !== "multi_class") {
+      return;
+    }
+
+    const nextClassIds = selectedClassIds.includes(classId)
+      ? selectedClassIds.filter((id) => id !== classId)
+      : [...selectedClassIds, classId];
+
+    setSelectedClassIds(nextClassIds);
+
+    if (!nextClassIds.length) {
+      setCandidates(null);
+      setSelectedTuitionIds([]);
+      return;
+    }
+
+    void loadCandidates(selectedStudent, issueForm, "multi_class", nextClassIds);
+  }
+
+  function requestUpdatePrice() {
+    const regularPrice = parseCurrencyInput(priceForm.regularPrice);
+    const makeupPrice = parseCurrencyInput(priceForm.makeupPrice);
+
+    if (
+      !priceForm.regularPrice ||
+      !priceForm.makeupPrice ||
+      !priceForm.priceEffectiveFrom ||
+      regularPrice === null ||
+      makeupPrice === null ||
+      regularPrice < 0 ||
+      makeupPrice < 0
+    ) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng nhập đủ giá buổi thường, giá học bù và ngày áp dụng.",
+      });
+      return;
+    }
+
+    setIsPriceConfirmOpen(true);
+  }
+
+  async function updateClassPrice() {
+    const regularPrice = parseCurrencyInput(priceForm.regularPrice);
+    const makeupPrice = parseCurrencyInput(priceForm.makeupPrice);
+
+    if (regularPrice === null || makeupPrice === null) {
+      setIsPriceConfirmOpen(false);
+      setNotice({ type: "error", text: "Giá tiền không hợp lệ." });
+      return;
+    }
+
+    setIsUpdatingPrice(true);
+    setNotice(null);
+
+    try {
+      const updatedClass = await schoolApi.updateClass(classroom.id, {
+        regularPrice,
+        makeupPrice,
+        priceEffectiveFrom: priceForm.priceEffectiveFrom,
+      });
+
+      onClassUpdated?.(updatedClass);
+      setIsPriceConfirmOpen(false);
+      await loadBillingData();
+      setNotice({
+        type: "success",
+        text: `Đã cập nhật giá học phí áp dụng từ ${formatDateInput(priceForm.priceEffectiveFrom)}.`,
+      });
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+      setIsPriceConfirmOpen(false);
+    } finally {
+      setIsUpdatingPrice(false);
+    }
+  }
+
   return (
     <div className="grid gap-5">
       {notice ? (
@@ -592,6 +770,16 @@ export function ClassTuitionTab({
           value={`${overview?.totals.readyToIssueCount ?? 0} học sinh`}
         />
       </div>
+
+      <PriceSettingsPanel
+        form={priceForm}
+        isLoading={isUpdatingPrice}
+        makeupPrice={classroom.makeupPrice}
+        onChange={setPriceForm}
+        onSubmit={requestUpdatePrice}
+        priceEffectiveFrom={classroom.priceEffectiveFrom}
+        regularPrice={classroom.regularPrice}
+      />
 
       <div className="grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
         <TextInput
@@ -718,21 +906,32 @@ export function ClassTuitionTab({
           candidates={candidates}
           discountAmount={discountAmount}
           form={issueForm}
+          issueMode={issueMode}
           isCandidateLoading={isCandidateLoading}
           isIssuing={isIssuing}
           isPreviewing={isPreviewing}
           onClose={closeIssueModal}
           onFormChange={setIssueForm}
-          onLoadCandidates={() => void loadCandidates(selectedStudent)}
+          onLoadCandidates={() =>
+            void loadCandidates(
+              selectedStudent,
+              issueForm,
+              issueMode,
+              selectedClassIds,
+            )
+          }
           onPreview={() => void previewReceipt()}
           onRequestIssue={() => setIsIssueConfirmOpen(true)}
           onSelectAll={handleSelectAllTuition}
+          onToggleClass={toggleIssueClass}
           onToggleEntry={toggleTuitionEntry}
           selectedPeriod={selectedPeriod}
+          selectedClassIds={selectedClassIds}
           selectedSubtotal={selectedSubtotal}
           selectedTotal={selectedTotal}
           selectedTuitionIds={selectedTuitionIds}
           student={selectedStudent}
+          studentBillingOverview={studentBillingOverview}
         />
       ) : null}
 
@@ -785,6 +984,17 @@ export function ClassTuitionTab({
           title="Xác nhận thanh toán"
         />
       ) : null}
+
+      {isPriceConfirmOpen ? (
+        <ConfirmDialog
+          confirmText="Cập nhật giá"
+          description={`Giá mới sẽ áp dụng cho các buổi học từ ${formatDateInput(priceForm.priceEffectiveFrom)}. Những buổi đã điểm danh trước mốc này vẫn dùng phiên bản giá cũ.`}
+          isLoading={isUpdatingPrice}
+          onCancel={() => setIsPriceConfirmOpen(false)}
+          onConfirm={() => void updateClassPrice()}
+          title="Xác nhận cập nhật giá"
+        />
+      ) : null}
     </div>
   );
 }
@@ -815,10 +1025,98 @@ function TuitionMetric({
   );
 }
 
+function PriceSettingsPanel({
+  form,
+  isLoading,
+  makeupPrice,
+  onChange,
+  onSubmit,
+  priceEffectiveFrom,
+  regularPrice,
+}: {
+  form: PriceFormState;
+  isLoading: boolean;
+  makeupPrice: number;
+  onChange: (form: PriceFormState) => void;
+  onSubmit: () => void;
+  priceEffectiveFrom?: string | null;
+  regularPrice: number;
+}) {
+  return (
+    <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(220px,0.72fr)_1fr_auto] xl:items-end">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)] px-3 py-1.5 text-[13px] font-extrabold text-[var(--brand-700)]">
+            <Coins size={14} />
+            Cấu hình giá
+          </div>
+          <h3 className="mt-3 text-[18px] font-extrabold text-[var(--brand-950)]">
+            Cập nhật giá buổi học
+          </h3>
+          <p className="mt-1 text-[14px] font-semibold leading-6 text-[var(--neutral-500)]">
+            Giá được lưu theo ngày áp dụng để khi nhập lại dữ liệu giấy, học phí
+            sẽ tính theo đúng ngày học.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-[12px] font-extrabold text-[var(--neutral-600)]">
+            <span className="rounded-full border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-1.5">
+              Thường: {formatMoney(regularPrice)}
+            </span>
+            <span className="rounded-full border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-1.5">
+              Học bù: {formatMoney(makeupPrice)}
+            </span>
+            <span className="rounded-full border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-1.5">
+              Từ: {formatDateInput(toVietnamDateInputValue(priceEffectiveFrom))}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <CurrencyField
+            label="Giá buổi thường"
+            onChange={(value) => onChange({ ...form, regularPrice: value })}
+            value={form.regularPrice}
+          />
+          <CurrencyField
+            label="Giá học bù / thêm"
+            onChange={(value) => onChange({ ...form, makeupPrice: value })}
+            value={form.makeupPrice}
+          />
+          <TextInput
+            icon={<CalendarDays size={16} />}
+            label="Ngày áp dụng"
+            onChange={(event) =>
+              onChange({ ...form, priceEffectiveFrom: event.target.value })
+            }
+            type="date"
+            value={form.priceEffectiveFrom}
+          />
+        </div>
+
+        <PrimaryAction
+          className="w-full xl:w-auto"
+          disabled={isLoading}
+          icon={
+            isLoading ? (
+              <LoaderCircle className="animate-spin" size={16} />
+            ) : (
+              <Save size={16} />
+            )
+          }
+          onClick={onSubmit}
+          type="button"
+        >
+          Cập nhật giá
+        </PrimaryAction>
+      </div>
+    </section>
+  );
+}
+
 function IssueReceiptModal({
   candidates,
   discountAmount,
   form,
+  issueMode,
   isCandidateLoading,
   isIssuing,
   isPreviewing,
@@ -828,16 +1126,20 @@ function IssueReceiptModal({
   onPreview,
   onRequestIssue,
   onSelectAll,
+  onToggleClass,
   onToggleEntry,
   selectedPeriod,
+  selectedClassIds,
   selectedSubtotal,
   selectedTotal,
   selectedTuitionIds,
   student,
+  studentBillingOverview,
 }: {
   candidates: BillingCandidates | null;
   discountAmount: number;
   form: IssueFormState;
+  issueMode: IssueMode;
   isCandidateLoading: boolean;
   isIssuing: boolean;
   isPreviewing: boolean;
@@ -847,19 +1149,27 @@ function IssueReceiptModal({
   onPreview: () => void;
   onRequestIssue: () => void;
   onSelectAll: (checked: boolean) => void;
+  onToggleClass: (classId: string) => void;
   onToggleEntry: (tuitionEntryId: string) => void;
   selectedPeriod: { from: string; to: string } | null;
+  selectedClassIds: string[];
   selectedSubtotal: number;
   selectedTotal: number;
   selectedTuitionIds: string[];
   student: Student;
+  studentBillingOverview: StudentBillingOverview | null;
 }) {
   const allSelected =
     Boolean(candidates?.tuitionEntries.length) &&
     selectedTuitionIds.length === candidates?.tuitionEntries.length;
 
   return (
-    <Modal onClose={onClose} title={`Xuất hóa đơn - ${student.fullName}`}>
+    <Modal
+      onClose={onClose}
+      title={`${
+        issueMode === "multi_class" ? "Xuất hóa đơn gộp" : "Xuất hóa đơn"
+      } - ${student.fullName}`}
+    >
       <div className="grid gap-5">
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <TextInput
@@ -889,6 +1199,66 @@ function IssueReceiptModal({
             Tải kỳ
           </SecondaryAction>
         </div>
+
+        {issueMode === "multi_class" ? (
+          <section className="rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)] p-4">
+            <div className="mb-3">
+              <h4 className="text-[15px] font-extrabold text-[var(--brand-950)]">
+                Chọn lớp cần gộp
+              </h4>
+              <p className="text-[13px] font-semibold text-[var(--neutral-500)]">
+                Mặc định chọn các lớp có buổi học chưa xuất hóa đơn.
+              </p>
+            </div>
+            {studentBillingOverview?.classes.length ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {studentBillingOverview.classes.map((item) => {
+                  const isChecked = selectedClassIds.includes(item.class.id);
+
+                  return (
+                    <label
+                      className={`grid cursor-pointer grid-cols-[22px_1fr] gap-3 rounded-lg border bg-white p-3 transition ${
+                        isChecked
+                          ? "border-[var(--brand-300)] ring-2 ring-[var(--brand-100)]"
+                          : "border-[var(--neutral-200)] hover:border-[var(--brand-200)]"
+                      }`}
+                      key={item.class.id}
+                    >
+                      <input
+                        checked={isChecked}
+                        className="mt-1 size-4 accent-[var(--brand-600)]"
+                        onChange={() => onToggleClass(item.class.id)}
+                        type="checkbox"
+                      />
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="size-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                item.class.colorHex || "var(--brand-500)",
+                            }}
+                          />
+                          <strong className="truncate text-[14px] text-[var(--neutral-800)]">
+                            {item.class.name}
+                          </strong>
+                        </span>
+                        <span className="mt-1 block text-[13px] font-semibold text-[var(--neutral-500)]">
+                          {item.unbilledLessonCount} buổi chờ xuất -{" "}
+                          {formatMoney(item.unbilledAmount)}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[14px] font-semibold text-[var(--neutral-500)]">
+                Chưa tìm thấy lớp đang học của học sinh này.
+              </p>
+            )}
+          </section>
+        ) : null}
 
         {isCandidateLoading ? (
           <InlineLoading text="Đang gom buổi học và bài kiểm tra..." />
@@ -971,6 +1341,21 @@ function IssueReceiptModal({
                             type="checkbox"
                           />
                           <span className="min-w-0">
+                            {issueMode === "multi_class" ? (
+                              <span className="mb-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brand-100)] bg-[var(--brand-50)] px-2 py-1 text-[12px] font-extrabold text-[var(--brand-700)]">
+                                <span
+                                  className="size-2 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      entry.classColorHex ||
+                                      "var(--brand-500)",
+                                  }}
+                                />
+                                <span className="truncate">
+                                  {entry.className}
+                                </span>
+                              </span>
+                            ) : null}
                             <span className="block truncate text-[14px] font-extrabold text-[var(--neutral-800)]">
                               {formatDate(entry.date)} | {entry.startTime} -{" "}
                               {entry.endTime}
@@ -981,6 +1366,12 @@ function IssueReceiptModal({
                             {lesson.detail ? (
                               <span className="block truncate text-[12px] font-semibold text-[var(--neutral-500)]">
                                 {lesson.detail}
+                              </span>
+                            ) : null}
+                            {entry.makeupForClassName ? (
+                              <span className="mt-1 block truncate text-[12px] font-extrabold text-amber-700">
+                                Học tại {entry.attendedClassName || entry.className} - bù cho{" "}
+                                {entry.makeupForClassName}
                               </span>
                             ) : null}
                           </span>
@@ -1992,6 +2383,20 @@ function toDateInputValue(value?: string | Date | null) {
   const day = String(vietnamDate.getUTCDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function buildPriceForm(classroom: Classroom): PriceFormState {
+  return {
+    regularPrice: formatCurrencyInput(String(classroom.regularPrice)),
+    makeupPrice: formatCurrencyInput(String(classroom.makeupPrice)),
+    priceEffectiveFrom:
+      toVietnamDateInputValue(classroom.priceEffectiveFrom) ||
+      getVietnamTodayInputDate(),
+  };
+}
+
+function formatDateInput(value?: string) {
+  return formatDate(value);
 }
 
 function handleProofFile(

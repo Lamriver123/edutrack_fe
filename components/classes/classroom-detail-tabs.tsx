@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
-import type { ClassroomDetail, Student } from "@/types/school";
+import type { Classroom, ClassroomDetail, Student } from "@/types/school";
 import { ClassScheduleTab } from "./class-schedule-tab";
 import { ClassAttendanceTab } from "./class-attendance-tab";
 import { ClassExamTab } from "./exam/class-exam-tab";
@@ -53,6 +53,7 @@ export function ClassroomDetailTabs({
   isLoading,
   onAddStudent,
   onArchiveClass,
+  onClassUpdated,
   onEditClass,
   onRemoveStudent,
   onScheduleChanged,
@@ -62,6 +63,7 @@ export function ClassroomDetailTabs({
   isLoading: boolean;
   onAddStudent: () => void;
   onArchiveClass?: () => void;
+  onClassUpdated?: (classroom: Classroom) => void;
   onEditClass?: () => void;
   onRemoveStudent: (student: Student) => void;
   onScheduleChanged?: () => Promise<void> | void;
@@ -72,6 +74,8 @@ export function ClassroomDetailTabs({
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [tuitionIssueStudent, setTuitionIssueStudent] =
     useState<Student | null>(null);
+  const [tuitionIssueMode, setTuitionIssueMode] =
+    useState<"class" | "multi_class">("class");
 
   const filteredStudents = useMemo(() => {
     const search = normalizeVisibleText(studentFilter);
@@ -203,8 +207,13 @@ export function ClassroomDetailTabs({
           ) : activeTab === "tuition" ? (
             <ClassTuitionTab
               classroom={classroom}
+              initialIssueMode={tuitionIssueMode}
               initialIssueStudent={tuitionIssueStudent}
-              onInitialIssueHandled={() => setTuitionIssueStudent(null)}
+              onInitialIssueHandled={() => {
+                setTuitionIssueStudent(null);
+                setTuitionIssueMode("class");
+              }}
+              onClassUpdated={onClassUpdated}
             />
           ) : activeTab === "attendance" ? (
             <ClassAttendanceTab classroom={classroom} />
@@ -221,6 +230,13 @@ export function ClassroomDetailTabs({
           classroom={classroom}
           onClose={() => setSelectedStudent(null)}
           onIssueReceipt={(student) => {
+            setTuitionIssueMode("class");
+            setTuitionIssueStudent(student);
+            setActiveTab("tuition");
+            setSelectedStudent(null);
+          }}
+          onIssueMultiClassReceipt={(student) => {
+            setTuitionIssueMode("multi_class");
             setTuitionIssueStudent(student);
             setActiveTab("tuition");
             setSelectedStudent(null);

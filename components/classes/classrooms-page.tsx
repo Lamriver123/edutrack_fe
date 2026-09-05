@@ -39,6 +39,7 @@ import {
   getClassColorHex,
   getClassColorLabel as getClassColorName,
   getClassColorTheme,
+  getVietnamTodayInputDate,
   parseCurrencyInput,
 } from "./classroom-utils";
 import styles from "./classroom-manager.module.css";
@@ -126,6 +127,7 @@ export function ClassroomsPage() {
       ...initialClassForm,
       colorHex: CLASS_COLOR_OPTIONS[colorIndex].accent,
       colorIndex,
+      priceEffectiveFrom: getVietnamTodayInputDate(),
     });
     setIsCreateClassModalOpen(true);
   }
@@ -145,6 +147,7 @@ export function ClassroomsPage() {
     if (
       !classForm.regularPrice ||
       !classForm.makeupPrice ||
+      !classForm.priceEffectiveFrom ||
       regularPrice === null ||
       makeupPrice === null ||
       regularPrice < 0 ||
@@ -152,7 +155,7 @@ export function ClassroomsPage() {
     ) {
       setNotice({
         type: "error",
-        text: "Học phí cần là số nguyên theo đơn vị VND.",
+        text: "Vui lòng nhập học phí và ngày áp dụng giá.",
       });
       return;
     }
@@ -177,6 +180,7 @@ export function ClassroomsPage() {
         colorHex: classForm.colorHex,
         regularPrice,
         makeupPrice,
+        priceEffectiveFrom: classForm.priceEffectiveFrom,
       });
 
       setClassForm(initialClassForm);

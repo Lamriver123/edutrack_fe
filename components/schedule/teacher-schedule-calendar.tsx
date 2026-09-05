@@ -23,12 +23,7 @@ import {
   Sunrise,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import type {
-  CSSProperties,
-  Dispatch,
-  ReactNode,
-  SetStateAction,
-} from "react";
+import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from "react";
 import {
   ConfirmDialog,
   Modal,
@@ -39,6 +34,12 @@ import {
 } from "@/components/classes/classroom-ui";
 import { getClassColorTheme } from "@/components/classes/classroom-utils";
 import { schoolApi } from "@/lib/api/school";
+import { ScheduleAvailabilityPicker } from "./schedule-availability-picker";
+import {
+  ScheduleConflictFeedback,
+  useScheduleCheck,
+} from "./schedule-conflict-feedback";
+import { ScheduleSourcePicker } from "./schedule-source-picker";
 import type {
   CreateTemporarySchedulePayload,
   ScheduleOverrideAction,
@@ -149,6 +150,8 @@ const unknownPeriod: SchedulePeriod = {
 type TemporaryScheduleForm = {
   action: ScheduleOverrideAction;
   originalDate: string;
+  originalStartTime?: string;
+  originalEndTime?: string;
   newDate: string;
   startTime: string;
   endTime: string;
@@ -165,6 +168,7 @@ const initialTemporaryForm: TemporaryScheduleForm = {
 };
 
 export function TeacherScheduleCalendar() {
+  const scheduleCheck = useScheduleCheck();
   const [selectedWeekStart, setSelectedWeekStart] = useState<string>(() =>
     getCurrentWeekStartKey(),
   );
@@ -176,8 +180,7 @@ export function TeacherScheduleCalendar() {
   const [adjustmentMode, setAdjustmentMode] = useState<
     ScheduleOverrideAction | ""
   >("");
-  const [isAdjustmentConfirmOpen, setIsAdjustmentConfirmOpen] =
-    useState(false);
+  const [isAdjustmentConfirmOpen, setIsAdjustmentConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTemporary, setIsSavingTemporary] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -236,8 +239,9 @@ export function TeacherScheduleCalendar() {
   }, [visibleEvents]);
 
   const activeEventCount = visibleEvents.length;
-  const temporaryEventCount =
-    visibleEvents.filter((event) => event.type !== "fixed").length;
+  const temporaryEventCount = visibleEvents.filter(
+    (event) => event.type !== "fixed",
+  ).length;
   const weekRange = schedule
     ? `${formatDate(schedule.weekStart)} - ${formatDate(schedule.weekEnd)}`
     : `${formatDate(selectedWeekStart)} - ${formatDate(
@@ -271,6 +275,7 @@ export function TeacherScheduleCalendar() {
   }
 
   function closeEventDetail() {
+    scheduleCheck.clear();
     setSelectedEvent(null);
     setAdjustmentMode("");
     setIsAdjustmentConfirmOpen(false);
@@ -282,11 +287,13 @@ export function TeacherScheduleCalendar() {
       return;
     }
 
+    scheduleCheck.clear();
     setAdjustmentMode(action);
     setTemporaryForm(buildTemporaryFormFromEvent(selectedEvent, action));
   }
 
   function cancelAdjustment() {
+    scheduleCheck.clear();
     setAdjustmentMode("");
     setIsAdjustmentConfirmOpen(false);
     setTemporaryForm(initialTemporaryForm);
@@ -304,7 +311,14 @@ export function TeacherScheduleCalendar() {
       return;
     }
 
-    setIsAdjustmentConfirmOpen(true);
+    const result = await scheduleCheck.check(() =>
+      schoolApi.checkTemporarySchedule(
+        selectedEvent.classId,
+        payload,
+        getTemporaryScheduleIdFromEvent(selectedEvent) || undefined,
+      ),
+    );
+    if (result) setIsAdjustmentConfirmOpen(true);
   }
 
   async function executeSaveAdjustment() {
@@ -342,6 +356,7 @@ export function TeacherScheduleCalendar() {
       closeEventDetail();
       await loadSchedule();
     } catch (error) {
+      scheduleCheck.captureError(error);
       setNotice({ type: "error", text: getErrorMessage(error) });
       setIsAdjustmentConfirmOpen(false);
     } finally {
@@ -465,9 +480,18 @@ export function TeacherScheduleCalendar() {
         <ScheduleEventModal
           event={selectedEvent}
           form={temporaryForm}
-          isSaving={isSavingTemporary}
+          isSaving={isSavingTemporary || scheduleCheck.isChecking}
           mode={adjustmentMode}
-          onChange={setTemporaryForm}
+          onChange={(value) => {
+            scheduleCheck.clear();
+            setTemporaryForm(value);
+          }}
+          feedback={
+            <ScheduleConflictFeedback
+              result={scheduleCheck.result}
+              error={scheduleCheck.error}
+            />
+          }
           onCancelAdjustment={cancelAdjustment}
           onClose={closeEventDetail}
           onModeChange={beginAdjustment}
@@ -477,7 +501,9 @@ export function TeacherScheduleCalendar() {
 
       {isAdjustmentConfirmOpen && selectedEvent && adjustmentMode ? (
         <ConfirmDialog
-          confirmText={adjustmentMode === "cancel" ? "Hủy lịch" : "Lưu lịch dời"}
+          confirmText={
+            adjustmentMode === "cancel" ? "Hủy lịch" : "Lưu lịch dời"
+          }
           description={`Bạn sắp ${
             adjustmentMode === "cancel" ? "hủy" : "dời"
           } buổi học ${formatDate(selectedEvent.date)} của lớp ${
@@ -585,7 +611,10 @@ function WeekCalendar({
             <DayHeader day={day} />
             <div className={styles.mobilePeriodList}>
               {periods.map((period) => (
-                <section className={styles.mobilePeriodBlock} key={period.value}>
+                <section
+                  className={styles.mobilePeriodBlock}
+                  key={period.value}
+                >
                   <PeriodHeader period={period} />
                   <CalendarCell
                     day={day}
@@ -700,9 +729,7 @@ function ScheduleEventCard({
           <FileText size={13} />
         </span>
         <span className={styles.eventLessonText}>
-          {lessonTitle ? (
-            <strong>{lessonTitle}</strong>
-          ) : null}
+          {lessonTitle ? <strong>{lessonTitle}</strong> : null}
           <span>{lessonContent}</span>
         </span>
       </span>
@@ -725,6 +752,7 @@ function ScheduleEventCard({
 }
 
 function ScheduleEventModal({
+  feedback,
   event,
   form,
   isSaving,
@@ -735,6 +763,7 @@ function ScheduleEventModal({
   onModeChange,
   onSave,
 }: {
+  feedback: ReactNode;
   event: TeacherScheduleEvent;
   form: TemporaryScheduleForm;
   isSaving: boolean;
@@ -748,7 +777,10 @@ function ScheduleEventModal({
   return (
     <Modal onClose={onClose} title="Thông tin buổi học">
       <div className={styles.sessionModalBody}>
-        <section className={styles.sessionSummary} style={getEventStyle(event.colorIndex, event.colorHex)}>
+        <section
+          className={styles.sessionSummary}
+          style={getEventStyle(event.colorIndex, event.colorHex)}
+        >
           <span className={styles.sessionSummaryIcon}>
             {getEventIcon(event.type)}
           </span>
@@ -758,7 +790,10 @@ function ScheduleEventModal({
               {formatDate(event.date)} - {formatTimeRange(event)}
             </p>
           </div>
-          <Link className={styles.classDetailLink} href={`/classes/${event.classId}`}>
+          <Link
+            className={styles.classDetailLink}
+            href={`/classes/${event.classId}`}
+          >
             <ExternalLink size={15} />
             Chi tiết lớp
           </Link>
@@ -766,8 +801,16 @@ function ScheduleEventModal({
 
         <section className={styles.sessionInfoGrid}>
           <InfoBlock label="Trạng thái" value={getEventLabel(event)} />
-          <InfoBlock label="Buổi học" value={getSessionPeriod(event.startTime).label} />
-          <InfoBlock label="Ngày gốc" value={event.originalDate ? formatDate(event.originalDate) : "Không có"} />
+          <InfoBlock
+            label="Buổi học"
+            value={getSessionPeriod(event.startTime).label}
+          />
+          <InfoBlock
+            label="Ngày gốc"
+            value={
+              event.originalDate ? formatDate(event.originalDate) : "Không có"
+            }
+          />
         </section>
 
         <section className={styles.sessionContentBox}>
@@ -783,7 +826,9 @@ function ScheduleEventModal({
         <section className={styles.adjustmentPanel}>
           <div className={styles.adjustmentHeader}>
             <strong>Điều chỉnh buổi học</strong>
-            <p>Dời lịch hoặc cho nghỉ sẽ tạo lịch tạm ngay trên tuần đang xem.</p>
+            <p>
+              Dời lịch hoặc cho nghỉ sẽ tạo lịch tạm ngay trên tuần đang xem.
+            </p>
           </div>
 
           <div className={styles.adjustmentActions}>
@@ -850,6 +895,46 @@ function ScheduleEventModal({
                 </div>
               ) : null}
 
+              {form.action === "reschedule" &&
+              (!form.originalStartTime || !form.originalEndTime) ? (
+                <ScheduleSourcePicker
+                  classId={event.classId}
+                  date={form.originalDate}
+                  ignoreOverrideId={
+                    getTemporaryScheduleIdFromEvent(event) || undefined
+                  }
+                  startTime={form.originalStartTime}
+                  endTime={form.originalEndTime}
+                  onChange={(slot) =>
+                    onChange((current) => ({
+                      ...current,
+                      originalStartTime: slot.startTime,
+                      originalEndTime: slot.endTime,
+                    }))
+                  }
+                />
+              ) : null}
+              {mode === "reschedule" ? (
+                <ScheduleAvailabilityPicker
+                  context={{
+                    classId: event.classId,
+                    mode: "temporary",
+                    date: form.newDate,
+                    ignoreOverrideId:
+                      getTemporaryScheduleIdFromEvent(event) || undefined,
+                    originalDate:
+                      form.action === "reschedule"
+                        ? form.originalDate
+                        : undefined,
+                    originalStartTime: form.originalStartTime,
+                    originalEndTime: form.originalEndTime,
+                  }}
+                  onSelect={(slot) =>
+                    onChange((current) => ({ ...current, ...slot }))
+                  }
+                />
+              ) : null}
+              {feedback}
               <TextArea
                 label={mode === "cancel" ? "Lý do hủy" : "Lý do dời lịch"}
                 maxLength={300}
@@ -988,7 +1073,10 @@ function CalendarSkeleton() {
             <DayHeader day={day} />
             <div className={styles.mobilePeriodList}>
               {calendarPeriods.map((period) => (
-                <section className={styles.mobilePeriodBlock} key={period.value}>
+                <section
+                  className={styles.mobilePeriodBlock}
+                  key={period.value}
+                >
                   <PeriodHeader period={period} />
                   <div className={styles.periodCell}>
                     <div className={styles.skeleton} />
@@ -1074,9 +1162,7 @@ function formatTimeRange(event: TeacherScheduleEvent) {
 
 function getLessonContent(event: TeacherScheduleEvent) {
   return (
-    event.content?.trim() ||
-    event.lessonContent?.trim() ||
-    "Nội dung buổi học"
+    event.content?.trim() || event.lessonContent?.trim() || "Nội dung buổi học"
   );
 }
 
@@ -1085,7 +1171,9 @@ function buildTemporaryFormFromEvent(
   requestedAction: ScheduleOverrideAction,
 ): TemporaryScheduleForm {
   const originalDate =
-    event.type === "reschedule" ? event.originalDate ?? event.date : event.date;
+    event.type === "reschedule"
+      ? (event.originalDate ?? event.date)
+      : event.date;
   const action =
     event.type === "extra" && requestedAction === "reschedule"
       ? "extra"
@@ -1094,9 +1182,19 @@ function buildTemporaryFormFromEvent(
   return {
     action,
     originalDate,
+    originalStartTime:
+      event.type === "fixed" ? event.startTime : event.originalStartTime,
+    originalEndTime:
+      event.type === "fixed" ? event.endTime : event.originalEndTime,
     newDate: requestedAction === "cancel" ? "" : event.date,
-    startTime: event.startTime ?? "",
-    endTime: event.endTime ?? "",
+    startTime:
+      (requestedAction === "cancel"
+        ? (event.originalStartTime ?? event.startTime)
+        : event.startTime) ?? "",
+    endTime:
+      (requestedAction === "cancel"
+        ? (event.originalEndTime ?? event.endTime)
+        : event.endTime) ?? "",
     reason: event.reason ?? "",
   };
 }
@@ -1160,8 +1258,11 @@ function buildTemporaryPayload(
 
   return {
     action: form.action,
-    originalDate:
-      form.action === "reschedule" ? form.originalDate : undefined,
+    originalDate: form.action === "reschedule" ? form.originalDate : undefined,
+    originalStartTime:
+      form.action === "reschedule" ? form.originalStartTime : undefined,
+    originalEndTime:
+      form.action === "reschedule" ? form.originalEndTime : undefined,
     newDate: form.newDate,
     startTime: form.startTime,
     endTime: form.endTime,
@@ -1185,7 +1286,10 @@ function compareEventsByStartTime(
   firstEvent: TeacherScheduleEvent,
   secondEvent: TeacherScheduleEvent,
 ) {
-  return getTimeOrderValue(firstEvent.startTime) - getTimeOrderValue(secondEvent.startTime);
+  return (
+    getTimeOrderValue(firstEvent.startTime) -
+    getTimeOrderValue(secondEvent.startTime)
+  );
 }
 
 function getTimeOrderValue(time?: string) {
@@ -1333,9 +1437,7 @@ function parseVietnamDateKey(value: string) {
     return null;
   }
 
-  return new Date(
-    Date.UTC(year, month - 1, day) - VIETNAM_TIMEZONE_OFFSET_MS,
-  );
+  return new Date(Date.UTC(year, month - 1, day) - VIETNAM_TIMEZONE_OFFSET_MS);
 }
 
 function getVietnamDayOfWeek(date: Date) {

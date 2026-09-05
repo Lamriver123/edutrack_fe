@@ -15,7 +15,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { schoolApi } from "@/lib/api/school";
 import type {
@@ -48,18 +48,22 @@ const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
 });
 
 type StudentDetailTab = "profile" | "receipts";
+const RECEIPT_FILTER_ALL = "all";
+const RECEIPT_FILTER_MULTI = "multi_class";
 
 export function StudentDetailModal({
   actions,
   classroom,
   onClose,
   onIssueReceipt,
+  onIssueMultiClassReceipt,
   student,
 }: {
   actions?: ReactNode;
   classroom?: ClassroomDetail | null;
   onClose: () => void;
   onIssueReceipt?: (student: Student) => void;
+  onIssueMultiClassReceipt?: (student: Student) => void;
   student: Student;
 }) {
   const [activeTab, setActiveTab] = useState<StudentDetailTab>("profile");
@@ -75,7 +79,6 @@ export function StudentDetailModal({
     try {
       const [nextReceipts, nextCandidates] = await Promise.all([
         schoolApi.listReceipts({
-          classId: classroom?.id,
           studentId: student.id,
         }),
         classroom
@@ -164,6 +167,11 @@ export function StudentDetailModal({
             isLoading={isReceiptLoading}
             onIssueReceipt={
               onIssueReceipt ? () => onIssueReceipt(student) : undefined
+            }
+            onIssueMultiClassReceipt={
+              onIssueMultiClassReceipt
+                ? () => onIssueMultiClassReceipt(student)
+                : undefined
             }
             onReload={() => void loadReceiptData()}
             receipts={receipts}
@@ -260,6 +268,7 @@ function StudentReceiptContent({
   error,
   isLoading,
   onIssueReceipt,
+  onIssueMultiClassReceipt,
   onReload,
   receipts,
 }: {
@@ -268,9 +277,29 @@ function StudentReceiptContent({
   error: string;
   isLoading: boolean;
   onIssueReceipt?: () => void;
+  onIssueMultiClassReceipt?: () => void;
   onReload: () => void;
   receipts: ReceiptListItem[];
 }) {
+  const receiptFilterOptions = useMemo(
+    () => getStudentReceiptFilterOptions(receipts),
+    [receipts],
+  );
+  const [receiptFilter, setReceiptFilter] = useState(RECEIPT_FILTER_ALL);
+  const filteredReceipts = useMemo(
+    () => filterStudentReceipts(receipts, receiptFilter),
+    [receiptFilter, receipts],
+  );
+
+  useEffect(() => {
+    if (
+      receiptFilter !== RECEIPT_FILTER_ALL &&
+      !receiptFilterOptions.some((option) => option.value === receiptFilter)
+    ) {
+      setReceiptFilter(RECEIPT_FILTER_ALL);
+    }
+  }, [receiptFilter, receiptFilterOptions]);
+
   if (isLoading) {
     return <InlineLoading text="Đang tải hóa đơn của học sinh..." />;
   }
@@ -298,15 +327,26 @@ function StudentReceiptContent({
                   : "Chưa có dữ liệu kỳ hiện tại."}
               </p>
             </div>
-            <PrimaryAction
-              className="w-full sm:w-auto"
-              disabled={!onIssueReceipt || !candidates?.summary.unbilledLessonCount}
-              icon={<FileText size={16} />}
-              onClick={onIssueReceipt}
-              type="button"
-            >
-              Xuất hóa đơn
-            </PrimaryAction>
+            <div className="grid gap-2 sm:flex sm:justify-end">
+              <SecondaryAction
+                className="w-full sm:w-auto"
+                disabled={!onIssueMultiClassReceipt}
+                icon={<FileText size={16} />}
+                onClick={onIssueMultiClassReceipt}
+                type="button"
+              >
+                Xuất gộp nhiều lớp
+              </SecondaryAction>
+              <PrimaryAction
+                className="w-full sm:w-auto"
+                disabled={!onIssueReceipt || !candidates?.summary.unbilledLessonCount}
+                icon={<FileText size={16} />}
+                onClick={onIssueReceipt}
+                type="button"
+              >
+                Xuất hóa đơn
+              </PrimaryAction>
+            </div>
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -341,9 +381,32 @@ function StudentReceiptContent({
           </SecondaryAction>
         </div>
 
-        {receipts.length ? (
+        {receiptFilterOptions.length > 1 ? (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {receiptFilterOptions.map((option) => {
+              const isActive = receiptFilter === option.value;
+
+              return (
+                <button
+                  className={`inline-flex min-h-9 items-center rounded-full border px-3 text-[13px] font-extrabold transition ${
+                    isActive
+                      ? "border-[var(--brand-200)] bg-[var(--brand-50)] text-[var(--brand-700)]"
+                      : "border-[var(--neutral-200)] bg-white text-[var(--neutral-500)] hover:border-[var(--brand-200)] hover:text-[var(--brand-700)]"
+                  }`}
+                  key={option.value}
+                  onClick={() => setReceiptFilter(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {filteredReceipts.length ? (
           <div className="grid gap-2">
-            {receipts.map((receipt) => (
+            {filteredReceipts.map((receipt) => (
               <div
                 className="grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-3 sm:grid-cols-[1fr_auto] sm:items-center"
                 key={receipt.id}
@@ -451,6 +514,73 @@ function getPaymentLabel(status: PaymentStatus) {
   };
 
   return labels[status] ?? "Chưa thanh toán";
+}
+
+function getStudentReceiptFilterOptions(receipts: ReceiptListItem[]) {
+  const options = [{ label: "Tất cả lớp", value: RECEIPT_FILTER_ALL }];
+  const classMap = new Map<string, string>();
+  const hasMultiClassReceipt = receipts.some(
+    (receipt) => receipt.scopeType === "multi_class",
+  );
+
+  for (const receipt of receipts) {
+    const snapshots = getReceiptClassSnapshots(receipt);
+
+    for (const snapshot of snapshots) {
+      if (!snapshot.classId || classMap.has(snapshot.classId)) {
+        continue;
+      }
+
+      classMap.set(snapshot.classId, snapshot.className);
+    }
+  }
+
+  if (hasMultiClassReceipt) {
+    options.push({ label: "Hóa đơn gộp", value: RECEIPT_FILTER_MULTI });
+  }
+
+  for (const [classId, className] of classMap) {
+    options.push({ label: className, value: `class:${classId}` });
+  }
+
+  return options;
+}
+
+function filterStudentReceipts(receipts: ReceiptListItem[], filter: string) {
+  if (filter === RECEIPT_FILTER_ALL) {
+    return receipts;
+  }
+
+  if (filter === RECEIPT_FILTER_MULTI) {
+    return receipts.filter((receipt) => receipt.scopeType === "multi_class");
+  }
+
+  if (filter.startsWith("class:")) {
+    const classId = filter.replace("class:", "");
+
+    return receipts.filter((receipt) =>
+      getReceiptClassSnapshots(receipt).some(
+        (snapshot) => snapshot.classId === classId,
+      ),
+    );
+  }
+
+  return receipts;
+}
+
+function getReceiptClassSnapshots(receipt: ReceiptListItem) {
+  if (receipt.classSnapshots?.length) {
+    return receipt.classSnapshots;
+  }
+
+  return [
+    {
+      classId: receipt.classId,
+      className: receipt.className,
+      makeupPrice: 0,
+      regularPrice: 0,
+    },
+  ];
 }
 
 function SectionTitle({

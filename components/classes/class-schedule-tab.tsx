@@ -70,6 +70,12 @@ import {
 import { getClassColorTheme, getErrorMessage } from "./classroom-utils";
 import formStyles from "./classroom-manager.module.css";
 import styles from "./class-schedule-tab.module.css";
+import { ScheduleAvailabilityPicker } from "../schedule/schedule-availability-picker";
+import { ScheduleSourcePicker } from "../schedule/schedule-source-picker";
+import {
+  ScheduleConflictFeedback,
+  useScheduleCheck,
+} from "../schedule/schedule-conflict-feedback";
 
 type FixedScheduleForm = {
   effectiveFrom: string;
@@ -79,6 +85,8 @@ type FixedScheduleForm = {
 type TemporaryScheduleForm = {
   action: ScheduleOverrideAction;
   originalDate: string;
+  originalStartTime?: string;
+  originalEndTime?: string;
   newDate: string;
   startTime: string;
   endTime: string;
@@ -203,6 +211,12 @@ const eventPalettes: Record<
     border: "#c7d2fe",
     text: "#312e81",
   },
+  manual: {
+    accent: "#475569",
+    background: "#f8fafc",
+    border: "#cbd5e1",
+    text: "#1e293b",
+  },
   reschedule: {
     accent: "#f59e0b",
     background: "#fffbeb",
@@ -269,6 +283,8 @@ export function ClassScheduleTab({
   const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [confirmAction, setConfirmAction] =
     useState<ScheduleConfirmAction | null>(null);
+  const fixedCheck = useScheduleCheck();
+  const temporaryCheck = useScheduleCheck();
 
   const loadSchedules = useCallback(async () => {
     setIsLoading(true);
@@ -348,6 +364,7 @@ export function ClassScheduleTab({
       )}`;
 
   function openFixedScheduleModal() {
+    fixedCheck.clear();
     setFixedForm(
       buildFixedFormFromSchedule(overview?.latestFixedSchedule ?? null),
     );
@@ -355,6 +372,7 @@ export function ClassScheduleTab({
   }
 
   function openCreateTemporaryScheduleModal() {
+    temporaryCheck.clear();
     setLessonAdjustmentMode("");
     setEditingTemporarySchedule(null);
     setTemporaryForm({
@@ -365,6 +383,7 @@ export function ClassScheduleTab({
   }
 
   function openEditTemporaryScheduleModal(schedule: ClassTemporarySchedule) {
+    temporaryCheck.clear();
     setLessonAdjustmentMode("");
     setEditingTemporarySchedule(schedule);
     setTemporaryForm(buildTemporaryFormFromSchedule(schedule));
@@ -394,12 +413,14 @@ export function ClassScheduleTab({
       return;
     }
 
+    temporaryCheck.clear();
     setLessonAdjustmentMode(action);
     setEditingTemporarySchedule(findTemporaryScheduleForEvent(selectedEvent));
     setTemporaryForm(buildTemporaryFormFromEvent(selectedEvent, action));
   }
 
   function cancelLessonAdjustment() {
+    temporaryCheck.clear();
     setLessonAdjustmentMode("");
     setEditingTemporarySchedule(null);
     setTemporaryForm(initialTemporaryForm);
@@ -436,7 +457,10 @@ export function ClassScheduleTab({
       return;
     }
 
-    setConfirmAction({ type: "fixed" });
+    const result = await fixedCheck.check(() =>
+      schoolApi.checkFixedSchedule(classroom.id, fixedForm),
+    );
+    if (result) setConfirmAction({ type: "fixed" });
   }
 
   async function executeSaveFixedSchedule() {
@@ -453,13 +477,19 @@ export function ClassScheduleTab({
     setIsSavingFixed(true);
 
     try {
-      await schoolApi.saveFixedSchedule(classroom.id, fixedForm);
-      setNotice({ type: "success", text: "Đã lưu thời khóa biểu cố định." });
+      const saved = await schoolApi.saveFixedSchedule(classroom.id, fixedForm);
+      setNotice({
+        type: "success",
+        text: saved.warnings?.length
+          ? `Đã lưu lịch cố định. Có ${saved.warnings.length} lịch tạm trùng cần điều chỉnh.`
+          : "Đã lưu thời khóa biểu cố định.",
+      });
       setIsFixedModalOpen(false);
       setConfirmAction(null);
       await loadSchedules();
       await onScheduleChanged?.();
     } catch (error) {
+      fixedCheck.captureError(error);
       setNotice({ type: "error", text: getErrorMessage(error) });
       setConfirmAction(null);
     } finally {
@@ -467,7 +497,9 @@ export function ClassScheduleTab({
     }
   }
 
-  async function handleSaveTemporarySchedule(event: FormEvent<HTMLFormElement>) {
+  async function handleSaveTemporarySchedule(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
     setNotice(null);
 
@@ -478,7 +510,14 @@ export function ClassScheduleTab({
       return;
     }
 
-    setConfirmAction({ type: "temporary" });
+    const result = await temporaryCheck.check(() =>
+      schoolApi.checkTemporarySchedule(
+        classroom.id,
+        payload,
+        editingTemporarySchedule?.id,
+      ),
+    );
+    if (result) setConfirmAction({ type: "temporary" });
   }
 
   async function executeSaveTemporarySchedule() {
@@ -513,6 +552,7 @@ export function ClassScheduleTab({
       setConfirmAction(null);
       await loadSchedules();
     } catch (error) {
+      temporaryCheck.captureError(error);
       setNotice({ type: "error", text: getErrorMessage(error) });
       setConfirmAction(null);
     } finally {
@@ -614,7 +654,14 @@ export function ClassScheduleTab({
       return;
     }
 
-    setConfirmAction({ type: "lessonAdjustment" });
+    const result = await temporaryCheck.check(() =>
+      schoolApi.checkTemporarySchedule(
+        classroom.id,
+        payload,
+        editingTemporarySchedule?.id,
+      ),
+    );
+    if (result) setConfirmAction({ type: "lessonAdjustment" });
   }
 
   async function executeSaveLessonAdjustment() {
@@ -655,6 +702,7 @@ export function ClassScheduleTab({
       setConfirmAction(null);
       await loadSchedules();
     } catch (error) {
+      temporaryCheck.captureError(error);
       setNotice({ type: "error", text: getErrorMessage(error) });
       setConfirmAction(null);
     } finally {
@@ -674,8 +722,9 @@ export function ClassScheduleTab({
     }
 
     return (
-      overview?.temporarySchedules.find((schedule) => schedule.id === scheduleId) ??
-      null
+      overview?.temporarySchedules.find(
+        (schedule) => schedule.id === scheduleId,
+      ) ?? null
     );
   }
 
@@ -684,6 +733,7 @@ export function ClassScheduleTab({
     field: keyof ClassScheduleSlot,
     value: string | number,
   ) {
+    fixedCheck.clear();
     setFixedForm((current) => ({
       ...current,
       schedules: current.schedules.map((slot, slotIndex) =>
@@ -698,6 +748,7 @@ export function ClassScheduleTab({
   }
 
   function addFixedSlot() {
+    fixedCheck.clear();
     setFixedForm((current) => ({
       ...current,
       schedules: [...current.schedules, { ...emptySlot }],
@@ -705,6 +756,7 @@ export function ClassScheduleTab({
   }
 
   function removeFixedSlot(index: number) {
+    fixedCheck.clear();
     setFixedForm((current) => ({
       ...current,
       schedules:
@@ -718,7 +770,7 @@ export function ClassScheduleTab({
     if (action.type === "fixed") {
       return {
         confirmText: "Lưu lịch",
-        description: `Bạn sắp lưu thời khóa biểu cố định cho lớp ${classroom.name}. Lịch mới sẽ áp dụng từ ngày ${formatDate(fixedForm.effectiveFrom)}.`,
+        description: `Bạn sắp lưu thời khóa biểu cố định cho lớp ${classroom.name}. Lịch mới sẽ áp dụng từ ngày ${formatDate(fixedForm.effectiveFrom)}.${fixedCheck.result?.warnings.length ? ` Có lịch tạm trùng cần điều chỉnh: ${fixedCheck.result.warnings.map((item) => item.message).join(" ")} Bạn vẫn muốn lưu?` : ""}`,
         title: "Xác nhận lưu lịch cố định",
         tone: "default" as const,
       };
@@ -728,9 +780,7 @@ export function ClassScheduleTab({
       const isCancel = temporaryForm.action === "cancel";
 
       return {
-        confirmText: editingTemporarySchedule
-          ? "Lưu thay đổi"
-          : "Tạo lịch tạm",
+        confirmText: editingTemporarySchedule ? "Lưu thay đổi" : "Tạo lịch tạm",
         description: `Bạn sắp ${
           editingTemporarySchedule ? "cập nhật" : "tạo"
         } lịch tạm "${getActionLabel(temporaryForm.action)}" cho lớp ${
@@ -947,16 +997,25 @@ export function ClassScheduleTab({
       <TemporarySchedulePanel
         isRevoking={isRevokingTemporary}
         onEdit={openEditTemporaryScheduleModal}
-        onRevoke={(scheduleId) => void handleRevokeTemporarySchedule(scheduleId)}
+        onRevoke={(scheduleId) =>
+          void handleRevokeTemporarySchedule(scheduleId)
+        }
         schedules={temporarySchedulesInWeek}
       />
 
       {isFixedModalOpen ? (
         <Modal
-          onClose={() => setIsFixedModalOpen(false)}
+          onClose={() => {
+            fixedCheck.clear();
+            setIsFixedModalOpen(false);
+          }}
           title="Sửa lịch cố định"
         >
-          <form className={styles.modalForm} onSubmit={handleSaveFixedSchedule}>
+          <form
+            className={styles.modalForm}
+            onSubmit={handleSaveFixedSchedule}
+            onChange={() => fixedCheck.clear()}
+          >
             <DateField
               label="Ngày áp dụng"
               onChange={(value) =>
@@ -970,42 +1029,68 @@ export function ClassScheduleTab({
 
             <div className={styles.fixedSlotList}>
               {fixedForm.schedules.map((slot, index) => (
-                <div className={formStyles.scheduleSlotRow} key={index}>
-                  <SelectField
-                    label="Thứ"
-                    onChange={(value) =>
-                      updateFixedSlot(index, "dayOfWeek", Number(value))
-                    }
-                    options={dayOptions}
-                    value={String(slot.dayOfWeek)}
+                <Fragment key={index}>
+                  <div className={formStyles.scheduleSlotRow}>
+                    <SelectField
+                      label="Thứ"
+                      onChange={(value) =>
+                        updateFixedSlot(index, "dayOfWeek", Number(value))
+                      }
+                      options={dayOptions}
+                      value={String(slot.dayOfWeek)}
+                    />
+                    <TimeField
+                      label="Bắt đầu"
+                      onChange={(value) =>
+                        updateFixedSlot(index, "startTime", value)
+                      }
+                      value={slot.startTime}
+                    />
+                    <TimeField
+                      label="Kết thúc"
+                      onChange={(value) =>
+                        updateFixedSlot(index, "endTime", value)
+                      }
+                      value={slot.endTime}
+                    />
+                    <button
+                      aria-label="Xóa ca học"
+                      className={formStyles.scheduleIconButton}
+                      disabled={fixedForm.schedules.length === 1}
+                      onClick={() => removeFixedSlot(index)}
+                      type="button"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <ScheduleAvailabilityPicker
+                    context={{
+                      classId: classroom.id,
+                      mode: "fixed",
+                      date: fixedForm.effectiveFrom,
+                      dayOfWeek: slot.dayOfWeek,
+                    }}
+                    reservedSlots={fixedForm.schedules.filter(
+                      (s, i) => i !== index && s.dayOfWeek === slot.dayOfWeek,
+                    )}
+                    onSelect={(time) => {
+                      fixedCheck.clear();
+                      setFixedForm((current) => ({
+                        ...current,
+                        schedules: current.schedules.map((s, i) =>
+                          i === index ? { ...s, ...time } : s,
+                        ),
+                      }));
+                    }}
                   />
-                  <TimeField
-                    label="Bắt đầu"
-                    onChange={(value) =>
-                      updateFixedSlot(index, "startTime", value)
-                    }
-                    value={slot.startTime}
-                  />
-                  <TimeField
-                    label="Kết thúc"
-                    onChange={(value) =>
-                      updateFixedSlot(index, "endTime", value)
-                    }
-                    value={slot.endTime}
-                  />
-                  <button
-                    aria-label="Xóa ca học"
-                    className={formStyles.scheduleIconButton}
-                    disabled={fixedForm.schedules.length === 1}
-                    onClick={() => removeFixedSlot(index)}
-                    type="button"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                </Fragment>
               ))}
             </div>
 
+            <ScheduleConflictFeedback
+              result={fixedCheck.result}
+              error={fixedCheck.error}
+            />
             <div className={styles.modalActions}>
               <SecondaryAction
                 icon={<Plus size={15} />}
@@ -1016,13 +1101,16 @@ export function ClassScheduleTab({
               </SecondaryAction>
               <div className={styles.modalActionsEnd}>
                 <SecondaryAction
-                  onClick={() => setIsFixedModalOpen(false)}
+                  onClick={() => {
+                    fixedCheck.clear();
+                    setIsFixedModalOpen(false);
+                  }}
                   type="button"
                 >
                   Hủy
                 </SecondaryAction>
                 <PrimaryAction
-                  disabled={isSavingFixed}
+                  disabled={isSavingFixed || fixedCheck.isChecking}
                   icon={
                     isSavingFixed ? (
                       <LoaderCircle className="animate-spin" size={16} />
@@ -1032,7 +1120,7 @@ export function ClassScheduleTab({
                   }
                   type="submit"
                 >
-                  Lưu lịch
+                  {fixedCheck.isChecking ? "Đang kiểm tra..." : "Lưu lịch"}
                 </PrimaryAction>
               </div>
             </div>
@@ -1043,6 +1131,7 @@ export function ClassScheduleTab({
       {isTemporaryModalOpen ? (
         <Modal
           onClose={() => {
+            temporaryCheck.clear();
             setIsTemporaryModalOpen(false);
             setEditingTemporarySchedule(null);
           }}
@@ -1051,16 +1140,26 @@ export function ClassScheduleTab({
           <form
             className={styles.modalForm}
             onSubmit={handleSaveTemporarySchedule}
+            onChange={() => temporaryCheck.clear()}
           >
             <div className={styles.temporaryFormGrid}>
               <SelectField
                 label="Loại lịch tạm"
-                onChange={(value) =>
+                onChange={(value) => {
+                  temporaryCheck.clear();
                   setTemporaryForm((current) => ({
                     ...current,
                     action: value as ScheduleOverrideAction,
-                  }))
-                }
+                    startTime:
+                      value === "cancel"
+                        ? (current.originalStartTime ?? "")
+                        : current.startTime,
+                    endTime:
+                      value === "cancel"
+                        ? (current.originalEndTime ?? "")
+                        : current.endTime,
+                  }));
+                }}
                 options={actionOptions}
                 value={temporaryForm.action}
               />
@@ -1072,6 +1171,8 @@ export function ClassScheduleTab({
                     setTemporaryForm((current) => ({
                       ...current,
                       originalDate: value,
+                      originalStartTime: undefined,
+                      originalEndTime: undefined,
                     }))
                   }
                   value={temporaryForm.originalDate}
@@ -1095,6 +1196,24 @@ export function ClassScheduleTab({
                 />
               ) : null}
             </div>
+
+            {temporaryForm.action === "reschedule" ? (
+              <ScheduleSourcePicker
+                classId={classroom.id}
+                date={temporaryForm.originalDate}
+                ignoreOverrideId={editingTemporarySchedule?.id}
+                startTime={temporaryForm.originalStartTime}
+                endTime={temporaryForm.originalEndTime}
+                onChange={(slot) => {
+                  temporaryCheck.clear();
+                  setTemporaryForm((current) => ({
+                    ...current,
+                    originalStartTime: slot.startTime,
+                    originalEndTime: slot.endTime,
+                  }));
+                }}
+              />
+            ) : null}
 
             {temporaryForm.action !== "cancel" ? (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -1121,6 +1240,30 @@ export function ClassScheduleTab({
               </div>
             ) : null}
 
+            {temporaryForm.action !== "cancel" ? (
+              <ScheduleAvailabilityPicker
+                context={{
+                  classId: classroom.id,
+                  mode: "temporary",
+                  date: temporaryForm.newDate,
+                  ignoreOverrideId: editingTemporarySchedule?.id,
+                  originalDate:
+                    temporaryForm.action === "reschedule"
+                      ? temporaryForm.originalDate
+                      : undefined,
+                  originalStartTime: temporaryForm.originalStartTime,
+                  originalEndTime: temporaryForm.originalEndTime,
+                }}
+                onSelect={(slot) => {
+                  temporaryCheck.clear();
+                  setTemporaryForm((current) => ({ ...current, ...slot }));
+                }}
+              />
+            ) : null}
+            <ScheduleConflictFeedback
+              result={temporaryCheck.result}
+              error={temporaryCheck.error}
+            />
             <TextArea
               label="Lý do"
               onChange={(event) =>
@@ -1160,6 +1303,7 @@ export function ClassScheduleTab({
               <div className={styles.modalActionsEnd}>
                 <SecondaryAction
                   onClick={() => {
+                    temporaryCheck.clear();
                     setIsTemporaryModalOpen(false);
                     setEditingTemporarySchedule(null);
                   }}
@@ -1168,7 +1312,7 @@ export function ClassScheduleTab({
                   Hủy
                 </SecondaryAction>
                 <PrimaryAction
-                  disabled={isSavingTemporary}
+                  disabled={isSavingTemporary || temporaryCheck.isChecking}
                   icon={
                     isSavingTemporary ? (
                       <LoaderCircle className="animate-spin" size={16} />
@@ -1195,7 +1339,11 @@ export function ClassScheduleTab({
           }}
           title="Nội dung buổi học"
         >
-          <form className={styles.modalForm} onSubmit={handleSaveLessonContent}>
+          <form
+            className={styles.modalForm}
+            onSubmit={handleSaveLessonContent}
+            onChange={() => temporaryCheck.clear()}
+          >
             <div className={styles.lessonEventSummary}>
               <span style={getEventStyle(selectedEvent)}>
                 {getEventIcon(selectedEvent.type)}
@@ -1212,7 +1360,7 @@ export function ClassScheduleTab({
             <LessonAdjustmentControls
               event={selectedEvent}
               form={temporaryForm}
-              isSaving={isSavingTemporary}
+              isSaving={isSavingTemporary || temporaryCheck.isChecking}
               mode={lessonAdjustmentMode}
               onCancel={cancelLessonAdjustment}
               onChange={setTemporaryForm}
@@ -1220,6 +1368,52 @@ export function ClassScheduleTab({
               onSave={() => void handleSaveLessonAdjustment()}
             />
 
+            {lessonAdjustmentMode ? (
+              <ScheduleConflictFeedback
+                result={temporaryCheck.result}
+                error={temporaryCheck.error}
+              />
+            ) : null}
+            {lessonAdjustmentMode === "reschedule" &&
+            temporaryForm.action === "reschedule" &&
+            (!temporaryForm.originalStartTime ||
+              !temporaryForm.originalEndTime) ? (
+              <ScheduleSourcePicker
+                classId={classroom.id}
+                date={temporaryForm.originalDate}
+                ignoreOverrideId={editingTemporarySchedule?.id}
+                startTime={temporaryForm.originalStartTime}
+                endTime={temporaryForm.originalEndTime}
+                onChange={(slot) => {
+                  temporaryCheck.clear();
+                  setTemporaryForm((current) => ({
+                    ...current,
+                    originalStartTime: slot.startTime,
+                    originalEndTime: slot.endTime,
+                  }));
+                }}
+              />
+            ) : null}
+            {lessonAdjustmentMode === "reschedule" ? (
+              <ScheduleAvailabilityPicker
+                context={{
+                  classId: classroom.id,
+                  mode: "temporary",
+                  date: temporaryForm.newDate,
+                  ignoreOverrideId: editingTemporarySchedule?.id,
+                  originalDate:
+                    temporaryForm.action === "reschedule"
+                      ? temporaryForm.originalDate
+                      : undefined,
+                  originalStartTime: temporaryForm.originalStartTime,
+                  originalEndTime: temporaryForm.originalEndTime,
+                }}
+                onSelect={(slot) => {
+                  temporaryCheck.clear();
+                  setTemporaryForm((current) => ({ ...current, ...slot }));
+                }}
+              />
+            ) : null}
             <TextInput
               label="Chủ đề"
               maxLength={160}
@@ -1392,7 +1586,10 @@ function WeekCalendar({
             <DayHeader day={day} />
             <div className={styles.mobilePeriodList}>
               {periods.map((period) => (
-                <section className={styles.mobilePeriodBlock} key={period.value}>
+                <section
+                  className={styles.mobilePeriodBlock}
+                  key={period.value}
+                >
                   <PeriodHeader period={period} />
                   <CalendarCell
                     day={day}
@@ -1426,7 +1623,9 @@ function DayHeader({ day }: { day: TeacherScheduleDay }) {
 function PeriodHeader({ period }: { period: SchedulePeriod }) {
   return (
     <div className={styles.periodHeader} data-period={period.value}>
-      <span className={styles.periodIcon}>{getSessionPeriodIcon(period.value)}</span>
+      <span className={styles.periodIcon}>
+        {getSessionPeriodIcon(period.value)}
+      </span>
       <span className={styles.periodText}>
         <strong>{period.label}</strong>
         <small>{period.timeHint}</small>
@@ -1626,9 +1825,7 @@ function LessonAdjustmentControls({
     <section className={styles.lessonActionsPanel}>
       <div className={styles.lessonActionsHeader}>
         <strong>Điều chỉnh lịch buổi này</strong>
-        <p>
-          Dời lịch hoặc cho nghỉ sẽ tạo lịch tạm cho đúng buổi đang chọn.
-        </p>
+        <p>Dời lịch hoặc cho nghỉ sẽ tạo lịch tạm cho đúng buổi đang chọn.</p>
       </div>
 
       <div className={styles.lessonQuickActions}>
@@ -1769,7 +1966,10 @@ function CalendarSkeleton({
             <DayHeader day={day} />
             <div className={styles.mobilePeriodList}>
               {periods.map((period) => (
-                <section className={styles.mobilePeriodBlock} key={period.value}>
+                <section
+                  className={styles.mobilePeriodBlock}
+                  key={period.value}
+                >
                   <PeriodHeader period={period} />
                   <div className={styles.periodCell}>
                     <div className={styles.skeleton} />
@@ -1814,10 +2014,7 @@ function SelectField({
       spaceBelow < SELECT_MENU_MAX_HEIGHT && spaceAbove > spaceBelow;
     const availableHeight = Math.max(
       132,
-      Math.min(
-        SELECT_MENU_MAX_HEIGHT,
-        shouldOpenUp ? spaceAbove : spaceBelow,
-      ),
+      Math.min(SELECT_MENU_MAX_HEIGHT, shouldOpenUp ? spaceAbove : spaceBelow),
     );
 
     setMenuStyle({
@@ -2015,6 +2212,8 @@ function buildTemporaryFormFromSchedule(
   return {
     action: schedule.action,
     originalDate: toDateInputValue(schedule.originalDate),
+    originalStartTime: schedule.originalStartTime,
+    originalEndTime: schedule.originalEndTime,
     newDate: toDateInputValue(schedule.newDate),
     startTime: schedule.startTime ?? "",
     endTime: schedule.endTime ?? "",
@@ -2027,14 +2226,27 @@ function buildTemporaryFormFromEvent(
   action: ScheduleOverrideAction,
 ): TemporaryScheduleForm {
   const originalDate =
-    event.type === "reschedule" ? event.originalDate ?? event.date : event.date;
+    event.type === "reschedule"
+      ? (event.originalDate ?? event.date)
+      : event.date;
 
   return {
-    action,
+    action:
+      event.type === "extra" && action === "reschedule" ? "extra" : action,
     originalDate,
+    originalStartTime:
+      event.type === "fixed" ? event.startTime : event.originalStartTime,
+    originalEndTime:
+      event.type === "fixed" ? event.endTime : event.originalEndTime,
     newDate: action === "cancel" ? "" : event.date,
-    startTime: event.startTime ?? "",
-    endTime: event.endTime ?? "",
+    startTime:
+      (action === "cancel"
+        ? (event.originalStartTime ?? event.startTime)
+        : event.startTime) ?? "",
+    endTime:
+      (action === "cancel"
+        ? (event.originalEndTime ?? event.endTime)
+        : event.endTime) ?? "",
     reason: event.reason ?? "",
   };
 }
@@ -2106,8 +2318,11 @@ function buildTemporaryPayload(
 
   return {
     action: form.action,
-    originalDate:
-      form.action === "reschedule" ? form.originalDate : undefined,
+    originalDate: form.action === "reschedule" ? form.originalDate : undefined,
+    originalStartTime:
+      form.action === "reschedule" ? form.originalStartTime : undefined,
+    originalEndTime:
+      form.action === "reschedule" ? form.originalEndTime : undefined,
     newDate: form.newDate,
     startTime: form.startTime,
     endTime: form.endTime,
@@ -2196,6 +2411,10 @@ function getEventLabel(type: TeacherScheduleEventType) {
     return "Dời lịch";
   }
 
+  if (type === "manual") {
+    return "Thủ công";
+  }
+
   return "Cố định";
 }
 
@@ -2209,9 +2428,7 @@ function formatTimeRange(event: TeacherScheduleEvent) {
 
 function getLessonContent(event: TeacherScheduleEvent) {
   return (
-    event.content?.trim() ||
-    event.lessonContent?.trim() ||
-    "Nội dung buổi học"
+    event.content?.trim() || event.lessonContent?.trim() || "Nội dung buổi học"
   );
 }
 
@@ -2452,9 +2669,7 @@ function parseVietnamDateKey(value: string) {
     return null;
   }
 
-  return new Date(
-    Date.UTC(year, month - 1, day) - VIETNAM_TIMEZONE_OFFSET_MS,
-  );
+  return new Date(Date.UTC(year, month - 1, day) - VIETNAM_TIMEZONE_OFFSET_MS);
 }
 
 function getVietnamDayOfWeek(date: Date) {

@@ -2,6 +2,7 @@
 
 import {
   BookOpenCheck,
+  CalendarDays,
   Coins,
   ImageIcon,
   LoaderCircle,
@@ -274,6 +275,19 @@ function ClassFormModal({
             value={form.makeupPrice}
           />
         </div>
+
+        <TextInput
+          icon={<CalendarDays size={16} />}
+          label="Ngày áp dụng giá"
+          onChange={(event) =>
+            onChange({
+              ...form,
+              priceEffectiveFrom: event.target.value,
+            })
+          }
+          type="date"
+          value={form.priceEffectiveFrom}
+        />
 
         <TextArea
           label="Mô tả"

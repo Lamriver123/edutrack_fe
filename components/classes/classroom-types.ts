@@ -19,6 +19,7 @@ export type ClassFormState = {
   colorHex: string;
   regularPrice: string;
   makeupPrice: string;
+  priceEffectiveFrom: string;
   status: ClassStatus;
 };
 
@@ -46,6 +47,7 @@ export const initialClassForm: ClassFormState = {
   colorHex: "#4f46e5",
   regularPrice: "",
   makeupPrice: "",
+  priceEffectiveFrom: "",
   status: "active",
 };
 

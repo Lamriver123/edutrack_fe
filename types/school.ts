@@ -20,6 +20,7 @@ export type LatestFixedSchedule = {
   effectiveFrom: string;
   effectiveTo?: string | null;
   schedules: ClassScheduleSlot[];
+  warnings?: ScheduleConflict[];
 };
 
 export type ClassScheduleOverview = {
@@ -33,6 +34,8 @@ export type ClassTemporarySchedule = {
   classId: string;
   action: ScheduleOverrideAction;
   originalDate?: string;
+  originalStartTime?: string;
+  originalEndTime?: string;
   newDate?: string;
   startTime?: string;
   endTime?: string;
@@ -90,6 +93,7 @@ export type Classroom = {
   colorHex?: string;
   regularPrice: number;
   makeupPrice: number;
+  priceEffectiveFrom?: string | null;
   status: ClassStatus;
   studentCount: number;
   latestFixedSchedule: LatestFixedSchedule | null;
@@ -107,6 +111,7 @@ export type CreateClassPayload = {
   colorHex?: string;
   regularPrice: number;
   makeupPrice: number;
+  priceEffectiveFrom?: string;
 };
 
 export type UpdateClassPayload = Partial<CreateClassPayload> & {
@@ -121,6 +126,8 @@ export type SaveFixedSchedulePayload = {
 export type CreateTemporarySchedulePayload = {
   action: ScheduleOverrideAction;
   originalDate?: string;
+  originalStartTime?: string;
+  originalEndTime?: string;
   newDate?: string;
   startTime?: string;
   endTime?: string;
@@ -160,7 +167,8 @@ export type TeacherScheduleEventType =
   | "fixed"
   | "extra"
   | "reschedule"
-  | "cancel";
+  | "cancel"
+  | "manual";
 
 export type TeacherScheduleClass = {
   id: string;
@@ -189,6 +197,8 @@ export type TeacherScheduleEvent = {
   type: TeacherScheduleEventType;
   reason?: string;
   originalDate?: string;
+  originalStartTime?: string;
+  originalEndTime?: string;
   topic?: string;
   content?: string;
   lessonContent?: string;
@@ -201,6 +211,24 @@ export type TeacherWeekSchedule = {
   classes: TeacherScheduleClass[];
   events: TeacherScheduleEvent[];
 };
+
+export type ScheduleConflict = {
+  classId: string; className: string; scheduleId: string;
+  date: string; startTime: string; endTime: string;
+  type: "fixed" | "temporary"; message: string;
+};
+export type ScheduleConflictResult = {
+  blockingConflicts: ScheduleConflict[];
+  warnings: ScheduleConflict[];
+};
+export type ScheduleAvailabilityPayload = {
+  classId: string; mode: "fixed" | "temporary"; date: string;
+  dayOfWeek?: number; duration: number; startTime: string; endTime: string;
+  ignoreOverrideId?: string; originalDate?: string;
+  originalStartTime?: string; originalEndTime?: string;
+};
+export type ScheduleTimeSlot = { startTime: string; endTime: string };
+export type ScheduleAvailability = { slots: ScheduleTimeSlot[]; warnings: ScheduleConflict[] };
 
 export type EnrollmentResponse = {
   id: string;
@@ -327,6 +355,7 @@ export type PaymentStatus =
   | "cancelled";
 
 export type ReceiptPdfStatus = "pending" | "generated" | "failed";
+export type ReceiptScope = "class" | "multi_class";
 
 export type ReceiptTeacherSnapshot = {
   fullName: string;
@@ -340,6 +369,7 @@ export type ReceiptTeacherSnapshot = {
 };
 
 export type ReceiptClassSnapshot = {
+  classId?: string;
   className: string;
   colorHex?: string;
   regularPrice: number;
@@ -360,10 +390,17 @@ export type ReceiptSessionSnapshot = {
   sequence: number;
   sessionId?: string;
   classId?: string;
+  attendedClassId?: string;
+  billingClassId?: string;
+  makeupForClassId?: string;
   date: string;
   startTime?: string;
   endTime?: string;
   className: string;
+  attendedClassName?: string;
+  billingClassName?: string;
+  makeupForClassName?: string;
+  classColorHex?: string;
   topic?: string;
   content?: string;
   attendanceStatus: AttendanceStatus;
@@ -393,6 +430,9 @@ export type ReceiptDetail = {
   id: string;
   teacherId: string;
   classId: string;
+  classIds?: string[];
+  primaryClassId?: string;
+  scopeType?: ReceiptScope;
   studentId: string;
   billingCycleId?: string | null;
   receiptNumber: string;
@@ -403,6 +443,7 @@ export type ReceiptDetail = {
   reason: "cycle_completed" | "manual_early";
   teacherSnapshot: ReceiptTeacherSnapshot;
   classSnapshot: ReceiptClassSnapshot;
+  classSnapshots?: ReceiptClassSnapshot[];
   studentSnapshot: ReceiptStudentSnapshot;
   sessions: ReceiptSessionSnapshot[];
   exams: ReceiptExamSnapshot[];
@@ -430,6 +471,9 @@ export type ReceiptDetail = {
 export type ReceiptListItem = {
   id: string;
   classId: string;
+  classIds?: string[];
+  primaryClassId?: string;
+  scopeType?: ReceiptScope;
   studentId: string;
   receiptNumber: string;
   issuedAt: string;
@@ -437,6 +481,7 @@ export type ReceiptListItem = {
   periodEnd: string;
   studentName: string;
   className: string;
+  classSnapshots?: ReceiptClassSnapshot[];
   lessonCount: number;
   totalAmount: number;
   paymentStatus: PaymentStatus;
@@ -471,7 +516,7 @@ export type BillingOverview = {
   students: BillingOverviewStudent[];
 };
 
-export type BillingCandidates = {
+export type StudentBillingOverviewClass = {
   class: {
     id: string;
     name: string;
@@ -479,6 +524,37 @@ export type BillingCandidates = {
     regularPrice: number;
     makeupPrice: number;
   };
+  unbilledLessonCount: number;
+  unbilledAmount: number;
+  firstUnbilledSessionDate?: string;
+  lastUnbilledSessionDate?: string;
+  reachedSuggestedCycle: boolean;
+  latestReceipt?: ReceiptListItem | null;
+};
+
+export type StudentBillingOverview = {
+  student: Student;
+  classes: StudentBillingOverviewClass[];
+  totals: {
+    classes: number;
+    unbilledLessonCount: number;
+    unbilledAmount: number;
+    readyToIssueCount: number;
+  };
+};
+
+export type BillingClassSummary = {
+  id: string;
+  name: string;
+  colorHex?: string;
+  regularPrice: number;
+  makeupPrice: number;
+};
+
+export type BillingCandidates = {
+  class: BillingClassSummary;
+  classes?: BillingClassSummary[];
+  scopeType?: ReceiptScope;
   student: Student;
   periodStart: string;
   periodEnd: string;
@@ -493,6 +569,8 @@ export type BillingCandidates = {
 };
 
 export type IssueReceiptPayload = {
+  scopeType?: ReceiptScope;
+  classIds?: string[];
   fromDate?: string;
   toDate?: string;
   dueDate?: string;

@@ -25,7 +25,9 @@ import {
   formatCurrencyInput,
   getErrorMessage,
   getClassColorHex,
+  getVietnamTodayInputDate,
   parseCurrencyInput,
+  toVietnamDateInputValue,
 } from "./classroom-utils";
 import {
   EditClassModal,
@@ -168,6 +170,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     if (
       !classForm.regularPrice ||
       !classForm.makeupPrice ||
+      !classForm.priceEffectiveFrom ||
       regularPrice === null ||
       makeupPrice === null ||
       regularPrice < 0 ||
@@ -175,7 +178,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     ) {
       setNotice({
         type: "error",
-        text: "Học phí cần là số nguyên theo đơn vị VND.",
+        text: "Vui lòng nhập học phí và ngày áp dụng giá.",
       });
       return;
     }
@@ -196,14 +199,24 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
       const makeupPrice = parseCurrencyInput(classForm.makeupPrice) ?? 0;
       const uploadedImageUrl = await uploadSelectedClassImage();
       const typedImageUrl = classForm.imageUrl.trim();
+      const currentPriceEffectiveFrom =
+        toVietnamDateInputValue(classDetail.priceEffectiveFrom) ||
+        getVietnamTodayInputDate();
+      const hasPriceChange =
+        regularPrice !== classDetail.regularPrice ||
+        makeupPrice !== classDetail.makeupPrice ||
+        classForm.priceEffectiveFrom !== currentPriceEffectiveFrom;
       const updatedClass = await schoolApi.updateClass(classDetail.id, {
         name: classForm.name.trim(),
         description: classForm.description.trim(),
         imageUrl: uploadedImageUrl ?? (typedImageUrl || undefined),
         colorIndex: classForm.colorIndex,
         colorHex: classForm.colorHex,
-        regularPrice,
-        makeupPrice,
+        regularPrice: hasPriceChange ? regularPrice : undefined,
+        makeupPrice: hasPriceChange ? makeupPrice : undefined,
+        priceEffectiveFrom: hasPriceChange
+          ? classForm.priceEffectiveFrom
+          : undefined,
         status: classForm.status,
       });
 
@@ -298,6 +311,16 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
           isLoading={isLoadingDetail}
           onAddStudent={() => setIsStudentModalOpen(true)}
           onArchiveClass={() => setIsArchiveClassConfirmOpen(true)}
+          onClassUpdated={(updatedClass) =>
+            setClassDetail((current) =>
+              current
+                ? {
+                    ...updatedClass,
+                    students: current.students,
+                  }
+                : current,
+            )
+          }
           onEditClass={() => void openEditClassModal()}
           onRemoveStudent={setStudentToRemove}
           onScheduleChanged={loadClassDetail}
@@ -384,6 +407,9 @@ function buildClassFormFromClass(classroom: ClassroomDetail): ClassFormState {
     colorHex: getClassColorHex(classroom),
     regularPrice: formatCurrencyInput(String(classroom.regularPrice)),
     makeupPrice: formatCurrencyInput(String(classroom.makeupPrice)),
+    priceEffectiveFrom:
+      toVietnamDateInputValue(classroom.priceEffectiveFrom) ||
+      getVietnamTodayInputDate(),
     status: classroom.status === "archived" ? "inactive" : classroom.status,
   };
 }

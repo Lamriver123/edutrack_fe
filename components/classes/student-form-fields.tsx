@@ -11,12 +11,11 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Gender, StudentStatus } from "@/types/school";
 import type { StudentFormState } from "./classroom-types";
-import {
-  getDefaultAvatarByGender,
-} from "./classroom-utils";
+import { getDefaultAvatarByGender } from "./classroom-utils";
 import { TextArea, TextInput } from "./classroom-ui";
 
 export function StudentFormFields({
@@ -40,10 +39,21 @@ export function StudentFormFields({
   showStatus?: boolean;
   subtitle?: string;
 }) {
-  const previewAvatarUrl =
-    avatarPreviewUrl ||
-    form.avatarUrl.trim() ||
-    getDefaultAvatarByGender(form.gender);
+  const typedAvatarUrl = form.avatarUrl.trim();
+  const defaultAvatarUrl = getDefaultAvatarByGender(form.gender);
+  const resolvedAvatarPreviewUrl =
+    avatarPreviewUrl || typedAvatarUrl || defaultAvatarUrl;
+  const [failedPreviewUrl, setFailedPreviewUrl] = useState("");
+  const hasPreviewError = failedPreviewUrl === resolvedAvatarPreviewUrl;
+
+  const previewAvatarUrl = hasPreviewError
+    ? defaultAvatarUrl
+    : resolvedAvatarPreviewUrl;
+  const previewSourceLabel = avatarPreviewUrl
+    ? "Preview từ ảnh vừa chọn"
+    : typedAvatarUrl
+      ? "Preview từ URL ảnh hiện tại"
+      : "Avatar mặc định theo giới tính";
 
   return (
     <div className="grid gap-4">
@@ -56,16 +66,24 @@ export function StudentFormFields({
             {subtitle}
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2 pr-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2 pr-3 shadow-[var(--shadow-sm)]">
           <img
             alt="Ảnh đại diện học sinh"
-            className="size-12 rounded-lg object-cover"
+            className="size-16 rounded-xl border border-white object-cover shadow-[0_8px_20px_rgba(15,23,42,0.08)]"
+            onError={() => setFailedPreviewUrl(resolvedAvatarPreviewUrl)}
             src={previewAvatarUrl}
           />
-          <span className="max-w-[170px] text-[13px] font-semibold leading-5 text-[var(--neutral-500)]">
-            {avatarFileName
-              ? "Ảnh đã chọn, chỉ tải lên khi tạo."
-              : "Avatar mặc định đổi theo giới tính."}
+          <span className="grid max-w-[190px] gap-1 text-[13px] leading-5">
+            <strong className="font-bold text-[var(--brand-950)]">
+              {hasPreviewError ? "URL ảnh không tải được" : previewSourceLabel}
+            </strong>
+            <span className="font-semibold text-[var(--neutral-500)]">
+              {avatarFileName
+                ? `${avatarFileName} - chỉ tải lên khi lưu.`
+                : typedAvatarUrl
+                  ? "Có thể đổi URL hoặc chọn ảnh từ máy."
+                  : "Có thể dán URL hoặc chọn ảnh từ máy."}
+            </span>
           </span>
         </div>
       </div>

@@ -34,7 +34,11 @@ import {
 } from "./classroom-ui";
 import {
   CLASS_COLOR_OPTIONS,
+  DEFAULT_CLASS_IMAGE_URL,
   getErrorMessage,
+  getClassColorHex,
+  getClassColorLabel as getClassColorName,
+  getClassColorTheme,
   parseCurrencyInput,
 } from "./classroom-utils";
 import styles from "./classroom-manager.module.css";
@@ -42,9 +46,7 @@ import {
   CreateClassModal,
   type ClassColorUsage,
 } from "./create-class-modal";
-
-const DEFAULT_CLASS_IMAGE_URL =
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTR-qRE8Ud2H3MA_umzUwRTCefEIGGjOmnsi5hsMnPdrg&s=10";
+import { useDeferredClassImageUpload } from "./use-deferred-class-image-upload";
 
 export function ClassroomsPage() {
   const router = useRouter();
@@ -58,6 +60,14 @@ export function ClassroomsPage() {
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isCreateClassConfirmOpen, setIsCreateClassConfirmOpen] =
     useState(false);
+  const {
+    classImageFileName,
+    classImagePreviewUrl,
+    isUploadingClassImage,
+    resetClassImageSelection,
+    selectClassImageFile,
+    uploadSelectedClassImage,
+  } = useDeferredClassImageUpload();
 
   useEffect(() => {
     let isCurrent = true;
@@ -109,9 +119,13 @@ export function ClassroomsPage() {
       }
     }
 
+    const colorIndex = getFirstAvailableColorIndex(sources);
+
+    resetClassImageSelection();
     setClassForm({
       ...initialClassForm,
-      colorIndex: getFirstAvailableColorIndex(sources),
+      colorHex: CLASS_COLOR_OPTIONS[colorIndex].accent,
+      colorIndex,
     });
     setIsCreateClassModalOpen(true);
   }
@@ -153,16 +167,20 @@ export function ClassroomsPage() {
     try {
       const regularPrice = parseCurrencyInput(classForm.regularPrice) ?? 0;
       const makeupPrice = parseCurrencyInput(classForm.makeupPrice) ?? 0;
+      const uploadedImageUrl = await uploadSelectedClassImage();
+      const typedImageUrl = classForm.imageUrl.trim();
       const classroom = await schoolApi.createClass({
         name: classForm.name,
         description: classForm.description || undefined,
-        imageUrl: classForm.imageUrl.trim() || undefined,
+        imageUrl: uploadedImageUrl ?? (typedImageUrl || undefined),
         colorIndex: classForm.colorIndex,
+        colorHex: classForm.colorHex,
         regularPrice,
         makeupPrice,
       });
 
       setClassForm(initialClassForm);
+      resetClassImageSelection();
       setIsCreateClassModalOpen(false);
       setIsCreateClassConfirmOpen(false);
       setNotice({
@@ -187,6 +205,15 @@ export function ClassroomsPage() {
     setIsCreateClassConfirmOpen(false);
     setIsCreateClassModalOpen(false);
     setClassForm(initialClassForm);
+    resetClassImageSelection();
+  }
+
+  function handleClassImageUrlChange(imageUrl: string) {
+    resetClassImageSelection();
+    setClassForm((current) => ({
+      ...current,
+      imageUrl,
+    }));
   }
 
   return (
@@ -210,9 +237,18 @@ export function ClassroomsPage() {
       {isCreateClassModalOpen ? (
         <CreateClassModal
           form={classForm}
+          imageFileName={classImageFileName}
+          imagePreviewUrl={classImagePreviewUrl}
           isSubmitting={isCreatingClass}
+          isUploadingImage={isUploadingClassImage}
           onChange={setClassForm}
           onClose={closeCreateClassModal}
+          onImageFileChange={(event) =>
+            selectClassImageFile(event, (message) =>
+              setNotice({ type: "error", text: message }),
+            )
+          }
+          onImageUrlChange={handleClassImageUrlChange}
           onSubmit={handleCreateClass}
           usedColorUsages={buildClassColorUsages(classColorSources)}
         />
@@ -242,6 +278,7 @@ function buildClassColorUsages(
       classId: classroom.id,
       className: classroom.name,
       colorIndex: classroom.colorIndex ?? 0,
+      colorHex: getClassColorHex(classroom),
     }));
 }
 
@@ -368,8 +405,8 @@ function ClassroomGridItem({ classroom }: { classroom: Classroom }) {
             {classroom.studentCount} học sinh
           </span>
           <span className={styles.classColorChip}>
-            <span style={getClassColorStyle(classroom.colorIndex)} />
-            {getClassColorLabel(classroom.colorIndex)}
+            <span style={getClassColorStyle(getClassColorHex(classroom))} />
+            {getClassColorName(getClassColorHex(classroom))}
           </span>
         </span>
         <span className={styles.classArrow}>
@@ -425,13 +462,11 @@ function getStatusClassName(status: ClassStatus) {
   return `${styles.classStatusBadge} ${styles.classStatusActive}`;
 }
 
-function getClassColorLabel(colorIndex: number) {
-  return CLASS_COLOR_OPTIONS[colorIndex]?.label ?? "Màu lịch";
-}
+function getClassColorStyle(colorHex: string) {
+  const colorTheme = getClassColorTheme(colorHex);
 
-function getClassColorStyle(colorIndex: number) {
   return {
-    background: CLASS_COLOR_OPTIONS[colorIndex]?.accent ?? "#4f46e5",
+    background: colorTheme.accent,
   };
 }
 

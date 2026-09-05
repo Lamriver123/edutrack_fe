@@ -24,6 +24,7 @@ import {
 import {
   formatCurrencyInput,
   getErrorMessage,
+  getClassColorHex,
   parseCurrencyInput,
 } from "./classroom-utils";
 import {
@@ -31,6 +32,7 @@ import {
   type ClassColorUsage,
 } from "./create-class-modal";
 import { StudentPickerModal } from "./student-picker-modal";
+import { useDeferredClassImageUpload } from "./use-deferred-class-image-upload";
 
 export function ClassroomDetailPage({ classId }: { classId: string }) {
   const router = useRouter();
@@ -48,6 +50,14 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
   const [isArchivingClass, setIsArchivingClass] = useState(false);
   const [removingStudentId, setRemovingStudentId] = useState("");
   const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
+  const {
+    classImageFileName,
+    classImagePreviewUrl,
+    isUploadingClassImage,
+    resetClassImageSelection,
+    selectClassImageFile,
+    uploadSelectedClassImage,
+  } = useDeferredClassImageUpload();
 
   const loadClassDetail = useCallback(async () => {
     setIsLoadingDetail(true);
@@ -120,6 +130,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     }
 
     setClassForm(buildClassFormFromClass(classDetail));
+    resetClassImageSelection();
     setIsEditClassModalOpen(true);
   }
 
@@ -131,6 +142,15 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     setIsEditClassModalOpen(false);
     setIsEditClassConfirmOpen(false);
     setClassForm(initialClassForm);
+    resetClassImageSelection();
+  }
+
+  function handleClassImageUrlChange(imageUrl: string) {
+    resetClassImageSelection();
+    setClassForm((current) => ({
+      ...current,
+      imageUrl,
+    }));
   }
 
   async function handleUpdateClass(event: FormEvent<HTMLFormElement>) {
@@ -174,11 +194,14 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     try {
       const regularPrice = parseCurrencyInput(classForm.regularPrice) ?? 0;
       const makeupPrice = parseCurrencyInput(classForm.makeupPrice) ?? 0;
+      const uploadedImageUrl = await uploadSelectedClassImage();
+      const typedImageUrl = classForm.imageUrl.trim();
       const updatedClass = await schoolApi.updateClass(classDetail.id, {
         name: classForm.name.trim(),
         description: classForm.description.trim(),
-        imageUrl: classForm.imageUrl.trim() || undefined,
+        imageUrl: uploadedImageUrl ?? (typedImageUrl || undefined),
         colorIndex: classForm.colorIndex,
+        colorHex: classForm.colorHex,
         regularPrice,
         makeupPrice,
         status: classForm.status,
@@ -199,6 +222,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
       );
       setIsEditClassModalOpen(false);
       setIsEditClassConfirmOpen(false);
+      resetClassImageSelection();
       setNotice({
         type: "success",
         text: `Đã cập nhật lớp ${updatedClass.name}.`,
@@ -305,9 +329,18 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
       {isEditClassModalOpen ? (
         <EditClassModal
           form={classForm}
+          imageFileName={classImageFileName}
+          imagePreviewUrl={classImagePreviewUrl}
           isSubmitting={isUpdatingClass}
+          isUploadingImage={isUploadingClassImage}
           onChange={setClassForm}
           onClose={closeEditClassModal}
+          onImageFileChange={(event) =>
+            selectClassImageFile(event, (message) =>
+              setNotice({ type: "error", text: message }),
+            )
+          }
+          onImageUrlChange={handleClassImageUrlChange}
           onSubmit={handleUpdateClass}
           usedColorUsages={buildClassColorUsages(
             classColorSources,
@@ -348,6 +381,7 @@ function buildClassFormFromClass(classroom: ClassroomDetail): ClassFormState {
     description: classroom.description ?? "",
     imageUrl: classroom.imageUrl ?? "",
     colorIndex: classroom.colorIndex ?? 0,
+    colorHex: getClassColorHex(classroom),
     regularPrice: formatCurrencyInput(String(classroom.regularPrice)),
     makeupPrice: formatCurrencyInput(String(classroom.makeupPrice)),
     status: classroom.status === "archived" ? "inactive" : classroom.status,
@@ -364,5 +398,6 @@ function buildClassColorUsages(
       classId: classroom.id,
       className: classroom.name,
       colorIndex: classroom.colorIndex ?? 0,
+      colorHex: getClassColorHex(classroom),
     }));
 }

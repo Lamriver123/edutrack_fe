@@ -4,6 +4,8 @@ export const DEFAULT_BOY_AVATAR_URL =
   "https://img.magnific.com/premium-psd/student-boy-avatar-3d-icon_1723-409.jpg";
 export const DEFAULT_GIRL_AVATAR_URL =
   "https://png.pngtree.com/png-vector/20250709/ourmid/pngtree-adorable-school-girl-cartoon-with-backpack-pointing-up-cute-chibi-vector-png-image_16736310.webp";
+export const DEFAULT_CLASS_IMAGE_URL =
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTR-qRE8Ud2H3MA_umzUwRTCefEIGGjOmnsi5hsMnPdrg&s=10";
 
 export const CLASS_COLOR_OPTIONS = [
   { accent: "#4f46e5", background: "#eef2ff", label: "Tím xanh" },
@@ -16,6 +18,8 @@ export const CLASS_COLOR_OPTIONS = [
   { accent: "#475569", background: "#f8fafc", label: "Ghi xanh" },
 ] as const;
 
+export const DEFAULT_CLASS_COLOR_HEX = CLASS_COLOR_OPTIONS[0].accent;
+const hexColorPattern = /^#([0-9a-f]{6})$/i;
 const vndSuffix = "VND";
 
 export function formatMoney(value: number) {
@@ -62,6 +66,76 @@ export function getErrorMessage(error: unknown) {
   }
 
   return "Có lỗi xảy ra. Vui lòng thử lại.";
+}
+
+export function normalizeClassColorHex(value?: string | null) {
+  const colorHex = value?.trim().toLowerCase();
+
+  if (!colorHex || !hexColorPattern.test(colorHex)) {
+    return DEFAULT_CLASS_COLOR_HEX;
+  }
+
+  return colorHex;
+}
+
+export function getClassColorHex({
+  colorHex,
+  colorIndex,
+}: {
+  colorHex?: string | null;
+  colorIndex?: number | null;
+}) {
+  return normalizeClassColorHex(
+    colorHex || CLASS_COLOR_OPTIONS[colorIndex ?? -1]?.accent,
+  );
+}
+
+export function getClassColorLabel(colorHex?: string | null) {
+  const normalizedColor = normalizeClassColorHex(colorHex);
+  const option = CLASS_COLOR_OPTIONS.find(
+    (color) => color.accent.toLowerCase() === normalizedColor,
+  );
+
+  return option?.label ?? normalizedColor.toUpperCase();
+}
+
+export function getClassColorTheme(colorHex?: string | null) {
+  const accent = normalizeClassColorHex(colorHex);
+
+  return {
+    accent,
+    background: mixHexColor(accent, "#ffffff", 0.9),
+    border: mixHexColor(accent, "#ffffff", 0.64),
+    text: mixHexColor(accent, "#0f172a", 0.42),
+  };
+}
+
+function mixHexColor(color: string, target: string, targetWeight: number) {
+  const sourceRgb = hexToRgb(normalizeClassColorHex(color));
+  const targetRgb = hexToRgb(target);
+  const sourceWeight = 1 - targetWeight;
+
+  return rgbToHex({
+    r: Math.round(sourceRgb.r * sourceWeight + targetRgb.r * targetWeight),
+    g: Math.round(sourceRgb.g * sourceWeight + targetRgb.g * targetWeight),
+    b: Math.round(sourceRgb.b * sourceWeight + targetRgb.b * targetWeight),
+  });
+}
+
+function hexToRgb(color: string) {
+  const normalizedColor = normalizeClassColorHex(color).slice(1);
+
+  return {
+    r: Number.parseInt(normalizedColor.slice(0, 2), 16),
+    g: Number.parseInt(normalizedColor.slice(2, 4), 16),
+    b: Number.parseInt(normalizedColor.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex({ r, g, b }: { r: number; g: number; b: number }) {
+  return `#${[r, g, b]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 export function getGenderLabel(gender?: Gender) {

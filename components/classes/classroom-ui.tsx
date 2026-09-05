@@ -26,7 +26,7 @@ export function Modal({
 }: {
   children: ReactNode;
   onClose: () => void;
-  size?: "default" | "sm";
+  size?: "default" | "sm" | "wide";
   title: string;
 }) {
   return (
@@ -34,7 +34,7 @@ export function Modal({
       <div
         className={`${styles.modalPanel} ${
           size === "sm" ? styles.modalPanelSm : ""
-        }`}
+        } ${size === "wide" ? styles.modalPanelWide : ""}`}
       >
         <div className="flex min-h-[72px] items-center justify-between gap-3 border-b border-[var(--neutral-200)] px-5 py-4">
           <h3 className="truncate text-[20px] font-extrabold text-[var(--brand-950)]">

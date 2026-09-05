@@ -1,0 +1,178 @@
+.sheetContainer {
+  position: relative;
+  border-radius: 0.5rem;
+  border: 1px solid var(--neutral-200);
+}
+
+.sheetWrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 0.5rem;
+}
+
+.sheetTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: max-content;
+}
+
+.sheetTable th,
+.sheetTable td {
+  padding: 0;
+  border-bottom: 1px solid var(--neutral-100);
+  border-right: 1px solid var(--neutral-100);
+}
+
+.sheetTable th:last-child,
+.sheetTable td:last-child {
+  border-right: none;
+}
+
+.sheetTable tr:last-child td {
+  border-bottom: none;
+}
+
+.sheetHeader {
+  background: #f8fafc; /* slate-50 */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* STT column */
+.sttCol {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 20;
+}
+.sheetHeader .sttCol {
+  background: inherit;
+  z-index: 30;
+}
+
+/* Sticky first column for student info */
+.stickyCol {
+  position: sticky;
+  left: 32px; /* Offset by STT width on mobile */
+  background: white;
+  z-index: 20;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.03);
+}
+
+@media (min-width: 640px) {
+  .stickyCol {
+    left: 56px; /* Offset by STT width on desktop */
+  }
+}
+.sheetHeader .stickyCol {
+  background: inherit;
+  z-index: 30;
+}
+
+.sheetHeader th {
+  padding: 0.75rem;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--neutral-500);
+  text-transform: uppercase;
+}
+
+.overviewCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.statBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  gap: 0.25rem;
+}
+
+/* The actual score cell */
+.scoreCell {
+  min-width: 64px;
+  width: 64px;
+  height: 100%;
+  position: relative;
+  background: white;
+  transition: background-color 0.15s ease;
+}
+
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 52px;
+  padding: 6px 4px;
+}
+
+.notePreview {
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--neutral-500);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.scoreInput {
+  width: 100%;
+  height: 100%;
+  min-height: 52px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--neutral-800);
+  outline: none;
+}
+
+.scoreInput:focus {
+  background: #f8fafc;
+}
+
+.scoreInput::placeholder {
+  color: var(--neutral-300);
+}
+
+.scoreInput::-webkit-outer-spin-button,
+.scoreInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.scoreInput[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Dirty indicator */
+.cellDirty {
+  position: relative;
+}
+.cellDirty::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #3b82f6; /* blue-500 */
+}

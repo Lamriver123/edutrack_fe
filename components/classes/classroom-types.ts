@@ -16,6 +16,7 @@ export type ClassFormState = {
   description: string;
   imageUrl: string;
   colorIndex: number;
+  colorHex: string;
   regularPrice: string;
   makeupPrice: string;
   status: ClassStatus;
@@ -42,6 +43,7 @@ export const initialClassForm: ClassFormState = {
   description: "",
   imageUrl: "",
   colorIndex: 0,
+  colorHex: "#4f46e5",
   regularPrice: "",
   makeupPrice: "",
   status: "active",

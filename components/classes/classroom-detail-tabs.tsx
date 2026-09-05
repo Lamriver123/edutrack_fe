@@ -15,8 +15,10 @@ import { useMemo, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import type { ClassroomDetail, Student } from "@/types/school";
 import { ClassScheduleTab } from "./class-schedule-tab";
+import { ClassAttendanceTab } from "./class-attendance-tab";
+import { ClassExamTab } from "./exam/class-exam-tab";
+import { ClassTuitionTab } from "./class-tuition-tab";
 import {
-  formatMoney,
   getGenderLabel,
   getStudentAvatar,
   normalizeVisibleText,
@@ -68,6 +70,8 @@ export function ClassroomDetailTabs({
   const [activeTab, setActiveTab] = useState<DetailTab>("students");
   const [studentFilter, setStudentFilter] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [tuitionIssueStudent, setTuitionIssueStudent] =
+    useState<Student | null>(null);
 
   const filteredStudents = useMemo(() => {
     const search = normalizeVisibleText(studentFilter);
@@ -197,7 +201,15 @@ export function ClassroomDetailTabs({
               onScheduleChanged={onScheduleChanged}
             />
           ) : activeTab === "tuition" ? (
-            <TuitionTab classroom={classroom} />
+            <ClassTuitionTab
+              classroom={classroom}
+              initialIssueStudent={tuitionIssueStudent}
+              onInitialIssueHandled={() => setTuitionIssueStudent(null)}
+            />
+          ) : activeTab === "attendance" ? (
+            <ClassAttendanceTab classroom={classroom} />
+          ) : activeTab === "scores" ? (
+            <ClassExamTab classroom={classroom} />
           ) : (
             <FutureTab tab={activeTab} />
           )}
@@ -206,7 +218,13 @@ export function ClassroomDetailTabs({
 
       {selectedStudent ? (
         <StudentDetailModal
+          classroom={classroom}
           onClose={() => setSelectedStudent(null)}
+          onIssueReceipt={(student) => {
+            setTuitionIssueStudent(student);
+            setActiveTab("tuition");
+            setSelectedStudent(null);
+          }}
           student={selectedStudent}
         />
       ) : null}
@@ -362,31 +380,6 @@ function StudentsTab({
   );
 }
 
-function TuitionTab({ classroom }: { classroom: ClassroomDetail }) {
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TabStatCard
-          icon={<Coins size={18} />}
-          label="Buổi thường"
-          value={formatMoney(classroom.regularPrice)}
-        />
-        <TabStatCard
-          icon={<Coins size={18} />}
-          label="Học bù"
-          value={formatMoney(classroom.makeupPrice)}
-        />
-      </div>
-
-      <EmptyState
-        icon={<Coins size={22} />}
-        text="Khu vực theo dõi chu kỳ học phí, dòng phát sinh và phiếu thu."
-        title="Học phí"
-      />
-    </div>
-  );
-}
-
 function TabStatCard({
   icon,
   label,
@@ -449,7 +442,7 @@ function FutureTab({ tab }: { tab: DetailTab }) {
     attendance: {
       icon: ClipboardCheck,
       title: "Điểm danh",
-      text: "Khu vực điểm danh buổi học, vắng, đi muộn và học bù.",
+      text: "",
     },
     students: {
       icon: Users,

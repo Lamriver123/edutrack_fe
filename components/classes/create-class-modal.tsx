@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+
 import {
   BookOpenCheck,
   Coins,
@@ -6,8 +8,10 @@ import {
   Palette,
   Plus,
   Save,
+  Upload,
 } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type { ClassStatus } from "@/types/school";
 import type { ClassFormState } from "./classroom-types";
 import {
@@ -19,13 +23,18 @@ import {
 } from "./classroom-ui";
 import {
   CLASS_COLOR_OPTIONS,
+  DEFAULT_CLASS_IMAGE_URL,
   formatCurrencyInput,
+  getClassColorLabel,
+  getClassColorTheme,
+  normalizeClassColorHex,
 } from "./classroom-utils";
 
 export type ClassColorUsage = {
   classId: string;
   className: string;
   colorIndex: number;
+  colorHex: string;
 };
 
 function CurrencyInput({
@@ -66,25 +75,40 @@ function CurrencyInput({
 
 export function CreateClassModal({
   form,
+  imageFileName,
+  imagePreviewUrl,
   isSubmitting,
+  isUploadingImage,
   onChange,
   onClose,
+  onImageFileChange,
+  onImageUrlChange,
   onSubmit,
   usedColorUsages,
 }: {
   form: ClassFormState;
+  imageFileName: string;
+  imagePreviewUrl?: string;
   isSubmitting: boolean;
+  isUploadingImage: boolean;
   onChange: (form: ClassFormState) => void;
   onClose: () => void;
+  onImageFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageUrlChange: (imageUrl: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   usedColorUsages: ClassColorUsage[];
 }) {
   return (
     <ClassFormModal
       form={form}
+      imageFileName={imageFileName}
+      imagePreviewUrl={imagePreviewUrl}
       isSubmitting={isSubmitting}
+      isUploadingImage={isUploadingImage}
       onChange={onChange}
       onClose={onClose}
+      onImageFileChange={onImageFileChange}
+      onImageUrlChange={onImageUrlChange}
       onSubmit={onSubmit}
       submitIcon={<Plus size={16} />}
       submitLoadingIcon={<LoaderCircle className="animate-spin" size={16} />}
@@ -97,26 +121,41 @@ export function CreateClassModal({
 
 export function EditClassModal({
   form,
+  imageFileName,
+  imagePreviewUrl,
   isSubmitting,
+  isUploadingImage,
   onChange,
   onClose,
+  onImageFileChange,
+  onImageUrlChange,
   onSubmit,
   usedColorUsages,
 }: {
   form: ClassFormState;
+  imageFileName: string;
+  imagePreviewUrl?: string;
   isSubmitting: boolean;
+  isUploadingImage: boolean;
   onChange: (form: ClassFormState) => void;
   onClose: () => void;
+  onImageFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageUrlChange: (imageUrl: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   usedColorUsages: ClassColorUsage[];
 }) {
   return (
     <ClassFormModal
       form={form}
+      imageFileName={imageFileName}
+      imagePreviewUrl={imagePreviewUrl}
       isEditMode
       isSubmitting={isSubmitting}
+      isUploadingImage={isUploadingImage}
       onChange={onChange}
       onClose={onClose}
+      onImageFileChange={onImageFileChange}
+      onImageUrlChange={onImageUrlChange}
       onSubmit={onSubmit}
       submitIcon={<Save size={16} />}
       submitLoadingIcon={<LoaderCircle className="animate-spin" size={16} />}
@@ -129,10 +168,15 @@ export function EditClassModal({
 
 function ClassFormModal({
   form,
+  imageFileName,
+  imagePreviewUrl,
   isEditMode = false,
   isSubmitting,
+  isUploadingImage,
   onChange,
   onClose,
+  onImageFileChange,
+  onImageUrlChange,
   onSubmit,
   submitIcon,
   submitLoadingIcon,
@@ -141,10 +185,15 @@ function ClassFormModal({
   usedColorUsages,
 }: {
   form: ClassFormState;
+  imageFileName: string;
+  imagePreviewUrl?: string;
   isEditMode?: boolean;
   isSubmitting: boolean;
+  isUploadingImage: boolean;
   onChange: (form: ClassFormState) => void;
   onClose: () => void;
+  onImageFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageUrlChange: (imageUrl: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   submitIcon: ReactNode;
   submitLoadingIcon: ReactNode;
@@ -168,29 +217,25 @@ function ClassFormModal({
           value={form.name}
         />
 
-        <TextInput
-          icon={<ImageIcon size={16} />}
-          label="Ảnh lớp học"
-          onChange={(event) =>
-            onChange({
-              ...form,
-              imageUrl: event.target.value,
-            })
-          }
-          placeholder="Dán URL ảnh lớp nếu muốn thay ảnh mặc định"
-          type="url"
-          value={form.imageUrl}
+        <ClassImagePicker
+          fileName={imageFileName}
+          form={form}
+          imagePreviewUrl={imagePreviewUrl}
+          isUploading={isUploadingImage}
+          onFileChange={onImageFileChange}
+          onImageUrlChange={onImageUrlChange}
         />
 
         <ClassColorPicker
-          onChange={(colorIndex) =>
+          onChange={(colorHex, colorIndex) =>
             onChange({
               ...form,
-              colorIndex,
+              colorHex,
+              colorIndex: colorIndex ?? form.colorIndex,
             })
           }
           usedColorUsages={usedColorUsages}
-          value={form.colorIndex}
+          value={form.colorHex}
         />
 
         {isEditMode ? (
@@ -251,11 +296,98 @@ function ClassFormModal({
             type="submit"
           >
             {isSubmitting ? submitLoadingIcon : submitIcon}
-            {submitText}
+            {isUploadingImage ? "Đang tải ảnh..." : submitText}
           </PrimaryAction>
         </div>
       </form>
     </Modal>
+  );
+}
+
+function ClassImagePicker({
+  fileName,
+  form,
+  imagePreviewUrl,
+  isUploading,
+  onFileChange,
+  onImageUrlChange,
+}: {
+  fileName: string;
+  form: ClassFormState;
+  imagePreviewUrl?: string;
+  isUploading: boolean;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageUrlChange: (imageUrl: string) => void;
+}) {
+  const typedImageUrl = form.imageUrl.trim();
+  const resolvedImageUrl =
+    imagePreviewUrl || typedImageUrl || DEFAULT_CLASS_IMAGE_URL;
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+  const hasPreviewError = failedImageUrl === resolvedImageUrl;
+  const previewImageUrl = hasPreviewError
+    ? DEFAULT_CLASS_IMAGE_URL
+    : resolvedImageUrl;
+  const previewLabel = imagePreviewUrl
+    ? "Preview ảnh vừa chọn"
+    : typedImageUrl
+      ? "Preview từ URL ảnh"
+      : "Ảnh mặc định của lớp";
+
+  return (
+    <div className="grid gap-2">
+      <span className="flex items-center gap-2 text-[14px] font-bold text-[var(--neutral-600)]">
+        <ImageIcon size={16} />
+        Ảnh lớp học
+      </span>
+      <div className="grid gap-3 rounded-xl border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2.5 sm:grid-cols-[180px_1fr]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-white bg-white shadow-[0_8px_22px_rgba(15,23,42,0.08)]">
+          <img
+            alt="Preview ảnh lớp học"
+            className="size-full object-cover"
+            onError={() => setFailedImageUrl(resolvedImageUrl)}
+            src={previewImageUrl}
+          />
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/92 px-2.5 py-1 text-[12px] font-extrabold text-[var(--brand-700)] shadow-[var(--shadow-sm)]">
+            {hasPreviewError ? "Ảnh lỗi, dùng mặc định" : previewLabel}
+          </span>
+        </div>
+
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--brand-200)] bg-white px-3 text-[13px] font-extrabold text-[var(--brand-700)] transition hover:bg-[var(--brand-50)]">
+              {isUploading ? (
+                <LoaderCircle className="animate-spin" size={15} />
+              ) : (
+                <Upload size={15} />
+              )}
+              Chọn ảnh
+              <input
+                accept="image/*"
+                className="sr-only"
+                disabled={isUploading}
+                onChange={onFileChange}
+                type="file"
+              />
+            </label>
+            <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--neutral-500)]">
+              {fileName || "Chọn file để xem trước, chưa upload Cloudinary."}
+            </span>
+          </div>
+
+          <TextInput
+            icon={<ImageIcon size={16} />}
+            label="URL ảnh"
+            onChange={(event) => onImageUrlChange(event.target.value)}
+            placeholder="Dán URL ảnh lớp nếu muốn thay ảnh khác"
+            type="url"
+            value={form.imageUrl}
+          />
+          <p className="text-[12px] font-semibold leading-5 text-[var(--neutral-500)]">
+            File hoặc URL chỉ được lưu khi bấm nút xác nhận.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -264,57 +396,105 @@ function ClassColorPicker({
   usedColorUsages,
   value,
 }: {
-  onChange: (colorIndex: number) => void;
+  onChange: (colorHex: string, colorIndex?: number) => void;
   usedColorUsages: ClassColorUsage[];
-  value: number;
+  value: string;
 }) {
+  const selectedColorHex = normalizeClassColorHex(value);
+  const selectedColor = getClassColorTheme(selectedColorHex);
+  const selectedUsedBy = usedColorUsages.filter(
+    (usage) =>
+      normalizeClassColorHex(usage.colorHex) === selectedColorHex,
+  );
+  const selectedUsageText = selectedUsedBy.length
+    ? `Đang dùng: ${selectedUsedBy
+        .map((usage) => usage.className)
+        .slice(0, 3)
+        .join(", ")}${selectedUsedBy.length > 3 ? "..." : ""}`
+    : "Màu này chưa được lớp nào dùng.";
+
   return (
     <div className="grid gap-2">
-      <span className="flex items-center gap-2 text-[14px] font-bold text-[var(--neutral-600)]">
-        <Palette size={16} />
-        Màu hiển thị trên thời khóa biểu
-      </span>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="flex items-center gap-2 text-[14px] font-bold text-[var(--neutral-600)]">
+          <Palette size={16} />
+          Bảng phối màu lịch
+        </span>
+        <span
+          className="rounded-full px-2.5 py-1 text-[12px] font-extrabold"
+          style={{
+            background: selectedColor.background,
+            color: selectedColor.text,
+          }}
+        >
+          {getClassColorLabel(selectedColorHex)}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
         {CLASS_COLOR_OPTIONS.map((color, colorIndex) => {
-          const isActive = value === colorIndex;
-          const usedBy = usedColorUsages.filter(
-            (usage) => usage.colorIndex === colorIndex,
+          const colorHex = normalizeClassColorHex(color.accent);
+          const colorTheme = getClassColorTheme(colorHex);
+          const isActive = selectedColorHex === colorHex;
+          const isUsed = usedColorUsages.some(
+            (usage) =>
+              normalizeClassColorHex(usage.colorHex) === colorHex,
           );
 
           return (
             <button
-              className={`grid min-h-[74px] gap-2 rounded-lg border p-3 text-left transition ${
+              aria-label={`Chọn màu ${color.label}${isUsed ? ", màu đã có lớp dùng" : ""}`}
+              aria-pressed={isActive}
+              className={`relative h-10 w-[52px] rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-400)] ${
                 isActive
-                  ? "border-[var(--brand-400)] bg-[var(--brand-50)] shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
-                  : "border-[var(--neutral-200)] bg-white hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)]"
+                  ? "border-[var(--brand-500)] shadow-[0_0_0_3px_rgba(99,102,241,0.18)]"
+                  : "border-[var(--neutral-200)] hover:border-[var(--brand-300)]"
               }`}
               key={color.label}
-              onClick={() => onChange(colorIndex)}
+              onClick={() => onChange(colorHex, colorIndex)}
+              style={{
+                background: `linear-gradient(135deg, ${colorTheme.accent} 0%, ${colorTheme.accent} 48%, ${colorTheme.background} 48%, ${colorTheme.background} 100%)`,
+              }}
+              title={`${color.label}${isUsed ? " - đã có lớp dùng" : ""}`}
               type="button"
             >
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  className="size-8 shrink-0 rounded-lg border border-white shadow-[0_0_0_1px_rgba(15,23,42,0.08)]"
-                  style={{ background: color.accent }}
-                />
-                <span className="min-w-0">
-                  <strong className="block truncate text-[14px] text-[var(--brand-950)]">
-                    {color.label}
-                  </strong>
-                  <span className="block truncate text-[12px] font-semibold text-[var(--neutral-500)]">
-                    {usedBy.length
-                      ? `Đã dùng: ${usedBy
-                          .map((usage) => usage.className)
-                          .slice(0, 2)
-                          .join(", ")}`
-                      : "Chưa lớp nào dùng"}
-                  </span>
-                </span>
-              </span>
+              <span className="sr-only">{color.label}</span>
+              {isActive ? (
+                <span className="absolute inset-1 rounded-lg border-2 border-white shadow-[0_0_0_1px_rgba(15,23,42,0.14)]" />
+              ) : null}
+              {isUsed ? (
+                <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-white shadow-[0_0_0_2px_rgba(15,23,42,0.18)]" />
+              ) : null}
             </button>
           );
         })}
+
+        <label
+          className="relative grid h-10 min-w-[116px] cursor-pointer grid-cols-[40px_1fr] items-center overflow-hidden rounded-xl border border-[var(--neutral-200)] bg-white text-[12px] font-extrabold text-[var(--neutral-600)] transition hover:border-[var(--brand-300)]"
+          title="Chọn màu bất kỳ"
+        >
+          <span
+            className="h-full"
+            style={{
+              background: selectedColorHex,
+            }}
+          />
+          <span className="px-2">{selectedColorHex.toUpperCase()}</span>
+          <input
+            aria-label="Chọn màu bất kỳ"
+            className="absolute inset-0 cursor-pointer opacity-0"
+            onChange={(event) =>
+              onChange(normalizeClassColorHex(event.target.value))
+            }
+            type="color"
+            value={selectedColorHex}
+          />
+        </label>
       </div>
+
+      <p className="rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-2 text-[12px] font-semibold leading-5 text-[var(--neutral-500)]">
+        {selectedUsageText}
+      </p>
     </div>
   );
 }

@@ -37,6 +37,7 @@ import {
   SecondaryAction,
   TextArea,
 } from "@/components/classes/classroom-ui";
+import { getClassColorTheme } from "@/components/classes/classroom-utils";
 import { schoolApi } from "@/lib/api/school";
 import type {
   CreateTemporarySchedulePayload,
@@ -528,7 +529,7 @@ function ClassLegend({ classes }: { classes: TeacherScheduleClass[] }) {
         <span
           className={styles.legendItem}
           key={classroom.id}
-          style={getEventStyle(classroom.colorIndex)}
+          style={getEventStyle(classroom.colorIndex, classroom.colorHex)}
           title={classroom.name}
         >
           <span className={styles.legendDot} />
@@ -684,7 +685,7 @@ function ScheduleEventCard({
       className={styles.eventCard}
       data-type={event.type}
       onClick={onView}
-      style={getEventStyle(event.colorIndex)}
+      style={getEventStyle(event.colorIndex, event.colorHex)}
       type="button"
     >
       <span className={styles.eventTopLine}>
@@ -747,7 +748,7 @@ function ScheduleEventModal({
   return (
     <Modal onClose={onClose} title="Thông tin buổi học">
       <div className={styles.sessionModalBody}>
-        <section className={styles.sessionSummary} style={getEventStyle(event.colorIndex)}>
+        <section className={styles.sessionSummary} style={getEventStyle(event.colorIndex, event.colorHex)}>
           <span className={styles.sessionSummaryIcon}>
             {getEventIcon(event.type)}
           </span>
@@ -1018,8 +1019,10 @@ function EmptyScheduleState() {
   );
 }
 
-function getEventStyle(colorIndex: number) {
-  const palette = eventPalettes[colorIndex % eventPalettes.length];
+function getEventStyle(colorIndex: number, colorHex?: string) {
+  const palette = colorHex
+    ? getClassColorTheme(colorHex)
+    : eventPalettes[colorIndex % eventPalettes.length];
 
   return {
     "--event-accent": palette.accent,

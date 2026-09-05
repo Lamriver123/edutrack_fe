@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -82,16 +83,33 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-const DashboardUserContext = createContext<User | null>(null);
+type DashboardUserContextValue = {
+  updateUser: (user: User) => void;
+  user: User;
+};
+
+const DashboardUserContext = createContext<DashboardUserContextValue | null>(
+  null,
+);
 
 export function useDashboardUser() {
-  const user = useContext(DashboardUserContext);
+  const context = useContext(DashboardUserContext);
 
-  if (!user) {
+  if (!context) {
     throw new Error("useDashboardUser must be used inside DashboardShell");
   }
 
-  return user;
+  return context.user;
+}
+
+export function useDashboardSession() {
+  const context = useContext(DashboardUserContext);
+
+  if (!context) {
+    throw new Error("useDashboardSession must be used inside DashboardShell");
+  }
+
+  return context;
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -100,6 +118,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const updateUser = useCallback((nextUser: User) => {
+    setUser(nextUser);
+
+    const accessToken = tokenStorage.getAccessToken();
+
+    if (accessToken) {
+      tokenStorage.setSession(accessToken, nextUser);
+    }
+  }, []);
 
   const activeNavigation = useMemo(
     () =>
@@ -187,7 +215,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const userInitial = user.fullName?.charAt(0)?.toUpperCase() ?? "G";
 
   return (
-    <DashboardUserContext.Provider value={user}>
+    <DashboardUserContext.Provider value={{ updateUser, user }}>
       <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
         {isSidebarOpen ? (
           <button

@@ -371,6 +371,10 @@
   width: min(100%, 460px);
 }
 
+.modalPanelWide {
+  width: min(100%, 1040px);
+}
+
 .modalBody {
   max-height: calc(100vh - 160px);
   overflow-y: auto;

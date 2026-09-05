@@ -1,5 +1,6 @@
 import { tokenStorage } from "@/lib/auth/token-storage";
 import type {
+  AttendanceResponse,
   Classroom,
   ClassroomDetail,
   ClassScheduleOverview,
@@ -14,15 +15,46 @@ import type {
   SaveClassSessionContentPayload,
   SaveFixedSchedulePayload,
   Student,
+  TakeAttendancePayload,
+  TakeAttendanceBatchPayload,
   TeacherWeekSchedule,
   UpdateClassPayload,
   UpdateStudentPayload,
   UpdateTemporarySchedulePayload,
+  AttendanceSheetResponse,
+  Exam,
+  CreateExamPayload,
+  UpdateExamPayload,
+  ExamSheetResponse,
+  TakeExamScoresBatchPayload,
+  BillingCandidates,
+  BillingOverview,
+  IssueReceiptPayload,
+  PaymentStatus,
+  ReceiptDetail,
+  ReceiptDownloadResponse,
+  ReceiptListItem,
+  ReceiptPreviewResponse,
+  UpdateReceiptPaymentPayload,
 } from "@/types/school";
 import { apiRequest } from "./client";
 
 function getToken() {
   return tokenStorage.getAccessToken();
+}
+
+function buildQuery(params: Record<string, string | undefined>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value?.trim()) {
+      searchParams.set(key, value.trim());
+    }
+  });
+
+  const queryString = searchParams.toString();
+
+  return queryString ? `?${queryString}` : "";
 }
 
 export const schoolApi = {
@@ -60,6 +92,17 @@ export const schoolApi = {
     return apiRequest<{ message: string }>(`/classes/${classId}`, {
       method: "DELETE",
       token: getToken(),
+    });
+  },
+
+  uploadClassImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<{ url: string; publicId: string }>("/classes/image", {
+      method: "POST",
+      token: getToken(),
+      body: formData,
     });
   },
 
@@ -231,6 +274,230 @@ export const schoolApi = {
       `/schedules/week${queryString ? `?${queryString}` : ""}`,
       {
         token: getToken(),
+      },
+    );
+  },
+
+  getAttendance(
+    classId: string,
+    date: string,
+    startTime: string,
+    endTime: string,
+  ) {
+    const params = new URLSearchParams({
+      date,
+      startTime,
+      endTime,
+    });
+
+    return apiRequest<AttendanceResponse>(
+      `/classes/${classId}/attendance?${params.toString()}`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
+  getAttendanceOverview: async (classId: string) => {
+    return apiRequest<Record<string, { present: number, absent: number, excused: number, total: number }>>(`/classes/${classId}/attendance-overview`, {
+      method: "GET",
+      token: getToken(),
+    });
+  },
+
+  takeAttendance(classId: string, payload: TakeAttendancePayload) {
+    return apiRequest<AttendanceResponse>(`/classes/${classId}/attendance`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getAttendanceSheet(classId: string) {
+    return apiRequest<AttendanceSheetResponse>(`/classes/${classId}/attendance-sheet`, {
+      method: "GET",
+      token: getToken(),
+    });
+  },
+
+  takeAttendanceBatch(classId: string, payload: TakeAttendanceBatchPayload) {
+    return apiRequest<{ message: string; updatedSessions: number }>(`/classes/${classId}/attendance-batch`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // --- Exam Management ---
+  getExamSheet(classId: string) {
+    return apiRequest<ExamSheetResponse>(`/classes/${classId}/exam-sheet`, {
+      method: "GET",
+      token: getToken(),
+    });
+  },
+
+  createExam(classId: string, payload: CreateExamPayload) {
+    return apiRequest<Exam>(`/classes/${classId}/exams`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateExam(classId: string, examId: string, payload: UpdateExamPayload) {
+    return apiRequest<Exam>(`/classes/${classId}/exams/${examId}`, {
+      method: "PATCH",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteExam(classId: string, examId: string) {
+    return apiRequest<{ message: string }>(`/classes/${classId}/exams/${examId}`, {
+      method: "DELETE",
+      token: getToken(),
+    });
+  },
+
+  uploadExamFile(classId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<{ url: string; publicId: string }>(`/classes/${classId}/exams/file`, {
+      method: "POST",
+      token: getToken(),
+      body: formData,
+    });
+  },
+
+  uploadExamEvidenceImage(classId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<{ url: string; publicId: string }>(`/classes/${classId}/exam-scores/evidence`, {
+      method: "POST",
+      token: getToken(),
+      body: formData,
+    });
+  },
+
+  takeExamScoresBatch(classId: string, payload: TakeExamScoresBatchPayload) {
+    return apiRequest<{ message: string }>(`/classes/${classId}/exam-scores`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getBillingOverview(
+    classId: string,
+    filters: { fromDate?: string; toDate?: string } = {},
+  ) {
+    return apiRequest<BillingOverview>(
+      `/classes/${classId}/billing/overview${buildQuery(filters)}`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
+  getBillingCandidates(
+    classId: string,
+    studentId: string,
+    filters: { fromDate?: string; toDate?: string } = {},
+  ) {
+    return apiRequest<BillingCandidates>(
+      `/classes/${classId}/students/${studentId}/billing-candidates${buildQuery(filters)}`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
+  previewReceipt(
+    classId: string,
+    studentId: string,
+    payload: IssueReceiptPayload,
+  ) {
+    return apiRequest<ReceiptPreviewResponse>(
+      `/classes/${classId}/students/${studentId}/receipts/preview`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  issueReceipt(classId: string, studentId: string, payload: IssueReceiptPayload) {
+    return apiRequest<ReceiptDetail>(
+      `/classes/${classId}/students/${studentId}/receipts`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  listReceipts(
+    filters: {
+      classId?: string;
+      studentId?: string;
+      paymentStatus?: PaymentStatus;
+      fromDate?: string;
+      toDate?: string;
+    } = {},
+  ) {
+    return apiRequest<ReceiptListItem[]>(`/receipts${buildQuery(filters)}`, {
+      token: getToken(),
+    });
+  },
+
+  getReceiptDownload(receiptId: string) {
+    return apiRequest<ReceiptDownloadResponse>(
+      `/receipts/${receiptId}/download`,
+      {
+        token: getToken(),
+      },
+    );
+  },
+
+  retryReceiptPdf(receiptId: string) {
+    return apiRequest<ReceiptDetail>(`/receipts/${receiptId}/render-pdf`, {
+      method: "POST",
+      token: getToken(),
+    });
+  },
+
+  updateReceiptPayment(
+    receiptId: string,
+    payload: UpdateReceiptPaymentPayload,
+  ) {
+    return apiRequest<ReceiptDetail>(`/receipts/${receiptId}/payment`, {
+      method: "PATCH",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  cancelReceipt(receiptId: string) {
+    return apiRequest<ReceiptDetail>(`/receipts/${receiptId}`, {
+      method: "DELETE",
+      token: getToken(),
+    });
+  },
+
+  uploadReceiptPaymentProof(receiptId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<{ url: string; publicId: string }>(
+      `/receipts/${receiptId}/payment-proof`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: formData,
       },
     );
   },

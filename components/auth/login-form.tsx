@@ -27,16 +27,19 @@ export function LoginForm() {
 
   useEffect(() => {
     const saved = tokenStorage.getSavedCredentials();
-    if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!saved) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
       setEmail(saved.email);
       if (saved.password) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPassword(saved.password);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRememberPassword(true);
       }
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

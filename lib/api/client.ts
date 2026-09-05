@@ -20,7 +20,7 @@ type ApiRequestOptions = RequestInit & {
   skipAuthRefresh?: boolean;
 };
 
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
   const baseUrl =
     process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:3001/api";
 

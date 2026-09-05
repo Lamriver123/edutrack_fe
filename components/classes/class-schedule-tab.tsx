@@ -67,7 +67,7 @@ import {
   TextArea,
   TextInput,
 } from "./classroom-ui";
-import { getErrorMessage } from "./classroom-utils";
+import { getClassColorTheme, getErrorMessage } from "./classroom-utils";
 import formStyles from "./classroom-manager.module.css";
 import styles from "./class-schedule-tab.module.css";
 
@@ -2154,7 +2154,10 @@ function getTemporaryIcon(action: ScheduleOverrideAction) {
 }
 
 function getEventStyle(event: TeacherScheduleEvent) {
-  const palette = eventPalettes[event.type];
+  const palette =
+    event.type === "cancel" || !event.colorHex
+      ? eventPalettes[event.type]
+      : getClassColorTheme(event.colorHex);
 
   return {
     "--event-accent": palette.accent,

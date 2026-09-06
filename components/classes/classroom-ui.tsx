@@ -4,7 +4,9 @@
 
 import {
   AlertCircle,
-  CheckCircle2,
+  AlertTriangle,
+  Check,
+  Info,
   LoaderCircle,
   X,
 } from "lucide-react";
@@ -138,8 +140,8 @@ export function NoticeBanner({
   notice: Notice;
   onClose?: () => void;
 }) {
-  const isSuccess = notice.type === "success";
   const closeRef = useRef(onClose);
+  const toastConfig = getNoticeToastConfig(notice.type);
 
   useEffect(() => {
     closeRef.current = onClose;
@@ -155,39 +157,86 @@ export function NoticeBanner({
     }, durationMs);
 
     return () => window.clearTimeout(timer);
-  }, [durationMs, notice.text, notice.type]);
+  }, [durationMs, notice.text, notice.title, notice.type]);
 
   return (
     <div
-      className={`fixed right-4 top-4 z-[90] flex w-[min(calc(100vw-32px),560px)] animate-slide-up items-start gap-3 rounded-lg border px-4 py-3.5 text-[14px] font-semibold shadow-[var(--shadow-xl)] backdrop-blur-xl ${
-        isSuccess
-          ? "border-emerald-200 bg-emerald-50/95 text-emerald-800"
-          : "border-red-200 bg-red-50/95 text-red-800"
-      }`}
-      role={isSuccess ? "status" : "alert"}
+      className={styles.toast}
+      role={toastConfig.role}
     >
-      <span className="mt-0.5 shrink-0">
-        {isSuccess ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+      <span
+        className={`${styles.toastIcon} ${toastConfig.iconClassName}`}
+        aria-hidden="true"
+      >
+        {toastConfig.icon}
       </span>
-      <span className="min-w-0 flex-1 break-words leading-6">
-        {notice.text}
+      <span className={styles.toastBody}>
+        <strong className={styles.toastTitle}>
+          {notice.title ?? toastConfig.title}
+        </strong>
+        <span className={styles.toastMessage}>{notice.text}</span>
       </span>
       {onClose ? (
         <button
           aria-label="Đóng thông báo"
-          className={`-mr-1 grid size-7 shrink-0 place-items-center rounded-lg transition ${
-            isSuccess
-              ? "text-emerald-700 hover:bg-emerald-100"
-              : "text-red-700 hover:bg-red-100"
-          }`}
+          className={styles.toastCloseButton}
           onClick={onClose}
           type="button"
         >
-          <X size={15} />
+          <X size={23} strokeWidth={1.8} />
         </button>
       ) : null}
+      <span
+        aria-hidden="true"
+        className={`${styles.toastProgress} ${toastConfig.barClassName}`}
+        style={{ animationDuration: `${durationMs}ms` }}
+      />
     </div>
   );
+}
+
+function getNoticeToastConfig(type: Notice["type"]) {
+  const configs: Record<
+    Notice["type"],
+    {
+      barClassName: string;
+      icon: ReactNode;
+      iconClassName: string;
+      role: "alert" | "status";
+      title: string;
+    }
+  > = {
+    error: {
+      barClassName: "bg-red-500",
+      icon: <AlertCircle size={20} strokeWidth={2.4} />,
+      iconClassName: "bg-red-500",
+      role: "alert",
+      title: "Lỗi",
+    },
+    info: {
+      barClassName: "bg-sky-500",
+      icon: <Info size={20} strokeWidth={2.6} />,
+      iconClassName: "bg-sky-500",
+      role: "status",
+      title: "Thông tin",
+    },
+    success: {
+      barClassName: "bg-emerald-500",
+      icon: <Check size={21} strokeWidth={3} />,
+      iconClassName: "bg-emerald-500",
+      role: "status",
+      title: "Thành công",
+    },
+    warning: {
+      barClassName: "bg-amber-400",
+      icon: <AlertTriangle size={20} strokeWidth={2.4} />,
+      iconClassName: "bg-amber-400",
+      role: "alert",
+      title: "Cần chú ý",
+    },
+  };
+
+  return configs[type];
 }
 
 export function InlineLoading({ text }: { text: string }) {

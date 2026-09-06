@@ -43,6 +43,7 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmittingExam, setIsSubmittingExam] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
   // Modals state
@@ -72,9 +73,14 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
     };
   }, []);
 
-  async function fetchExamSheet() {
+  async function fetchExamSheet(options: { showLoading?: boolean } = {}) {
+    const shouldShowLoading = options.showLoading ?? true;
+
     try {
-      setIsLoading(true);
+      if (shouldShowLoading) {
+        setIsLoading(true);
+      }
+
       const data = await schoolApi.getExamSheet(classroom.id);
       if (data) {
         setExams(data.exams);
@@ -104,7 +110,9 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
     } catch {
       setNotice({ type: "error", text: "Không thể tải dữ liệu điểm số." });
     } finally {
-      setIsLoading(false);
+      if (shouldShowLoading) {
+        setIsLoading(false);
+      }
     }
   }
 
@@ -230,7 +238,12 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
   }
 
   async function handleCreateOrUpdateExam(payload: CreateExamPayload, file?: File | null) {
+    if (isSubmittingExam) {
+      return;
+    }
+
     try {
+      setIsSubmittingExam(true);
       let finalFileUrl = payload.fileUrl;
       let finalFileName = payload.fileName;
 
@@ -247,10 +260,20 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
       };
 
       if (examToEdit) {
-        await schoolApi.updateExam(classroom.id, examToEdit.id, finalPayload as UpdateExamPayload);
+        const updatedExam = await schoolApi.updateExam(
+          classroom.id,
+          examToEdit.id,
+          finalPayload as UpdateExamPayload,
+        );
+        setExams((current) =>
+          current
+            .map((exam) => (exam.id === updatedExam.id ? updatedExam : exam))
+            .sort(sortExamsByDate),
+        );
         setNotice({ type: "success", text: "Cập nhật bài kiểm tra thành công!" });
       } else {
-        await schoolApi.createExam(classroom.id, finalPayload);
+        const createdExam = await schoolApi.createExam(classroom.id, finalPayload);
+        setExams((current) => [...current, createdExam].sort(sortExamsByDate));
         setNotice({ type: "success", text: "Tạo bài kiểm tra thành công!" });
       }
       
@@ -258,6 +281,8 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
       setExamToEdit(undefined);
     } catch {
       setNotice({ type: "error", text: "Có lỗi xảy ra khi lưu bài kiểm tra." });
+    } finally {
+      setIsSubmittingExam(false);
     }
   }
 
@@ -369,7 +394,9 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
         </div>
       </div>
 
-      {notice && <NoticeBanner notice={notice} />}
+      {notice ? (
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
+      ) : null}
 
       {/* Desktop View */}
       <div className="hidden lg:block">
@@ -414,7 +441,7 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
             setExamToEdit(undefined);
           }}
           onSubmit={handleCreateOrUpdateExam}
-          isSubmitting={false}
+          isSubmitting={isSubmittingExam}
         />
       )}
 
@@ -506,4 +533,10 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+function sortExamsByDate(first: Exam, second: Exam) {
+  return (
+    new Date(first.testDate).getTime() - new Date(second.testDate).getTime()
+  );
 }

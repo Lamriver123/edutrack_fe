@@ -234,7 +234,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           userInitial={userInitial}
         />
 
-        <div className="lg:pl-[292px]">
+        <div className="pt-[84px] lg:pl-[292px]">
           <Header
             activeNavigation={activeNavigation}
             onLogout={handleLogout}
@@ -377,7 +377,7 @@ function Header({
   userInitial: string;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--neutral-200)]/80 bg-white/90 backdrop-blur-xl">
+    <header className="fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-200)]/80 bg-white lg:left-[292px]">
       <div className="flex h-[84px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <button

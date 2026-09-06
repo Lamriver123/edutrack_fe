@@ -9,12 +9,16 @@ import type {
   CreateClassPayload,
   CreateStudentPayload,
   CreateTemporarySchedulePayload,
+  DashboardOverviewData,
   DeleteStudentMode,
+  EnrollmentBulkResponse,
   EnrollmentResponse,
   LatestFixedSchedule,
   SaveClassSessionContentPayload,
   SaveFixedSchedulePayload,
   Student,
+  StudentImportResult,
+  StudentListFilters,
   TakeAttendancePayload,
   TakeAttendanceBatchPayload,
   TeacherWeekSchedule,
@@ -26,23 +30,27 @@ import type {
   CreateExamPayload,
   UpdateExamPayload,
   ExamSheetResponse,
+  FileDownloadResponse,
   TakeExamScoresBatchPayload,
   BillingCandidates,
   BillingOverview,
   IssueReceiptPayload,
   PaymentStatus,
   ReceiptDetail,
+  ReceiptBulkDownloadPayload,
   ReceiptDownloadResponse,
   ReceiptListItem,
   ReceiptPreviewResponse,
+  RemoveStudentsBulkResponse,
   StudentBillingOverview,
+  StudentBulkDeleteResult,
   UpdateReceiptPaymentPayload,
   ScheduleConflictResult,
   ScheduleAvailabilityPayload,
   ScheduleAvailability,
   ScheduleTimeSlot,
 } from "@/types/school";
-import { apiRequest } from "./client";
+import { apiBlobRequest, apiRequest } from "./client";
 
 function getToken() {
   return tokenStorage.getAccessToken();
@@ -73,6 +81,12 @@ function buildQuery(params: Record<string, string | string[] | undefined>) {
 }
 
 export const schoolApi = {
+  getDashboardOverview() {
+    return apiRequest<DashboardOverviewData>("/dashboard/overview", {
+      token: getToken(),
+    });
+  },
+
   checkFixedSchedule(classId: string, payload: SaveFixedSchedulePayload) {
     return apiRequest<ScheduleConflictResult>("/schedules/conflicts/check-fixed", {
       method: "POST", token: getToken(), body: JSON.stringify({ ...payload, classId }),
@@ -91,6 +105,30 @@ export const schoolApi = {
   getScheduleSourceSlots(classId: string, date: string, ignoreOverrideId?: string) {
     return apiRequest<ScheduleTimeSlot[]>(`/schedules/source-slots${buildQuery({ classId, date, ignoreOverrideId })}`, { token: getToken() });
   },
+
+  listStudents(filters: StudentListFilters = {}) {
+    return apiRequest<Student[]>(`/students${buildQuery(filters)}`, {
+      token: getToken(),
+    });
+  },
+
+  downloadStudentImportTemplate(): Promise<FileDownloadResponse> {
+    return apiBlobRequest("/students/import-template", {
+      token: getToken(),
+    });
+  },
+
+  importStudents(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<StudentImportResult>("/students/import", {
+      method: "POST",
+      token: getToken(),
+      body: formData,
+    });
+  },
+
   listClasses(search?: string) {
     const params = new URLSearchParams();
 
@@ -213,15 +251,7 @@ export const schoolApi = {
   },
 
   searchStudents(search: string) {
-    const params = new URLSearchParams({
-      limit: "12",
-    });
-
-    if (search.trim()) {
-      params.set("search", search.trim());
-    }
-
-    return apiRequest<Student[]>(`/students?${params.toString()}`, {
+    return apiRequest<Student[]>(`/students${buildQuery({ limit: "12", search })}`, {
       token: getToken(),
     });
   },
@@ -254,6 +284,14 @@ export const schoolApi = {
     );
   },
 
+  deleteStudents(studentIds: string[], mode: DeleteStudentMode) {
+    return apiRequest<StudentBulkDeleteResult>("/students/bulk-delete", {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify({ mode, studentIds }),
+    });
+  },
+
   uploadStudentAvatar(file: File) {
     const formData = new FormData();
     formData.append("file", file);
@@ -273,6 +311,17 @@ export const schoolApi = {
     });
   },
 
+  enrollExistingStudents(classId: string, studentIds: string[]) {
+    return apiRequest<EnrollmentBulkResponse>(
+      `/classes/${classId}/students/bulk`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify({ studentIds }),
+      },
+    );
+  },
+
   createStudentAndEnroll(classId: string, payload: CreateStudentPayload) {
     return apiRequest<EnrollmentResponse>(
       `/classes/${classId}/students/new`,
@@ -290,6 +339,17 @@ export const schoolApi = {
       {
         method: "DELETE",
         token: getToken(),
+      },
+    );
+  },
+
+  removeStudentsFromClass(classId: string, studentIds: string[]) {
+    return apiRequest<RemoveStudentsBulkResponse>(
+      `/classes/${classId}/students/bulk-remove`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify({ studentIds }),
       },
     );
   },
@@ -516,7 +576,7 @@ export const schoolApi = {
     });
   },
 
-  listReceipts(
+  async listReceipts(
     filters: {
       classId?: string;
       studentId?: string;
@@ -525,18 +585,31 @@ export const schoolApi = {
       toDate?: string;
     } = {},
   ) {
-    return apiRequest<ReceiptListItem[]>(`/receipts${buildQuery(filters)}`, {
-      token: getToken(),
-    });
+    const receipts = await apiRequest<ReceiptListItem[]>(
+      `/receipts${buildQuery(filters)}`,
+      {
+        token: getToken(),
+      },
+    );
+
+    return receipts.filter((receipt) => receipt.paymentStatus !== "cancelled");
   },
 
-  getReceiptDownload(receiptId: string) {
-    return apiRequest<ReceiptDownloadResponse>(
+  getReceiptDownload(receiptId: string): Promise<ReceiptDownloadResponse> {
+    return apiBlobRequest(
       `/receipts/${receiptId}/download`,
       {
         token: getToken(),
       },
     );
+  },
+
+  downloadReceipts(payload: ReceiptBulkDownloadPayload): Promise<ReceiptDownloadResponse> {
+    return apiBlobRequest("/receipts/download-bulk", {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
   },
 
   retryReceiptPdf(receiptId: string) {

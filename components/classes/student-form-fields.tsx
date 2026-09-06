@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  GraduationCap,
   ImageIcon,
   LoaderCircle,
   MapPin,
@@ -114,6 +115,19 @@ export function StudentFormFields({
           }
           placeholder="Tự sinh nếu bỏ trống"
           value={form.studentCode}
+        />
+        <TextInput
+          disabled={disabled}
+          icon={<GraduationCap size={16} />}
+          label="Lớp mấy"
+          onChange={(event) =>
+            onChange({
+              ...form,
+              gradeLevel: event.target.value,
+            })
+          }
+          placeholder="Ví dụ: Lớp 5"
+          value={form.gradeLevel}
         />
       </div>
 

@@ -7,7 +7,8 @@ import type {
 } from "@/types/school";
 
 export type Notice = {
-  type: "success" | "error";
+  type: "success" | "error" | "info" | "warning";
+  title?: string;
   text: string;
 };
 
@@ -29,6 +30,7 @@ export type StudentFormState = {
   gender: Gender;
   avatarUrl: string;
   dateOfBirth: string;
+  gradeLevel: string;
   phone: string;
   parentFullName: string;
   parentPhone: string;
@@ -57,6 +59,7 @@ export const initialStudentForm: StudentFormState = {
   gender: "male",
   avatarUrl: "",
   dateOfBirth: "",
+  gradeLevel: "",
   phone: "",
   parentFullName: "",
   parentPhone: "",
@@ -84,6 +87,7 @@ export function buildStudentPayload(
     gender: form.gender,
     avatarUrl: form.avatarUrl.trim() || undefined,
     dateOfBirth: form.dateOfBirth || undefined,
+    gradeLevel: form.gradeLevel.trim() || undefined,
     phone: form.phone.trim() || undefined,
     parent: hasParentInfo ? parent : undefined,
     address: form.address.trim() || undefined,
@@ -99,6 +103,7 @@ export function buildStudentFormFromStudent(student: Student): StudentFormState 
     gender: student.gender ?? "male",
     avatarUrl: student.avatarUrl ?? "",
     dateOfBirth: toDateInputValue(student.dateOfBirth),
+    gradeLevel: student.gradeLevel ?? "",
     phone: student.phone ?? "",
     parentFullName: student.parent?.fullName ?? "",
     parentPhone: student.parent?.phone ?? "",

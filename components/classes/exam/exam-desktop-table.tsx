@@ -7,6 +7,10 @@ import { getStudentAvatar } from "../classroom-utils";
 import { format } from "date-fns";
 import { FileText } from "lucide-react";
 
+const STT_COLUMN_WIDTH = 64;
+const STUDENT_COLUMN_WIDTH = 280;
+const SCORE_COLUMN_WIDTH = 120;
+
 type ExamDesktopTableProps = {
   students: Student[];
   exams: Exam[];
@@ -26,40 +30,54 @@ export function ExamDesktopTable({
   onEditExam,
   onUploadEvidence,
 }: ExamDesktopTableProps) {
+  const tableWidth =
+    STT_COLUMN_WIDTH + STUDENT_COLUMN_WIDTH + exams.length * SCORE_COLUMN_WIDTH;
+
   return (
     <div className={styles.sheetContainer}>
       <div className={styles.sheetWrapper}>
-        <table className={styles.sheetTable}>
+        <table
+          className={styles.sheetTable}
+          style={{ width: `max(100%, ${tableWidth}px)` }}
+        >
+          <colgroup>
+            <col className={styles.sttColumn} />
+            <col className={styles.studentColumn} />
+            {exams.map((exam) => (
+              <col className={styles.examColumn} key={exam.id} />
+            ))}
+            <col className={styles.spacerColumn} />
+          </colgroup>
           <thead className={styles.sheetHeader}>
             <tr>
-              <th className={`w-8 sm:w-14 ${styles.sttCol}`}>STT</th>
-              <th className={`w-[160px] min-w-[160px] sm:w-[280px] sm:min-w-[280px] text-left ${styles.stickyCol}`}>
+              <th className={styles.sttCol}>STT</th>
+              <th className={`${styles.stickyCol} ${styles.studentHeaderCell}`}>
                 Học sinh
               </th>
               {exams.map((exam) => (
-                <th key={exam.id} className="min-w-[80px]">
+                <th key={exam.id} className={styles.examHeaderCell}>
                   <button
-                    className="flex w-full flex-col items-center justify-center gap-1 p-2 hover:bg-[var(--neutral-100)] transition"
+                    className={styles.examHeaderButton}
                     onClick={() => onEditExam(exam)}
                   >
-                    <span className="font-bold text-[13px] text-[var(--neutral-700)] truncate max-w-[120px]" title={exam.title}>
+                    <span className={styles.examTitle} title={exam.title}>
                       {exam.title}
                     </span>
-                    <span className="text-[11px] text-[var(--neutral-500)]">
+                    <span className={styles.examMeta}>
                       {format(new Date(exam.testDate), "dd/MM")}
                     </span>
-                    <span className="text-[10px] text-[var(--brand-600)]">
+                    <span className={styles.examMax}>
                       Max: {exam.maxScore}
                     </span>
                     {exam.fileUrl && (
-                      <span className="mt-1 text-[var(--brand-500)]">
+                      <span className={styles.examFileIcon}>
                         <FileText size={14} />
                       </span>
                     )}
                   </button>
                 </th>
               ))}
-              <th className="w-full"></th>
+              <th aria-hidden="true" className={styles.spacerCell} />
             </tr>
           </thead>
           <tbody>
@@ -68,7 +86,7 @@ export function ExamDesktopTable({
                 <td className={`text-center text-[12px] font-bold text-[var(--neutral-400)] ${styles.sttCol}`}>
                   {index + 1}
                 </td>
-                <td className={styles.stickyCol}>
+                <td className={`${styles.stickyCol} ${styles.studentCell}`}>
                   <div className="flex items-center gap-2 p-2">
                     <div className="hidden sm:block">
                       <StudentAvatar alt={student.fullName} src={getStudentAvatar(student)} size="sm" />
@@ -108,7 +126,7 @@ export function ExamDesktopTable({
                     </td>
                   );
                 })}
-                <td></td>
+                <td aria-hidden="true" className={styles.spacerCell} />
               </tr>
             ))}
             {students.length === 0 && (

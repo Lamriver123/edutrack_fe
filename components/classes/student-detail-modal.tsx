@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Coins,
   FileText,
+  GraduationCap,
   LoaderCircle,
   MapPin,
   NotebookText,
@@ -57,6 +58,7 @@ export function StudentDetailModal({
   onClose,
   onIssueReceipt,
   onIssueMultiClassReceipt,
+  receiptActionLoading = false,
   student,
 }: {
   actions?: ReactNode;
@@ -64,6 +66,7 @@ export function StudentDetailModal({
   onClose: () => void;
   onIssueReceipt?: (student: Student) => void;
   onIssueMultiClassReceipt?: (student: Student) => void;
+  receiptActionLoading?: boolean;
   student: Student;
 }) {
   const [activeTab, setActiveTab] = useState<StudentDetailTab>("profile");
@@ -173,6 +176,7 @@ export function StudentDetailModal({
                 ? () => onIssueMultiClassReceipt(student)
                 : undefined
             }
+            receiptActionLoading={receiptActionLoading}
             onReload={() => void loadReceiptData()}
             receipts={receipts}
           />
@@ -199,6 +203,11 @@ function StudentProfileContent({ student }: { student: Student }) {
             icon={<UserRound size={16} />}
             label="Giới tính"
             value={getGenderLabel(student.gender)}
+          />
+          <DetailItem
+            icon={<GraduationCap size={16} />}
+            label="Lớp mấy"
+            value={student.gradeLevel}
           />
           <DetailItem
             icon={<CalendarDays size={16} />}
@@ -270,6 +279,7 @@ function StudentReceiptContent({
   onIssueReceipt,
   onIssueMultiClassReceipt,
   onReload,
+  receiptActionLoading,
   receipts,
 }: {
   candidates: BillingCandidates | null;
@@ -279,6 +289,7 @@ function StudentReceiptContent({
   onIssueReceipt?: () => void;
   onIssueMultiClassReceipt?: () => void;
   onReload: () => void;
+  receiptActionLoading: boolean;
   receipts: ReceiptListItem[];
 }) {
   const receiptFilterOptions = useMemo(
@@ -312,57 +323,71 @@ function StudentReceiptContent({
         </div>
       ) : null}
 
-      {classroom ? (
+      {classroom || onIssueMultiClassReceipt ? (
         <section className="rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <SectionTitle icon={<Coins size={16} />}>
-                Kỳ học phí hiện tại
+                {classroom ? "Kỳ học phí hiện tại" : "Xuất hóa đơn học phí"}
               </SectionTitle>
               <p className="mt-1 text-[13px] font-semibold text-[var(--neutral-500)]">
-                {candidates
-                  ? `${formatDate(candidates.periodStart)} - ${formatDate(
-                      candidates.periodEnd,
-                    )}`
-                  : "Chưa có dữ liệu kỳ hiện tại."}
+                {classroom
+                  ? candidates
+                    ? `${formatDate(candidates.periodStart)} - ${formatDate(
+                        candidates.periodEnd,
+                      )}`
+                    : "Chưa có dữ liệu kỳ hiện tại."
+                  : "Gom các buổi chưa xuất hóa đơn của học sinh trong nhiều lớp."}
               </p>
             </div>
             <div className="grid gap-2 sm:flex sm:justify-end">
               <SecondaryAction
                 className="w-full sm:w-auto"
-                disabled={!onIssueMultiClassReceipt}
-                icon={<FileText size={16} />}
+                disabled={!onIssueMultiClassReceipt || receiptActionLoading}
+                icon={
+                  receiptActionLoading ? (
+                    <LoaderCircle className="animate-spin" size={16} />
+                  ) : (
+                    <FileText size={16} />
+                  )
+                }
                 onClick={onIssueMultiClassReceipt}
                 type="button"
               >
                 Xuất gộp nhiều lớp
               </SecondaryAction>
-              <PrimaryAction
-                className="w-full sm:w-auto"
-                disabled={!onIssueReceipt || !candidates?.summary.unbilledLessonCount}
-                icon={<FileText size={16} />}
-                onClick={onIssueReceipt}
-                type="button"
-              >
-                Xuất hóa đơn
-              </PrimaryAction>
+              {classroom ? (
+                <PrimaryAction
+                  className="w-full sm:w-auto"
+                  disabled={
+                    !onIssueReceipt || !candidates?.summary.unbilledLessonCount
+                  }
+                  icon={<FileText size={16} />}
+                  onClick={onIssueReceipt}
+                  type="button"
+                >
+                  Xuất hóa đơn
+                </PrimaryAction>
+              ) : null}
             </div>
           </div>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <MiniMetric
-              label="Buổi chờ xuất"
-              value={`${candidates?.summary.unbilledLessonCount ?? 0} buổi`}
-            />
-            <MiniMetric
-              label="Tạm tính"
-              value={formatMoney(candidates?.summary.unbilledAmount ?? 0)}
-            />
-            <MiniMetric
-              label="Bài kiểm tra"
-              value={`${candidates?.summary.examCount ?? 0} bài`}
-            />
-          </div>
+          {classroom ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <MiniMetric
+                label="Buổi chờ xuất"
+                value={`${candidates?.summary.unbilledLessonCount ?? 0} buổi`}
+              />
+              <MiniMetric
+                label="Tạm tính"
+                value={formatMoney(candidates?.summary.unbilledAmount ?? 0)}
+              />
+              <MiniMetric
+                label="Bài kiểm tra"
+                value={`${candidates?.summary.examCount ?? 0} bài`}
+              />
+            </div>
+          ) : null}
         </section>
       ) : null}
 

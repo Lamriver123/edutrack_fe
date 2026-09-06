@@ -56,6 +56,7 @@ export type Student = {
   fullName: string;
   avatarUrl?: string;
   dateOfBirth?: string;
+  gradeLevel?: string;
   gender?: Gender;
   phone?: string;
   parent?: StudentParent;
@@ -70,6 +71,7 @@ export type CreateStudentPayload = {
   gender: Gender;
   avatarUrl?: string;
   dateOfBirth?: string;
+  gradeLevel?: string;
   phone?: string;
   parent?: StudentParent;
   address?: string;
@@ -82,6 +84,47 @@ export type UpdateStudentPayload = Partial<CreateStudentPayload> & {
 };
 
 export type DeleteStudentMode = "deactivate" | "delete";
+
+export type StudentBulkDeleteResult = {
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  mode: DeleteStudentMode;
+  affectedStudents: Student[];
+  errors: Array<{
+    studentId: string;
+    studentName?: string;
+    message: string;
+  }>;
+};
+
+export type StudentSortField =
+  | "fullName"
+  | "gradeLevel"
+  | "createdAt"
+  | "updatedAt";
+
+export type StudentSortOrder = "asc" | "desc";
+
+export type StudentListFilters = {
+  search?: string;
+  status?: StudentStatus;
+  gradeLevel?: string;
+  sortBy?: StudentSortField;
+  sortOrder?: StudentSortOrder;
+  limit?: string;
+};
+
+export type StudentImportResult = {
+  totalRows: number;
+  successCount: number;
+  failedCount: number;
+  createdStudents: Student[];
+  errors: Array<{
+    row: number;
+    message: string;
+  }>;
+};
 
 export type Classroom = {
   id: string;
@@ -212,6 +255,62 @@ export type TeacherWeekSchedule = {
   events: TeacherScheduleEvent[];
 };
 
+export type DashboardTodayLesson = TeacherScheduleEvent & {
+  displayTitle: string;
+  statusLabel: string;
+  typeLabel: string;
+};
+
+export type DashboardRevenueStats = {
+  issuedAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  paidReceiptCount: number;
+  pendingReceiptCount: number;
+  receiptCount: number;
+};
+
+export type DashboardPendingPayment = {
+  id: string;
+  classId?: string;
+  className: string;
+  colorHex?: string;
+  dueDate?: string | null;
+  issuedAt?: string;
+  lessonCount: number;
+  paidAmount: number;
+  parentName: string;
+  parentPhone: string;
+  paymentStatus: PaymentStatus;
+  periodEnd?: string;
+  periodStart?: string;
+  receiptNumber?: string;
+  remainingAmount: number;
+  studentCode?: string;
+  studentId?: string;
+  studentName: string;
+  totalAmount: number;
+};
+
+export type DashboardOverviewData = {
+  generatedAt: string;
+  today: string;
+  stats: {
+    activeClassCount: number;
+    activeStudentCount: number;
+    todaySessionCount: number;
+    unreadNotificationCount: number;
+    pendingPaymentCount: number;
+  };
+  revenue: {
+    currentMonth: DashboardRevenueStats;
+    collectedThisMonth: number;
+    overall: DashboardRevenueStats;
+  };
+  todayLessons: DashboardTodayLesson[];
+  pendingPayments: DashboardPendingPayment[];
+};
+
 export type ScheduleConflict = {
   classId: string; className: string; scheduleId: string;
   date: string; startTime: string; endTime: string;
@@ -238,6 +337,30 @@ export type EnrollmentResponse = {
   joinedAt: string;
   leftAt?: string | null;
   student: Student;
+};
+
+export type EnrollmentBulkResponse = {
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  enrollments: EnrollmentResponse[];
+  errors: Array<{
+    studentId: string;
+    studentName?: string;
+    message: string;
+  }>;
+};
+
+export type RemoveStudentsBulkResponse = {
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  removedStudents: Student[];
+  errors: Array<{
+    studentId: string;
+    studentName?: string;
+    message: string;
+  }>;
 };
 
 export type AttendanceStatus = "present" | "absent" | "excused" | "late";
@@ -595,9 +718,16 @@ export type ReceiptPreviewResponse = {
   html: string;
 };
 
-export type ReceiptDownloadResponse = {
-  url: string;
+export type FileDownloadResponse = {
+  blob: Blob;
+  contentType?: string;
   fileName: string;
+};
+
+export type ReceiptDownloadResponse = FileDownloadResponse;
+
+export type ReceiptBulkDownloadPayload = {
+  receiptIds: string[];
 };
 
 export type UpdateReceiptPaymentPayload = {

@@ -122,24 +122,28 @@ const paymentStatusOptions: Array<{
 
 const VIETNAM_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
 const ALL_RECEIPT_PERIODS = "all";
+const BULK_RECEIPT_DOWNLOAD_ID = "__bulk_receipt_download__";
 const SELECT_MENU_GAP = 8;
 const SELECT_MENU_MAX_HEIGHT = 252;
 
-async function downloadPdfFromUrl(url: string, fileName: string) {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error("Không thể tải file PDF.");
-  }
-
-  const blob = await response.blob();
-  const pdfBlob =
-    blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" });
-  const objectUrl = URL.createObjectURL(pdfBlob);
+function downloadBlobFile(
+  blob: Blob,
+  fileName: string,
+  fallbackMimeType: string,
+  extension: string,
+) {
+  const normalizedBlob =
+    blob.type === fallbackMimeType ? blob : new Blob([blob], { type: fallbackMimeType });
+  const objectUrl = URL.createObjectURL(normalizedBlob);
   const link = document.createElement("a");
+  const normalizedExtension = extension.startsWith(".")
+    ? extension
+    : `.${extension}`;
 
   link.href = objectUrl;
-  link.download = fileName.toLowerCase().endsWith(".pdf") ? fileName : `${fileName}.pdf`;
+  link.download = fileName.toLowerCase().endsWith(normalizedExtension)
+    ? fileName
+    : `${fileName}${normalizedExtension}`;
   link.rel = "noopener noreferrer";
   document.body.appendChild(link);
   link.click();
@@ -524,11 +528,45 @@ export function ClassTuitionTab({
 
     try {
       const download = await schoolApi.getReceiptDownload(receipt.id);
-      try {
-        await downloadPdfFromUrl(download.url, download.fileName);
-      } catch {
-        window.open(download.url, "_blank", "noopener,noreferrer");
-      }
+      downloadBlobFile(
+        download.blob,
+        download.fileName,
+        "application/pdf",
+        ".pdf",
+      );
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsMutatingReceipt("");
+    }
+  }
+
+  async function downloadSelectedReceipts(selectedReceipts: ReceiptListItem[]) {
+    if (!selectedReceipts.length) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng chọn ít nhất một hóa đơn để tải.",
+      });
+      return;
+    }
+
+    setIsMutatingReceipt(BULK_RECEIPT_DOWNLOAD_ID);
+
+    try {
+      const download = await schoolApi.downloadReceipts({
+        receiptIds: selectedReceipts.map((receipt) => receipt.id),
+      });
+
+      downloadBlobFile(
+        download.blob,
+        download.fileName,
+        "application/zip",
+        ".zip",
+      );
+      setNotice({
+        type: "success",
+        text: `Đã tải ${selectedReceipts.length} hóa đơn.`,
+      });
     } catch (error) {
       setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
@@ -892,6 +930,9 @@ export function ClassTuitionTab({
 
           <ReceiptHistory
             isMutatingReceipt={isMutatingReceipt}
+            onBulkDownload={(selectedReceipts) =>
+              void downloadSelectedReceipts(selectedReceipts)
+            }
             onCancel={setReceiptToCancel}
             onDownload={(receipt) => void downloadReceipt(receipt)}
             onPayment={openPaymentModal}
@@ -1752,6 +1793,7 @@ function PaymentModal({
 
 function ReceiptHistory({
   isMutatingReceipt,
+  onBulkDownload,
   onCancel,
   onDownload,
   onPayment,
@@ -1759,6 +1801,7 @@ function ReceiptHistory({
   receipts,
 }: {
   isMutatingReceipt: string;
+  onBulkDownload: (receipts: ReceiptListItem[]) => void;
   onCancel: (receipt: ReceiptListItem) => void;
   onDownload: (receipt: ReceiptListItem) => void;
   onPayment: (receipt: ReceiptListItem) => void;
@@ -1766,6 +1809,7 @@ function ReceiptHistory({
   receipts: ReceiptListItem[];
 }) {
   const [periodFilter, setPeriodFilter] = useState(ALL_RECEIPT_PERIODS);
+  const [selectedReceiptIds, setSelectedReceiptIds] = useState<string[]>([]);
   const periodOptions = useMemo(() => getReceiptPeriodOptions(receipts), [receipts]);
   const filteredReceipts = useMemo(
     () =>
@@ -1774,6 +1818,24 @@ function ReceiptHistory({
         : receipts.filter((receipt) => getReceiptPeriodKey(receipt) === periodFilter),
     [periodFilter, receipts],
   );
+  const downloadableReceipts = useMemo(
+    () => filteredReceipts.filter((receipt) => receipt.pdfStatus === "generated"),
+    [filteredReceipts],
+  );
+  const selectedReceipts = useMemo(() => {
+    const selectedIdSet = new Set(selectedReceiptIds);
+
+    return downloadableReceipts.filter((receipt) =>
+      selectedIdSet.has(receipt.id),
+    );
+  }, [downloadableReceipts, selectedReceiptIds]);
+  const downloadableReceiptKey = downloadableReceipts
+    .map((receipt) => receipt.id)
+    .join("|");
+  const allDownloadableSelected =
+    Boolean(downloadableReceipts.length) &&
+    selectedReceipts.length === downloadableReceipts.length;
+  const isBulkDownloading = isMutatingReceipt === BULK_RECEIPT_DOWNLOAD_ID;
   const selectedPeriodOption = periodOptions.find(
     (option) => option.key === periodFilter,
   );
@@ -1790,6 +1852,30 @@ function ReceiptHistory({
     }
   }, [periodFilter, periodOptions]);
 
+  useEffect(() => {
+    const validReceiptIds = new Set(downloadableReceipts.map((receipt) => receipt.id));
+
+    setSelectedReceiptIds((current) => {
+      const next = current.filter((receiptId) => validReceiptIds.has(receiptId));
+
+      return next.length === current.length ? current : next;
+    });
+  }, [downloadableReceiptKey, downloadableReceipts]);
+
+  function toggleReceiptSelection(receiptId: string, checked: boolean) {
+    setSelectedReceiptIds((current) =>
+      checked
+        ? [...new Set([...current, receiptId])]
+        : current.filter((item) => item !== receiptId),
+    );
+  }
+
+  function toggleAllDownloadable(checked: boolean) {
+    setSelectedReceiptIds(
+      checked ? downloadableReceipts.map((receipt) => receipt.id) : [],
+    );
+  }
+
   return (
     <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-4">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -1802,23 +1888,44 @@ function ReceiptHistory({
           </p>
         </div>
         {receipts.length ? (
-          <div className="grid gap-1 sm:min-w-[320px]">
-            <SelectField
-              label="Lọc theo đợt"
-              onChange={setPeriodFilter}
-              options={[
-                { label: "Tất cả đợt", value: ALL_RECEIPT_PERIODS },
-                ...periodOptions.map((option) => ({
-                  label: option.label,
-                  value: option.key,
-                })),
-              ]}
-              value={periodFilter}
-            />
-            <span className="text-[13px] font-semibold text-[var(--neutral-500)]">
-              {visibleSummary.count} hóa đơn -{" "}
-              {formatMoney(visibleSummary.total)}
-            </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <SecondaryAction
+              className="h-12 justify-center px-4"
+              disabled={!selectedReceipts.length || isBulkDownloading}
+              icon={
+                isBulkDownloading ? (
+                  <LoaderCircle className="animate-spin" size={16} />
+                ) : (
+                  <Download size={16} />
+                )
+              }
+              onClick={() => onBulkDownload(selectedReceipts)}
+              type="button"
+            >
+              {isBulkDownloading
+                ? "Đang nén..."
+                : selectedReceipts.length
+                  ? `Tải ${selectedReceipts.length} hóa đơn`
+                  : "Tải đã chọn"}
+            </SecondaryAction>
+            <div className="grid gap-1 sm:min-w-[320px]">
+              <SelectField
+                label=""
+                onChange={setPeriodFilter}
+                options={[
+                  { label: "Tất cả đợt", value: ALL_RECEIPT_PERIODS },
+                  ...periodOptions.map((option) => ({
+                    label: option.label,
+                    value: option.key,
+                  })),
+                ]}
+                value={periodFilter}
+              />
+              <span className="text-[13px] font-semibold text-[var(--neutral-500)]">
+                {visibleSummary.count} hóa đơn -{" "}
+                {formatMoney(visibleSummary.total)}
+              </span>
+            </div>
           </div>
         ) : null}
       </div>
@@ -1826,13 +1933,31 @@ function ReceiptHistory({
       {receipts.length ? (
         <>
           <div className="grid gap-2 lg:hidden">
-            {filteredReceipts.map((receipt) => (
+            {filteredReceipts.map((receipt) => {
+              const isDownloadable = receipt.pdfStatus === "generated";
+              const isSelected = selectedReceiptIds.includes(receipt.id);
+
+              return (
               <article
-                className="rounded-lg border border-[var(--neutral-200)] bg-white p-3 shadow-[var(--shadow-sm)]"
+                className={`rounded-lg border bg-white p-3 shadow-[var(--shadow-sm)] ${
+                  isSelected
+                    ? "border-[var(--brand-300)] ring-2 ring-[var(--brand-100)]"
+                    : "border-[var(--neutral-200)]"
+                }`}
                 key={receipt.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                <div className="flex items-start gap-3">
+                  <input
+                    aria-label={`Chọn hóa đơn ${receipt.receiptNumber}`}
+                    checked={isSelected}
+                    className="mt-1 size-5 shrink-0 accent-[var(--brand-600)] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!isDownloadable || isBulkDownloading}
+                    onChange={(event) =>
+                      toggleReceiptSelection(receipt.id, event.target.checked)
+                    }
+                    type="checkbox"
+                  />
+                  <div className="min-w-0 flex-1">
                     <h4 className="break-words text-[16px] font-extrabold leading-6 text-[var(--neutral-900)]">
                       {receipt.studentName}
                     </h4>
@@ -1877,61 +2002,98 @@ function ReceiptHistory({
                   receipt={receipt}
                 />
               </article>
-            ))}
+              );
+            })}
           </div>
 
           <div className="hidden max-w-full overflow-x-auto pb-2 lg:block">
-          <div className="grid min-w-[920px] gap-2">
-            <div className="grid grid-cols-[130px_1.1fr_120px_140px_145px_230px] gap-3 rounded-lg bg-[var(--neutral-50)] px-4 py-3 text-[13px] font-bold text-[var(--neutral-500)]">
-              <span>Mã hóa đơn</span>
-              <span>Học sinh</span>
-              <span>Số buổi</span>
-              <span>Tổng tiền</span>
-              <span>Trạng thái</span>
-              <span>Thao tác</span>
-            </div>
-            {filteredReceipts.map((receipt) => (
-              <div
-                className="grid grid-cols-[130px_1.1fr_120px_140px_145px_230px] items-center gap-3 rounded-lg border border-[var(--neutral-200)] px-4 py-3"
-                key={receipt.id}
-              >
-                <span className="truncate text-[14px] font-extrabold text-[var(--brand-800)]">
-                  {receipt.receiptNumber}
+            <div className="grid min-w-[980px] gap-2">
+              <div className="grid grid-cols-[44px_130px_1.1fr_120px_140px_145px_230px] gap-3 rounded-lg bg-[var(--neutral-50)] px-4 py-3 text-[13px] font-bold text-[var(--neutral-500)]">
+                <span className="grid place-items-center">
+                  <input
+                    aria-label="Chọn tất cả hóa đơn có PDF"
+                    checked={allDownloadableSelected}
+                    className="size-5 accent-[var(--brand-600)] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!downloadableReceipts.length || isBulkDownloading}
+                    onChange={(event) =>
+                      toggleAllDownloadable(event.target.checked)
+                    }
+                    type="checkbox"
+                  />
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[14px] font-bold text-[var(--neutral-800)]">
-                    {receipt.studentName}
-                  </span>
-                  <span className="block truncate text-[13px] font-semibold text-[var(--neutral-500)]">
-                    {formatDate(receipt.periodStart)} -{" "}
-                    {formatDate(receipt.periodEnd)}
-                  </span>
-                </span>
-                <span className="text-[14px] font-bold text-[var(--neutral-600)]">
-                  {receipt.lessonCount} buổi
-                </span>
-                <strong className="text-[14px] text-[var(--brand-950)]">
-                  {formatMoney(receipt.totalAmount)}
-                </strong>
-                <div className="grid gap-1">
-                  <StatusPill tone={getPaymentTone(receipt.paymentStatus)}>
-                    {getPaymentLabel(receipt.paymentStatus)}
-                  </StatusPill>
-                  {receipt.pdfStatus === "failed" ? (
-                    <StatusPill tone="danger">Lỗi PDF</StatusPill>
-                  ) : null}
-                </div>
-                <ReceiptActions
-                  isMutatingReceipt={isMutatingReceipt}
-                  onCancel={onCancel}
-                  onDownload={onDownload}
-                  onPayment={onPayment}
-                  onRetryPdf={onRetryPdf}
-                  receipt={receipt}
-                />
+                <span>Mã hóa đơn</span>
+                <span>Học sinh</span>
+                <span>Số buổi</span>
+                <span>Tổng tiền</span>
+                <span>Trạng thái</span>
+                <span>Thao tác</span>
               </div>
-            ))}
-          </div>
+              {filteredReceipts.map((receipt) => {
+                const isDownloadable = receipt.pdfStatus === "generated";
+                const isSelected = selectedReceiptIds.includes(receipt.id);
+
+                return (
+                  <div
+                    className={`grid grid-cols-[44px_130px_1.1fr_120px_140px_145px_230px] items-center gap-3 rounded-lg border px-4 py-3 ${
+                      isSelected
+                        ? "border-[var(--brand-300)] bg-[var(--brand-50)]"
+                        : "border-[var(--neutral-200)]"
+                    }`}
+                    key={receipt.id}
+                  >
+                    <span className="grid place-items-center">
+                      <input
+                        aria-label={`Chọn hóa đơn ${receipt.receiptNumber}`}
+                        checked={isSelected}
+                        className="size-5 accent-[var(--brand-600)] disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={!isDownloadable || isBulkDownloading}
+                        onChange={(event) =>
+                          toggleReceiptSelection(
+                            receipt.id,
+                            event.target.checked,
+                          )
+                        }
+                        type="checkbox"
+                      />
+                    </span>
+                    <span className="truncate text-[14px] font-extrabold text-[var(--brand-800)]">
+                      {receipt.receiptNumber}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-bold text-[var(--neutral-800)]">
+                        {receipt.studentName}
+                      </span>
+                      <span className="block truncate text-[13px] font-semibold text-[var(--neutral-500)]">
+                        {formatDate(receipt.periodStart)} -{" "}
+                        {formatDate(receipt.periodEnd)}
+                      </span>
+                    </span>
+                    <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+                      {receipt.lessonCount} buổi
+                    </span>
+                    <strong className="text-[14px] text-[var(--brand-950)]">
+                      {formatMoney(receipt.totalAmount)}
+                    </strong>
+                    <div className="grid gap-1">
+                      <StatusPill tone={getPaymentTone(receipt.paymentStatus)}>
+                        {getPaymentLabel(receipt.paymentStatus)}
+                      </StatusPill>
+                      {receipt.pdfStatus === "failed" ? (
+                        <StatusPill tone="danger">Lỗi PDF</StatusPill>
+                      ) : null}
+                    </div>
+                    <ReceiptActions
+                      isMutatingReceipt={isMutatingReceipt}
+                      onCancel={onCancel}
+                      onDownload={onDownload}
+                      onPayment={onPayment}
+                      onRetryPdf={onRetryPdf}
+                      receipt={receipt}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       ) : (
@@ -2030,22 +2192,27 @@ function SelectField({
       return;
     }
 
-    const spaceBelow = window.innerHeight - rect.bottom - SELECT_MENU_GAP;
-    const spaceAbove = rect.top - SELECT_MENU_GAP;
-    const shouldOpenUp =
-      spaceBelow < SELECT_MENU_MAX_HEIGHT && spaceAbove > spaceBelow;
+    const spaceBelow =
+      window.innerHeight - rect.bottom - SELECT_MENU_GAP - 12;
     const availableHeight = Math.max(
       132,
-      Math.min(SELECT_MENU_MAX_HEIGHT, shouldOpenUp ? spaceAbove : spaceBelow),
+      Math.min(SELECT_MENU_MAX_HEIGHT, spaceBelow),
+    );
+
+    const menuWidth = Math.min(
+      Math.max(rect.width, 280),
+      Math.max(180, window.innerWidth - 24),
+    );
+    const menuLeft = Math.min(
+      Math.max(12, rect.right - menuWidth),
+      window.innerWidth - menuWidth - 12,
     );
 
     setMenuStyle({
-      left: rect.left,
+      left: menuLeft,
       maxHeight: availableHeight,
-      top: shouldOpenUp
-        ? rect.top - SELECT_MENU_GAP - availableHeight
-        : rect.bottom + SELECT_MENU_GAP,
-      width: rect.width,
+      top: rect.bottom + SELECT_MENU_GAP,
+      width: menuWidth,
     });
   }, []);
 

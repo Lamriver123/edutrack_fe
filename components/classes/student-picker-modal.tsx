@@ -35,7 +35,7 @@ import { useDeferredStudentAvatarUpload } from "./use-deferred-student-avatar-up
 
 type AddMode = "existing" | "new";
 type PendingStudentAction =
-  | { student: Student; type: "enroll" }
+  | { students: Student[]; type: "enroll" }
   | { type: "create" };
 
 export function StudentPickerModal({
@@ -56,7 +56,10 @@ export function StudentPickerModal({
     useState<StudentFormState>(initialStudentForm);
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [enrollingStudentId, setEnrollingStudentId] = useState("");
+  const [isEnrollingExisting, setIsEnrollingExisting] = useState(false);
+  const [selectedExistingStudents, setSelectedExistingStudents] = useState<
+    Student[]
+  >([]);
   const [pendingAction, setPendingAction] =
     useState<PendingStudentAction | null>(null);
   const {
@@ -71,6 +74,10 @@ export function StudentPickerModal({
   const selectedStudentIds = useMemo(
     () => new Set(classroom.students.map((student) => student.id)),
     [classroom.students],
+  );
+  const selectedExistingStudentIds = useMemo(
+    () => new Set(selectedExistingStudents.map((student) => student.id)),
+    [selectedExistingStudents],
   );
 
   useEffect(() => {
@@ -105,19 +112,53 @@ export function StudentPickerModal({
     };
   }, [mode, onError, search]);
 
-  async function executeEnrollExisting(student: Student) {
-    setEnrollingStudentId(student.id);
+  async function executeEnrollExisting(studentsToEnroll: Student[]) {
+    setIsEnrollingExisting(true);
 
     try {
-      await schoolApi.enrollExistingStudent(classroom.id, student.id);
-      onAdded(`Đã thêm ${student.fullName} vào lớp ${classroom.name}.`);
+      const result = await schoolApi.enrollExistingStudents(
+        classroom.id,
+        studentsToEnroll.map((student) => student.id),
+      );
+      const studentCountLabel =
+        result.successCount === 1
+          ? result.enrollments[0]?.student.fullName ?? "1 học sinh"
+          : `${result.successCount} học sinh`;
+
+      if (!result.successCount) {
+        const firstError = result.errors[0]?.message;
+        onError(firstError ?? "Không thể thêm học sinh vào lớp.");
+        return;
+      }
+
+      if (result.failedCount) {
+        onAdded(
+          `Đã thêm ${studentCountLabel} vào lớp ${classroom.name}. ${result.failedCount} học sinh chưa thêm được.`,
+        );
+      } else {
+        onAdded(`Đã thêm ${studentCountLabel} vào lớp ${classroom.name}.`);
+      }
+
+      setSelectedExistingStudents([]);
       onClose();
     } catch (error) {
       onError(getErrorMessage(error));
     } finally {
-      setEnrollingStudentId("");
+      setIsEnrollingExisting(false);
       setPendingAction(null);
     }
+  }
+
+  function toggleExistingStudent(student: Student) {
+    if (selectedStudentIds.has(student.id) || isEnrollingExisting) {
+      return;
+    }
+
+    setSelectedExistingStudents((current) =>
+      current.some((selectedStudent) => selectedStudent.id === student.id)
+        ? current.filter((selectedStudent) => selectedStudent.id !== student.id)
+        : [...current, student],
+    );
   }
 
   async function handleCreateStudentAndEnroll(event: FormEvent<HTMLFormElement>) {
@@ -166,7 +207,7 @@ export function StudentPickerModal({
     }
 
     if (pendingAction.type === "enroll") {
-      void executeEnrollExisting(pendingAction.student);
+      void executeEnrollExisting(pendingAction.students);
       return;
     }
 
@@ -219,14 +260,14 @@ export function StudentPickerModal({
               ) : students.length ? (
                 students.map((student) => {
                   const isInClass = selectedStudentIds.has(student.id);
-                  const isEnrolling = enrollingStudentId === student.id;
+                  const isSelected = selectedExistingStudentIds.has(student.id);
 
                   return (
                     <StudentOption
-                      isEnrolling={isEnrolling}
                       isInClass={isInClass}
+                      isSelected={isSelected}
                       key={student.id}
-                      onAdd={() => setPendingAction({ student, type: "enroll" })}
+                      onToggle={() => toggleExistingStudent(student)}
                       student={student}
                     />
                   );
@@ -246,6 +287,54 @@ export function StudentPickerModal({
                   text="Không tìm thấy học sinh phù hợp."
                 />
               )}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-[var(--neutral-200)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-h-6 text-[14px] font-semibold text-[var(--neutral-500)]">
+                {selectedExistingStudents.length ? (
+                  <span>
+                    Đã chọn{" "}
+                    <strong className="text-[var(--brand-700)]">
+                      {selectedExistingStudents.length}
+                    </strong>{" "}
+                    học sinh
+                  </span>
+                ) : (
+                  <span>Chọn một hoặc nhiều học sinh để thêm vào lớp.</span>
+                )}
+              </div>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <SecondaryAction
+                  disabled={isEnrollingExisting}
+                  onClick={onClose}
+                  type="button"
+                >
+                  Hủy
+                </SecondaryAction>
+                <PrimaryAction
+                  disabled={
+                    !selectedExistingStudents.length || isEnrollingExisting
+                  }
+                  icon={
+                    isEnrollingExisting ? (
+                      <LoaderCircle className="animate-spin" size={16} />
+                    ) : (
+                      <UserPlus size={16} />
+                    )
+                  }
+                  onClick={() =>
+                    setPendingAction({
+                      students: selectedExistingStudents,
+                      type: "enroll",
+                    })
+                  }
+                  type="button"
+                >
+                  {selectedExistingStudents.length
+                    ? `Thêm ${selectedExistingStudents.length} học sinh`
+                    : "Thêm học sinh"}
+                </PrimaryAction>
+              </div>
             </div>
           </div>
         ) : (
@@ -289,12 +378,12 @@ export function StudentPickerModal({
           }
           description={
             pendingAction.type === "enroll"
-              ? `Bạn sắp thêm ${pendingAction.student.fullName} vào lớp ${classroom.name}.`
+              ? pendingAction.students.length === 1
+                ? `Bạn sắp thêm ${pendingAction.students[0]?.fullName} vào lớp ${classroom.name}.`
+                : `Bạn sắp thêm ${pendingAction.students.length} học sinh vào lớp ${classroom.name}.`
               : `Bạn sắp tạo hồ sơ học sinh mới và thêm vào lớp ${classroom.name}.`
           }
-          isLoading={
-            isCreating || isUploadingAvatar || Boolean(enrollingStudentId)
-          }
+          isLoading={isCreating || isUploadingAvatar || isEnrollingExisting}
           onCancel={() => setPendingAction(null)}
           onConfirm={handleConfirmAction}
           title={
@@ -309,18 +398,24 @@ export function StudentPickerModal({
 }
 
 function StudentOption({
-  isEnrolling,
   isInClass,
-  onAdd,
+  isSelected,
+  onToggle,
   student,
 }: {
-  isEnrolling: boolean;
   isInClass: boolean;
-  onAdd: () => void;
+  isSelected: boolean;
+  onToggle: () => void;
   student: Student;
 }) {
   return (
-    <div className="grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+    <div
+      className={`grid gap-3 rounded-lg border p-3 transition sm:grid-cols-[1fr_auto] sm:items-center ${
+        isSelected
+          ? "border-[var(--brand-300)] bg-[var(--brand-50)]"
+          : "border-[var(--neutral-200)] bg-[var(--neutral-50)]"
+      }`}
+    >
       <div className="grid min-w-0 grid-cols-[48px_1fr] items-center gap-3">
         <StudentAvatar
           alt={student.fullName}
@@ -337,23 +432,24 @@ function StudentOption({
       </div>
 
       <button
+        aria-pressed={isSelected}
         className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-[14px] font-bold transition ${
           isInClass
             ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border border-[var(--brand-200)] bg-white text-[var(--brand-700)] hover:bg-[var(--brand-50)]"
+            : isSelected
+              ? "border border-[var(--brand-300)] bg-[var(--brand-600)] text-white shadow-[var(--shadow-sm)]"
+              : "border border-[var(--brand-200)] bg-white text-[var(--brand-700)] hover:bg-[var(--brand-50)]"
         }`}
-        disabled={isInClass || isEnrolling}
-        onClick={onAdd}
+        disabled={isInClass}
+        onClick={onToggle}
         type="button"
       >
-        {isEnrolling ? (
-          <LoaderCircle className="animate-spin" size={15} />
-        ) : isInClass ? (
+        {isInClass || isSelected ? (
           <Check size={15} />
         ) : (
           <Plus size={15} />
         )}
-        {isInClass ? "Đã có" : "Thêm"}
+        {isInClass ? "Đã có" : isSelected ? "Đã chọn" : "Chọn"}
       </button>
     </div>
   );

@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, BookOpenCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { schoolApi } from "@/lib/api/school";
@@ -38,6 +38,7 @@ import { useDeferredClassImageUpload } from "./use-deferred-class-image-upload";
 
 export function ClassroomDetailPage({ classId }: { classId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [classDetail, setClassDetail] = useState<ClassroomDetail | null>(null);
   const [classColorSources, setClassColorSources] = useState<Classroom[]>([]);
   const [classForm, setClassForm] = useState<ClassFormState>(initialClassForm);
@@ -52,6 +53,9 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
   const [isArchivingClass, setIsArchivingClass] = useState(false);
   const [removingStudentId, setRemovingStudentId] = useState("");
   const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
+  const [studentsToRemove, setStudentsToRemove] = useState<Student[]>([]);
+  const [isRemovingStudents, setIsRemovingStudents] = useState(false);
+  const [handledIssueRequestKey, setHandledIssueRequestKey] = useState("");
   const {
     classImageFileName,
     classImagePreviewUrl,
@@ -78,6 +82,22 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
   useEffect(() => {
     void loadClassDetail();
   }, [loadClassDetail]);
+
+  const receiptStudentId = searchParams.get("receiptStudentId");
+  const receiptMode =
+    searchParams.get("receiptMode") === "multi_class"
+      ? "multi_class"
+      : "class";
+  const receiptRequestKey = `${receiptMode}:${receiptStudentId ?? ""}`;
+  const initialIssueStudent =
+    receiptStudentId && receiptRequestKey !== handledIssueRequestKey
+      ? classDetail?.students.find((student) => student.id === receiptStudentId)
+      : null;
+
+  const handleInitialIssueHandled = useCallback(() => {
+    setHandledIssueRequestKey(receiptRequestKey);
+    router.replace(`/classes/${classId}`, { scroll: false });
+  }, [classId, receiptRequestKey, router]);
 
   async function refreshClassColorSources() {
     const classrooms = await schoolApi.listClasses();
@@ -115,6 +135,35 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
       setStudentToRemove(null);
     } finally {
       setRemovingStudentId("");
+    }
+  }
+
+  async function handleRemoveStudents(students: Student[]) {
+    if (!students.length) {
+      return;
+    }
+
+    setNotice(null);
+    setIsRemovingStudents(true);
+
+    try {
+      const result = await schoolApi.removeStudentsFromClass(
+        classId,
+        students.map((student) => student.id),
+      );
+      await loadClassDetail();
+      setNotice({
+        type: result.failedCount ? "error" : "success",
+        text: result.failedCount
+          ? `Đã cho nghỉ ${result.successCount} học sinh, ${result.failedCount} học sinh chưa xử lý được.`
+          : `Đã cho nghỉ ${result.successCount} học sinh trong lớp.`,
+      });
+      setStudentsToRemove([]);
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+      setStudentsToRemove([]);
+    } finally {
+      setIsRemovingStudents(false);
     }
   }
 
@@ -309,6 +358,9 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
         <ClassroomDetailTabs
           classroom={classDetail}
           isLoading={isLoadingDetail}
+          initialActiveTab={receiptStudentId ? "tuition" : undefined}
+          initialIssueMode={receiptMode}
+          initialIssueStudent={initialIssueStudent}
           onAddStudent={() => setIsStudentModalOpen(true)}
           onArchiveClass={() => setIsArchiveClassConfirmOpen(true)}
           onClassUpdated={(updatedClass) =>
@@ -322,9 +374,18 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
             )
           }
           onEditClass={() => void openEditClassModal()}
+          onInitialIssueHandled={handleInitialIssueHandled}
           onRemoveStudent={setStudentToRemove}
+          onRemoveStudents={setStudentsToRemove}
           onScheduleChanged={loadClassDetail}
           removingStudentId={removingStudentId}
+          removingStudentIds={
+            isRemovingStudents
+              ? studentsToRemove.map((student) => student.id)
+              : removingStudentId
+                ? [removingStudentId]
+                : []
+          }
         />
       )}
 
@@ -345,6 +406,18 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
           onCancel={() => setStudentToRemove(null)}
           onConfirm={() => void handleRemoveStudent(studentToRemove)}
           title="Xác nhận cho nghỉ lớp"
+          tone="danger"
+        />
+      ) : null}
+
+      {studentsToRemove.length ? (
+        <ConfirmDialog
+          confirmText="Cho nghỉ"
+          description={`Bạn sắp chuyển ${studentsToRemove.length} học sinh khỏi danh sách đang học của lớp này. Lịch sử học tập vẫn được giữ lại.`}
+          isLoading={isRemovingStudents}
+          onCancel={() => setStudentsToRemove([])}
+          onConfirm={() => void handleRemoveStudents(studentsToRemove)}
+          title="Xác nhận cho nghỉ nhiều học sinh"
           tone="danger"
         />
       ) : null}

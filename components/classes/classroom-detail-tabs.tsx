@@ -51,31 +51,61 @@ const detailTabs: Array<{
 export function ClassroomDetailTabs({
   classroom,
   isLoading,
+  initialActiveTab,
+  initialIssueMode,
+  initialIssueStudent,
   onAddStudent,
   onArchiveClass,
   onClassUpdated,
   onEditClass,
+  onInitialIssueHandled,
   onRemoveStudent,
+  onRemoveStudents,
   onScheduleChanged,
   removingStudentId,
+  removingStudentIds = [],
 }: {
   classroom: ClassroomDetail | null;
   isLoading: boolean;
+  initialActiveTab?: DetailTab;
+  initialIssueMode?: "class" | "multi_class";
+  initialIssueStudent?: Student | null;
   onAddStudent: () => void;
   onArchiveClass?: () => void;
   onClassUpdated?: (classroom: Classroom) => void;
   onEditClass?: () => void;
+  onInitialIssueHandled?: () => void;
   onRemoveStudent: (student: Student) => void;
+  onRemoveStudents: (students: Student[]) => void;
   onScheduleChanged?: () => Promise<void> | void;
   removingStudentId: string;
+  removingStudentIds?: string[];
 }) {
-  const [activeTab, setActiveTab] = useState<DetailTab>("students");
+  const [activeTab, setActiveTab] = useState<DetailTab>(
+    initialActiveTab ?? "students",
+  );
   const [studentFilter, setStudentFilter] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [tuitionIssueStudent, setTuitionIssueStudent] =
     useState<Student | null>(null);
   const [tuitionIssueMode, setTuitionIssueMode] =
     useState<"class" | "multi_class">("class");
+
+  const effectiveActiveTab = initialIssueStudent ? "tuition" : activeTab;
+  const effectiveIssueMode = initialIssueStudent
+    ? initialIssueMode ?? "class"
+    : tuitionIssueMode;
+  const effectiveIssueStudent = initialIssueStudent ?? tuitionIssueStudent;
+
+  function handleTuitionInitialIssueHandled() {
+    if (initialIssueStudent) {
+      onInitialIssueHandled?.();
+      return;
+    }
+
+    setTuitionIssueStudent(null);
+    setTuitionIssueMode("class");
+  }
 
   const filteredStudents = useMemo(() => {
     const search = normalizeVisibleText(studentFilter);
@@ -166,7 +196,7 @@ export function ClassroomDetailTabs({
         >
           <div className="flex flex-wrap gap-2">
             {detailTabs.map(({ icon: Icon, label, value }) => {
-              const isActive = activeTab === value;
+              const isActive = effectiveActiveTab === value;
 
               return (
                 <button
@@ -188,39 +218,38 @@ export function ClassroomDetailTabs({
         </div>
 
         <div className="p-5">
-          {activeTab === "students" ? (
+          {effectiveActiveTab === "students" ? (
             <StudentsTab
               filteredStudents={filteredStudents}
               onAddStudent={onAddStudent}
               onRemoveStudent={onRemoveStudent}
+              onRemoveStudents={onRemoveStudents}
               onSelectStudent={setSelectedStudent}
               removingStudentId={removingStudentId}
+              removingStudentIds={removingStudentIds}
               searchValue={studentFilter}
               setSearchValue={setStudentFilter}
               totalStudents={classroom.students.length}
             />
-          ) : activeTab === "schedule" ? (
+          ) : effectiveActiveTab === "schedule" ? (
             <ClassScheduleTab
               classroom={classroom}
               onScheduleChanged={onScheduleChanged}
             />
-          ) : activeTab === "tuition" ? (
+          ) : effectiveActiveTab === "tuition" ? (
             <ClassTuitionTab
               classroom={classroom}
-              initialIssueMode={tuitionIssueMode}
-              initialIssueStudent={tuitionIssueStudent}
-              onInitialIssueHandled={() => {
-                setTuitionIssueStudent(null);
-                setTuitionIssueMode("class");
-              }}
+              initialIssueMode={effectiveIssueMode}
+              initialIssueStudent={effectiveIssueStudent}
+              onInitialIssueHandled={handleTuitionInitialIssueHandled}
               onClassUpdated={onClassUpdated}
             />
-          ) : activeTab === "attendance" ? (
+          ) : effectiveActiveTab === "attendance" ? (
             <ClassAttendanceTab classroom={classroom} />
-          ) : activeTab === "scores" ? (
+          ) : effectiveActiveTab === "scores" ? (
             <ClassExamTab classroom={classroom} />
           ) : (
-            <FutureTab tab={activeTab} />
+            <FutureTab tab={effectiveActiveTab} />
           )}
         </div>
       </section>
@@ -252,8 +281,10 @@ function StudentsTab({
   filteredStudents,
   onAddStudent,
   onRemoveStudent,
+  onRemoveStudents,
   onSelectStudent,
   removingStudentId,
+  removingStudentIds,
   searchValue,
   setSearchValue,
   totalStudents,
@@ -261,12 +292,64 @@ function StudentsTab({
   filteredStudents: Student[];
   onAddStudent: () => void;
   onRemoveStudent: (student: Student) => void;
+  onRemoveStudents: (students: Student[]) => void;
   onSelectStudent: (student: Student) => void;
   removingStudentId: string;
+  removingStudentIds: string[];
   searchValue: string;
   setSearchValue: (value: string) => void;
   totalStudents: number;
 }) {
+  const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
+  const removingStudentIdSet = useMemo(
+    () => new Set(removingStudentIds),
+    [removingStudentIds],
+  );
+  const visibleStudentIds = useMemo(
+    () => new Set(filteredStudents.map((student) => student.id)),
+    [filteredStudents],
+  );
+  const selectedVisibleStudents = useMemo(
+    () =>
+      selectedStudents.filter((student) => visibleStudentIds.has(student.id)),
+    [selectedStudents, visibleStudentIds],
+  );
+  const selectedStudentIds = useMemo(
+    () => new Set(selectedVisibleStudents.map((student) => student.id)),
+    [selectedVisibleStudents],
+  );
+  const allVisibleSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((student) => selectedStudentIds.has(student.id));
+  const isBulkRemoving = removingStudentIds.length > 0;
+
+  function toggleStudent(student: Student) {
+    if (isBulkRemoving || removingStudentIdSet.has(student.id)) {
+      return;
+    }
+
+    setSelectedStudents((current) =>
+      current.some((selectedStudent) => selectedStudent.id === student.id)
+        ? current.filter((selectedStudent) => selectedStudent.id !== student.id)
+        : [...current, student],
+    );
+  }
+
+  function toggleVisibleStudents() {
+    if (isBulkRemoving || !filteredStudents.length) {
+      return;
+    }
+
+    setSelectedStudents((current) =>
+      allVisibleSelected
+        ? current.filter((student) => !visibleStudentIds.has(student.id))
+        : [
+            ...current.filter((student) => !visibleStudentIds.has(student.id)),
+            ...filteredStudents,
+          ],
+    );
+  }
+
   function handleRowKeyDown(
     event: KeyboardEvent<HTMLDivElement>,
     student: Student,
@@ -303,23 +386,56 @@ function StudentsTab({
           type="search"
           value={searchValue}
         />
-        <PrimaryAction
-          className="w-full lg:w-auto"
-          icon={<Plus size={16} />}
-          onClick={onAddStudent}
-          type="button"
-        >
-          Thêm học sinh
-        </PrimaryAction>
+        <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+          {selectedVisibleStudents.length ? (
+            <button
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 text-[14px] font-bold text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:pointer-events-none disabled:opacity-60"
+              disabled={isBulkRemoving}
+              onClick={() => onRemoveStudents(selectedVisibleStudents)}
+              type="button"
+            >
+              {isBulkRemoving ? (
+                <LoaderCircle className="animate-spin" size={16} />
+              ) : (
+                <Trash2 size={16} />
+              )}
+              Cho nghỉ {selectedVisibleStudents.length} HS
+            </button>
+          ) : null}
+          <PrimaryAction
+            className="w-full lg:w-auto"
+            icon={<Plus size={16} />}
+            onClick={onAddStudent}
+            type="button"
+          >
+            Thêm học sinh
+          </PrimaryAction>
+        </div>
       </div>
 
       {filteredStudents.length ? (
         <div className={styles.studentListScroller}>
-          <div className={styles.studentListTable}>
+          <div
+            className={`${styles.studentListTable} ${styles.selectableStudentListTable}`}
+          >
             <div
-              className={`${styles.studentTableHeader} rounded-lg bg-[var(--neutral-50)] px-4 py-3 text-[13px] font-bold text-[var(--neutral-500)]`}
+              className={`${styles.studentTableHeader} ${styles.selectableStudentTableRow} rounded-lg bg-[var(--neutral-50)] px-4 py-3 text-[13px] font-bold text-[var(--neutral-500)]`}
             >
+              <label
+                className="flex items-center justify-center"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <input
+                  aria-label="Chọn tất cả học sinh đang hiển thị"
+                  checked={allVisibleSelected}
+                  className={styles.studentBulkCheckbox}
+                  disabled={isBulkRemoving || !filteredStudents.length}
+                  onChange={toggleVisibleStudents}
+                  type="checkbox"
+                />
+              </label>
               <span>Học sinh</span>
+              <span>Lớp mấy</span>
               <span>Giới tính</span>
               <span>Liên hệ</span>
               <span>Phụ huynh</span>
@@ -328,14 +444,36 @@ function StudentsTab({
 
             {filteredStudents.map((student) => (
               <div
-                className={`${styles.studentTableRow} cursor-pointer rounded-lg border border-[var(--neutral-200)] px-4 py-3 transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] focus-visible:border-[var(--brand-400)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(99,102,241,0.18)]`}
+                className={`${styles.studentTableRow} ${styles.selectableStudentTableRow} cursor-pointer rounded-lg border border-[var(--neutral-200)] px-4 py-3 transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] focus-visible:border-[var(--brand-400)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(99,102,241,0.18)] ${
+                  selectedStudentIds.has(student.id)
+                    ? "border-[var(--brand-200)] bg-[var(--brand-50)]"
+                    : ""
+                }`}
                 key={student.id}
                 onClick={() => onSelectStudent(student)}
                 onKeyDown={(event) => handleRowKeyDown(event, student)}
                 role="button"
                 tabIndex={0}
               >
+                <label
+                  className="flex items-center justify-center"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <input
+                    aria-label={`Chọn ${student.fullName}`}
+                    checked={selectedStudentIds.has(student.id)}
+                    className={styles.studentBulkCheckbox}
+                    disabled={
+                      isBulkRemoving || removingStudentIdSet.has(student.id)
+                    }
+                    onChange={() => toggleStudent(student)}
+                    type="checkbox"
+                  />
+                </label>
                 <StudentIdentity student={student} />
+                <span className="truncate text-[14px] font-semibold text-[var(--neutral-600)]">
+                  {student.gradeLevel || "Chưa có"}
+                </span>
                 <span className="text-[14px] font-semibold text-[var(--neutral-600)]">
                   {getGenderLabel(student.gender)}
                 </span>
@@ -353,7 +491,11 @@ function StudentsTab({
                 <button
                   aria-label={`Cho ${student.fullName} nghỉ lớp`}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 text-[13px] font-bold text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:pointer-events-none disabled:text-red-300"
-                  disabled={removingStudentId === student.id}
+                  disabled={
+                    isBulkRemoving ||
+                    removingStudentId === student.id ||
+                    removingStudentIdSet.has(student.id)
+                  }
                   onClick={(event) => {
                     event.stopPropagation();
                     onRemoveStudent(student);

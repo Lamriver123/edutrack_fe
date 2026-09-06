@@ -44,7 +44,7 @@ export function AttendanceActionBar({
           className="flex-1 sm:flex-none px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-200 flex items-center justify-center gap-2 transition hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 whitespace-nowrap"
         >
           <Send size={16} className="shrink-0" />
-          <span className="truncate">{isSaving ? "Đang lưu..." : (dirtyCellsSize > 0 ? "Lưu & Gửi thông báo" : "Đóng chỉnh sửa")}</span>
+          <span className="truncate">{isSaving ? "Đang lưu..." : (dirtyCellsSize > 0 ? "Lưu" : "Đóng chỉnh sửa")}</span>
         </button>
       </div>
     </aside>

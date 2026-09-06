@@ -2,25 +2,38 @@
   position: relative;
   border-radius: 0.5rem;
   border: 1px solid var(--neutral-200);
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .sheetWrapper {
   overflow-x: auto;
   overflow-y: hidden;
   border-radius: 0.5rem;
+  background: #ffffff;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sheetTable {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: max-content;
+  --exam-stt-width: 64px;
+  --exam-student-width: 280px;
+  --exam-score-width: 120px;
+
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  min-width: 100%;
+  background: #ffffff;
+  isolation: isolate;
 }
 
 .sheetTable th,
 .sheetTable td {
+  box-sizing: border-box;
   padding: 0;
   border-bottom: 1px solid var(--neutral-100);
   border-right: 1px solid var(--neutral-100);
+  overflow: hidden;
 }
 
 .sheetTable th:last-child,
@@ -39,35 +52,62 @@
   z-index: 10;
 }
 
+.sttColumn {
+  width: var(--exam-stt-width);
+  min-width: var(--exam-stt-width);
+  max-width: var(--exam-stt-width);
+}
+
+.studentColumn {
+  width: var(--exam-student-width);
+  min-width: var(--exam-student-width);
+  max-width: var(--exam-student-width);
+}
+
+.examColumn {
+  width: var(--exam-score-width);
+  min-width: var(--exam-score-width);
+  max-width: var(--exam-score-width);
+}
+
+.spacerColumn {
+  width: auto;
+}
+
 /* STT column */
 .sttCol {
   position: sticky;
   left: 0;
-  background: white;
-  z-index: 20;
+  width: var(--exam-stt-width);
+  min-width: var(--exam-stt-width);
+  max-width: var(--exam-stt-width);
+  background: #ffffff;
+  background-clip: padding-box;
+  z-index: 30;
 }
 .sheetHeader .sttCol {
-  background: inherit;
-  z-index: 30;
+  background: #f8fafc;
+  z-index: 60;
 }
 
 /* Sticky first column for student info */
 .stickyCol {
   position: sticky;
-  left: 32px; /* Offset by STT width on mobile */
-  background: white;
-  z-index: 20;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.03);
+  left: var(--exam-stt-width);
+  width: var(--exam-student-width);
+  min-width: var(--exam-student-width);
+  max-width: var(--exam-student-width);
+  background: #ffffff;
+  background-clip: padding-box;
+  z-index: 30;
+  box-shadow:
+    8px 0 18px rgba(15, 23, 42, 0.06),
+    1px 0 0 var(--neutral-100);
 }
 
-@media (min-width: 640px) {
-  .stickyCol {
-    left: 56px; /* Offset by STT width on desktop */
-  }
-}
 .sheetHeader .stickyCol {
-  background: inherit;
-  z-index: 30;
+  background: #f8fafc;
+  z-index: 60;
 }
 
 .sheetHeader th {
@@ -78,6 +118,77 @@
   font-weight: 700;
   color: var(--neutral-500);
   text-transform: uppercase;
+}
+
+.studentHeaderCell {
+  padding: 0.875rem 1rem !important;
+  text-align: left !important;
+  color: var(--neutral-600);
+}
+
+.studentCell {
+  vertical-align: middle;
+}
+
+.examHeaderCell {
+  width: var(--exam-score-width);
+  min-width: var(--exam-score-width);
+  max-width: var(--exam-score-width);
+  background: #f8fafc;
+  vertical-align: middle;
+}
+
+.examHeaderButton {
+  display: flex;
+  width: 100%;
+  min-height: 92px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  padding: 0.625rem;
+  text-align: center;
+  transition: background-color 0.15s ease;
+}
+
+.examHeaderButton:hover {
+  background: var(--neutral-100);
+}
+
+.examTitle {
+  display: block;
+  width: 100%;
+  max-width: calc(var(--exam-score-width) - 20px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--neutral-700);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: none;
+}
+
+.examMeta {
+  color: var(--neutral-500);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.examMax {
+  color: var(--brand-600);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.examFileIcon {
+  margin-top: 0.125rem;
+  color: var(--brand-500);
 }
 
 .overviewCell {
@@ -101,12 +212,25 @@
 
 /* The actual score cell */
 .scoreCell {
-  min-width: 64px;
-  width: 64px;
+  width: var(--exam-score-width);
+  min-width: var(--exam-score-width);
+  max-width: var(--exam-score-width);
   height: 100%;
   position: relative;
-  background: white;
+  background: #ffffff;
+  z-index: 1;
   transition: background-color 0.15s ease;
+}
+
+.spacerCell {
+  min-width: 0;
+  width: auto;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.sheetHeader .spacerCell {
+  background: #f8fafc;
 }
 
 .cellContent {
@@ -117,12 +241,12 @@
   gap: 2px;
   width: 100%;
   height: 100%;
-  min-height: 52px;
-  padding: 6px 4px;
+  min-height: 72px;
+  padding: 0.625rem 0.5rem;
 }
 
 .notePreview {
-  max-width: 58px;
+  max-width: calc(var(--exam-score-width) - 20px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -175,4 +299,11 @@
   height: 6px;
   border-radius: 50%;
   background-color: #3b82f6; /* blue-500 */
+}
+
+@media (max-width: 1200px) {
+  .sheetTable {
+    --exam-student-width: 240px;
+    --exam-score-width: 112px;
+  }
 }

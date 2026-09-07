@@ -24,12 +24,11 @@ import type {
 import {
   initialClassForm,
   type ClassFormState,
-  type Notice,
 } from "./classroom-types";
+import { useNotice } from "@/components/ui/notice-provider";
 import {
   ConfirmDialog,
   EmptyState,
-  NoticeBanner,
   PrimaryAction,
 } from "./classroom-ui";
 import {
@@ -55,7 +54,7 @@ export function ClassroomsPage() {
   const [classColorSources, setClassColorSources] = useState<Classroom[]>([]);
   const [classSearch, setClassSearch] = useState("");
   const [classForm, setClassForm] = useState<ClassFormState>(initialClassForm);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [isCreatingClass, setIsCreatingClass] = useState(false);
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
@@ -100,7 +99,7 @@ export function ClassroomsPage() {
       isCurrent = false;
       window.clearTimeout(timer);
     };
-  }, [classSearch]);
+  }, [classSearch, setNotice]);
 
   async function refreshClassColorSources() {
     const classrooms = await schoolApi.listClasses();
@@ -222,9 +221,7 @@ export function ClassroomsPage() {
 
   return (
     <section className={styles.workspace}>
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       <ClassroomToolbar
         onCreateClass={() => void openCreateClassModal()}

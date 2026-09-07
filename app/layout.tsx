@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NoticeProvider } from "@/components/ui/notice-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className="h-full" suppressHydrationWarning>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <NoticeProvider>{children}</NoticeProvider>
+      </body>
     </html>
   );
 }

@@ -604,6 +604,12 @@ export const schoolApi = {
     );
   },
 
+  getReceiptDetail(receiptId: string) {
+    return apiRequest<ReceiptDetail>(`/receipts/${receiptId}`, {
+      token: getToken(),
+    });
+  },
+
   downloadReceipts(payload: ReceiptBulkDownloadPayload): Promise<ReceiptDownloadResponse> {
     return apiBlobRequest("/receipts/download-bulk", {
       method: "POST",

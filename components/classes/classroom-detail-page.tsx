@@ -13,12 +13,11 @@ import { ClassroomDetailTabs } from "./classroom-detail-tabs";
 import {
   initialClassForm,
   type ClassFormState,
-  type Notice,
 } from "./classroom-types";
+import { useNotice } from "@/components/ui/notice-provider";
 import {
   ConfirmDialog,
   EmptyState,
-  NoticeBanner,
   SecondaryAction,
 } from "./classroom-ui";
 import {
@@ -42,7 +41,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
   const [classDetail, setClassDetail] = useState<ClassroomDetail | null>(null);
   const [classColorSources, setClassColorSources] = useState<Classroom[]>([]);
   const [classForm, setClassForm] = useState<ClassFormState>(initialClassForm);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [isLoadingDetail, setIsLoadingDetail] = useState(true);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isEditClassModalOpen, setIsEditClassModalOpen] = useState(false);
@@ -77,7 +76,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
     } finally {
       setIsLoadingDetail(false);
     }
-  }, [classId]);
+  }, [classId, setNotice]);
 
   useEffect(() => {
     void loadClassDetail();
@@ -108,14 +107,14 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
 
   const handleStudentModalError = useCallback((message: string) => {
     setNotice({ type: "error", text: message });
-  }, []);
+  }, [setNotice]);
 
   const handleStudentAdded = useCallback(
     async (message: string) => {
       setNotice({ type: "success", text: message });
       await loadClassDetail();
     },
-    [loadClassDetail],
+    [loadClassDetail, setNotice],
   );
 
   async function handleRemoveStudent(student: Student) {
@@ -336,9 +335,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
         
       </div>
 
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       {!isLoadingDetail && !classDetail ? (
         <EmptyState

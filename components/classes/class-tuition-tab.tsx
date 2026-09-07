@@ -49,14 +49,14 @@ import {
   EmptyState,
   InlineLoading,
   Modal,
-  NoticeBanner,
   PrimaryAction,
   SecondaryAction,
   StudentAvatar,
   TextArea,
   TextInput,
 } from "./classroom-ui";
-import type { Notice } from "./classroom-types";
+
+import { useNotice } from "@/components/ui/notice-provider";
 
 type BillingFilterState = {
   fromDate: string;
@@ -167,7 +167,7 @@ export function ClassTuitionTab({
   const [filters, setFilters] = useState<BillingFilterState>(initialFilters);
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [receipts, setReceipts] = useState<ReceiptListItem[]>([]);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice, watchReceipt } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [issueMode, setIssueMode] = useState<IssueMode>("class");
@@ -202,7 +202,6 @@ export function ClassTuitionTab({
   );
   const [isPriceConfirmOpen, setIsPriceConfirmOpen] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
-  const prevReceiptsRef = useRef<ReceiptListItem[]>([]);
 
   const loadBillingData = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -224,30 +223,21 @@ export function ClassTuitionTab({
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [classroom.id, filters]);
+  }, [classroom.id, filters, setNotice]);
 
   useEffect(() => {
     void loadBillingData();
   }, [loadBillingData]);
 
   useEffect(() => {
-    if (prevReceiptsRef.current.length > 0) {
-      receipts.forEach((r) => {
-        const prev = prevReceiptsRef.current.find((pr) => pr.id === r.id);
-        if (prev && prev.pdfStatus === "pending" && r.pdfStatus !== "pending") {
-          setNotice({
-            type: r.pdfStatus === "generated" ? "success" : "error",
-            text:
-              r.pdfStatus === "generated"
-                ? `Hóa đơn ${r.receiptNumber} đã được tạo PDF xong.`
-                : `Lỗi tạo PDF cho hóa đơn ${r.receiptNumber}. Bạn có thể tạo lại.`,
-          });
-        }
-      });
-    }
-    prevReceiptsRef.current = receipts;
-
     const hasPending = receipts.some((r) => r.pdfStatus === "pending");
+
+    receipts.forEach((r) => {
+      if (r.pdfStatus === "pending") {
+        watchReceipt(r.id, r.receiptNumber);
+      }
+    });
+
     if (!hasPending) return;
 
     const timer = setInterval(() => {
@@ -255,7 +245,7 @@ export function ClassTuitionTab({
     }, 4000);
 
     return () => clearInterval(timer);
-  }, [receipts, loadBillingData]);
+  }, [receipts, loadBillingData, watchReceipt]);
 
   useEffect(() => {
     setPriceForm(buildPriceForm(classroom));
@@ -608,9 +598,11 @@ export function ClassTuitionTab({
     setIsMutatingReceipt(receipt.id);
 
     try {
-      await schoolApi.retryReceiptPdf(receipt.id);
+      const updatedReceipt = await schoolApi.retryReceiptPdf(receipt.id);
       await loadBillingData();
-      setNotice({ type: "success", text: "Đã tạo lại PDF hóa đơn." });
+      if (updatedReceipt.pdfStatus !== "pending") {
+        setNotice({ type: "success", text: "Đã tạo lại PDF hóa đơn." });
+      }
     } catch (error) {
       setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
@@ -812,9 +804,7 @@ export function ClassTuitionTab({
 
   return (
     <div className="grid gap-5">
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       <div className="grid gap-3 md:grid-cols-4">
         <TuitionMetric

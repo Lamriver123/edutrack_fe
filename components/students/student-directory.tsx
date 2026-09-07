@@ -36,9 +36,9 @@ import {
   buildStudentFormFromStudent,
   buildStudentPayload,
   initialStudentForm,
-  type Notice,
   type StudentFormState,
 } from "@/components/classes/classroom-types";
+import { useNotice } from "@/components/ui/notice-provider";
 import {
   getErrorMessage,
   getGenderLabel,
@@ -49,7 +49,6 @@ import {
   EmptyState,
   InlineLoading,
   Modal,
-  NoticeBanner,
   PrimaryAction,
   SecondaryAction,
   StudentAvatar,
@@ -98,7 +97,7 @@ export function StudentDirectory() {
   const [sortOrder, setSortOrder] = useState<StudentSortOrder>("asc");
   const [studentForm, setStudentForm] =
     useState<StudentFormState>(initialStudentForm);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -183,7 +182,7 @@ export function StudentDirectory() {
       isCurrent = false;
       window.clearTimeout(timer);
     };
-  }, [gradeFilter, search, sortBy, sortOrder, statusFilter]);
+  }, [gradeFilter, search, sortBy, sortOrder, statusFilter, setNotice]);
 
   async function reloadStudents() {
     const results = await schoolApi.listStudents({
@@ -597,9 +596,7 @@ export function StudentDirectory() {
         </div>
       </div>
 
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-5 shadow-[var(--shadow-card)]">
         <div className="mb-4 grid gap-3 xl:grid-cols-[minmax(260px,1fr)_minmax(150px,0.55fr)_minmax(150px,0.55fr)_minmax(170px,0.6fr)_minmax(140px,0.5fr)_auto] xl:items-end">

@@ -340,25 +340,7 @@ function Sidebar({
         })}
       </nav>
 
-      <div className="mt-auto border-t border-[var(--neutral-200)] p-4">
-        <Link
-          className="grid grid-cols-[44px_1fr] items-center gap-3 rounded-lg bg-[var(--neutral-50)] p-3 transition hover:bg-[var(--brand-50)]"
-          href="/profile"
-          onClick={onClose}
-        >
-          <div className="grid size-11 place-items-center rounded-lg bg-gradient-to-br from-[var(--brand-500)] to-[var(--brand-700)] text-[14px] font-bold text-white">
-            {userInitial}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-bold text-[var(--neutral-800)]">
-              {user.fullName}
-            </p>
-            <p className="truncate text-[13px] text-[var(--neutral-500)]">
-              Giáo viên
-            </p>
-          </div>
-        </Link>
-      </div>
+      
     </aside>
   );
 }

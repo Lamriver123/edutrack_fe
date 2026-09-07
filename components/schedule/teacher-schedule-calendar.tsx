@@ -27,7 +27,6 @@ import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from "react";
 import {
   ConfirmDialog,
   Modal,
-  NoticeBanner,
   PrimaryAction,
   SecondaryAction,
   TextArea,
@@ -51,6 +50,7 @@ import type {
 } from "@/types/school";
 import formStyles from "@/components/classes/classroom-manager.module.css";
 import styles from "./teacher-schedule-calendar.module.css";
+import { useNotice } from "@/components/ui/notice-provider";
 
 const VIETNAM_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -183,26 +183,21 @@ export function TeacherScheduleCalendar() {
   const [isAdjustmentConfirmOpen, setIsAdjustmentConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTemporary, setIsSavingTemporary] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [notice, setNotice] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const { setNotice } = useNotice();
 
   const loadSchedule = useCallback(async () => {
     setIsLoading(true);
-    setErrorMessage("");
 
     try {
       const result = await schoolApi.getTeacherWeekSchedule(selectedWeekStart);
       setSchedule(result);
     } catch (error) {
       setSchedule(null);
-      setErrorMessage(getErrorMessage(error));
+      setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedWeekStart]);
+  }, [selectedWeekStart, setNotice]);
 
   useEffect(() => {
     void loadSchedule();
@@ -425,16 +420,9 @@ export function TeacherScheduleCalendar() {
         </div>
       </div>
 
-      {errorMessage ? (
-        <NoticeBanner
-          notice={{ type: "error", text: errorMessage }}
-          onClose={() => setErrorMessage("")}
-        />
-      ) : null}
 
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
+
 
       <div className={styles.summaryGrid}>
         <SummaryItem

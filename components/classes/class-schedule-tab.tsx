@@ -55,13 +55,12 @@ import type {
   TeacherScheduleEventType,
   TeacherWeekSchedule,
 } from "@/types/school";
-import type { Notice } from "./classroom-types";
+
 import {
   ConfirmDialog,
   EmptyState,
   InlineLoading,
   Modal,
-  NoticeBanner,
   PrimaryAction,
   SecondaryAction,
   TextArea,
@@ -76,6 +75,7 @@ import {
   ScheduleConflictFeedback,
   useScheduleCheck,
 } from "../schedule/schedule-conflict-feedback";
+import { useNotice } from "@/components/ui/notice-provider";
 
 type FixedScheduleForm = {
   effectiveFrom: string;
@@ -273,7 +273,7 @@ export function ClassScheduleTab({
     useState<ClassTemporarySchedule | null>(null);
   const [selectedEvent, setSelectedEvent] =
     useState<TeacherScheduleEvent | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [isFixedModalOpen, setIsFixedModalOpen] = useState(false);
   const [isTemporaryModalOpen, setIsTemporaryModalOpen] = useState(false);
@@ -305,7 +305,7 @@ export function ClassScheduleTab({
     } finally {
       setIsLoading(false);
     }
-  }, [classroom.id, selectedWeekStart]);
+  }, [classroom.id, selectedWeekStart, setNotice]);
 
   useEffect(() => {
     void loadSchedules();
@@ -878,9 +878,7 @@ export function ClassScheduleTab({
 
   return (
     <div className={styles.scheduleWorkspace}>
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       <section className={styles.scheduleHero}>
         <div className={styles.scheduleHeroMain}>

@@ -40,13 +40,12 @@ import { profileApi } from "@/lib/api/profile";
 import type { UpdateProfilePayload, User } from "@/types/user";
 import {
   ConfirmDialog,
-  NoticeBanner,
   PrimaryAction,
   SecondaryAction,
   TextArea,
   TextInput,
 } from "@/components/classes/classroom-ui";
-import type { Notice } from "@/components/classes/classroom-types";
+import { useNotice } from "@/components/ui/notice-provider";
 import { getErrorMessage } from "@/components/classes/classroom-utils";
 
 const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -116,7 +115,7 @@ export function ProfilePage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null,
   );
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -202,7 +201,7 @@ export function ProfilePage() {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [user.hasPaymentQr, user.paymentQrImageUpdatedAt]);
+  }, [user.hasPaymentQr, user.paymentQrImageUpdatedAt, setNotice]);
 
   useEffect(() => {
     return () => {
@@ -471,9 +470,7 @@ export function ProfilePage() {
 
   return (
     <section className="grid gap-5">
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <form

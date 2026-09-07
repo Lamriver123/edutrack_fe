@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { schoolApi } from "@/lib/api/school";
+import { useNotice } from "@/components/ui/notice-provider";
 import type {
   AttendanceStatus,
   ClassroomDetail,
@@ -10,8 +11,7 @@ import type {
   TeacherScheduleEvent,
 } from "@/types/school";
 import { FileSpreadsheet } from "lucide-react";
-import { ConfirmDialog, NoticeBanner } from "./classroom-ui";
-import type { Notice } from "./classroom-types";
+import { ConfirmDialog } from "./classroom-ui";
 import { AttendanceTable } from "./attendance/attendance-table";
 import { AttendanceLegend } from "./attendance/attendance-legend";
 import { AttendanceActionBar } from "./attendance/attendance-action-bar";
@@ -28,7 +28,7 @@ export function ClassAttendanceTab({ classroom }: ClassAttendanceTabProps) {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -341,12 +341,7 @@ export function ClassAttendanceTab({ classroom }: ClassAttendanceTabProps) {
         />
       )}
 
-      {notice && (
-        <NoticeBanner
-          notice={notice}
-          onClose={() => setNotice(null)}
-        />
-      )}
+
     </div>
   );
 }

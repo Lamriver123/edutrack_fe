@@ -12,8 +12,8 @@ import type {
   UpdateExamPayload,
 } from "@/types/school";
 import { Plus, Save, Loader2, Trash2 } from "lucide-react";
-import { ConfirmDialog, NoticeBanner, PrimaryAction } from "../classroom-ui";
-import type { Notice } from "../classroom-types";
+import { ConfirmDialog, PrimaryAction } from "../classroom-ui";
+import { useNotice } from "@/components/ui/notice-provider";
 import { ExamDesktopTable } from "./exam-desktop-table";
 import { ExamMobileList } from "./exam-mobile-list";
 import { ExamCreateModal } from "./exam-create-modal";
@@ -44,7 +44,7 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmittingExam, setIsSubmittingExam] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { setNotice } = useNotice();
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -394,9 +394,7 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
         </div>
       </div>
 
-      {notice ? (
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-      ) : null}
+
 
       {/* Desktop View */}
       <div className="hidden lg:block">

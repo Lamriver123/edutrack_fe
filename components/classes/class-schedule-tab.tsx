@@ -1272,7 +1272,7 @@ export function ClassScheduleTab({
                   reason: event.target.value,
                 }))
               }
-              placeholder="Nghỉ lễ, học bù, đổi phòng học..."
+              placeholder="Nghỉ lễ, học kèm, đổi phòng học..."
               value={temporaryForm.reason}
             />
 
@@ -1899,7 +1899,7 @@ function LessonAdjustmentControls({
                 reason: inputEvent.target.value,
               }))
             }
-            placeholder="Nghỉ lễ, học bù, đổi phòng học..."
+            placeholder="Nghỉ lễ, học kèm, đổi phòng học..."
             value={form.reason}
           />
 

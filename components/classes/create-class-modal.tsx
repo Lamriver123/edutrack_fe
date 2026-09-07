@@ -264,7 +264,7 @@ function ClassFormModal({
             value={form.regularPrice}
           />
           <CurrencyInput
-            label="Giá học bù"
+            label="Giá học kèm"
             onChange={(value) =>
               onChange({
                 ...form,

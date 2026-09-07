@@ -202,9 +202,10 @@ export function ClassTuitionTab({
   );
   const [isPriceConfirmOpen, setIsPriceConfirmOpen] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const prevReceiptsRef = useRef<ReceiptListItem[]>([]);
 
-  const loadBillingData = useCallback(async () => {
-    setIsLoading(true);
+  const loadBillingData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
 
     try {
       const [nextOverview, nextReceipts] = await Promise.all([
@@ -219,15 +220,42 @@ export function ClassTuitionTab({
       setOverview(nextOverview);
       setReceipts(nextReceipts);
     } catch (error) {
-      setNotice({ type: "error", text: getErrorMessage(error) });
+      if (!silent) setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [classroom.id, filters]);
 
   useEffect(() => {
     void loadBillingData();
   }, [loadBillingData]);
+
+  useEffect(() => {
+    if (prevReceiptsRef.current.length > 0) {
+      receipts.forEach((r) => {
+        const prev = prevReceiptsRef.current.find((pr) => pr.id === r.id);
+        if (prev && prev.pdfStatus === "pending" && r.pdfStatus !== "pending") {
+          setNotice({
+            type: r.pdfStatus === "generated" ? "success" : "error",
+            text:
+              r.pdfStatus === "generated"
+                ? `Hóa đơn ${r.receiptNumber} đã được tạo PDF xong.`
+                : `Lỗi tạo PDF cho hóa đơn ${r.receiptNumber}. Bạn có thể tạo lại.`,
+          });
+        }
+      });
+    }
+    prevReceiptsRef.current = receipts;
+
+    const hasPending = receipts.some((r) => r.pdfStatus === "pending");
+    if (!hasPending) return;
+
+    const timer = setInterval(() => {
+      void loadBillingData(true);
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [receipts, loadBillingData]);
 
   useEffect(() => {
     setPriceForm(buildPriceForm(classroom));
@@ -475,13 +503,15 @@ export function ClassTuitionTab({
             );
       closeIssueModal();
       await loadBillingData();
-      setNotice({
-        type: receipt.pdfStatus === "generated" ? "success" : "error",
-        text:
-          receipt.pdfStatus === "generated"
-            ? `Đã phát hành hóa đơn ${receipt.receiptNumber}.`
-            : `Đã lưu hóa đơn ${receipt.receiptNumber}, nhưng PDF chưa tạo được. Bạn có thể bấm tạo lại PDF.`,
-      });
+      if (receipt.pdfStatus !== "pending") {
+        setNotice({
+          type: receipt.pdfStatus === "generated" ? "success" : "error",
+          text:
+            receipt.pdfStatus === "generated"
+              ? `Đã phát hành hóa đơn ${receipt.receiptNumber}.`
+              : `Đã lưu hóa đơn ${receipt.receiptNumber}, nhưng PDF chưa tạo được. Bạn có thể bấm tạo lại PDF.`,
+        });
+      }
     } catch (error) {
       setNotice({ type: "error", text: getErrorMessage(error) });
       setIsIssueConfirmOpen(false);
@@ -737,7 +767,7 @@ export function ClassTuitionTab({
     ) {
       setNotice({
         type: "error",
-        text: "Vui lòng nhập đủ giá buổi thường, giá học bù và ngày áp dụng.",
+        text: "Vui lòng nhập đủ giá buổi thường, giá học kèm và ngày áp dụng.",
       });
       return;
     }
@@ -794,7 +824,7 @@ export function ClassTuitionTab({
         />
         <TuitionMetric
           icon={<Coins size={18} />}
-          label="Học bù / học thêm"
+          label="Học kèm / học thêm"
           value={formatMoney(classroom.makeupPrice)}
         />
         <TuitionMetric
@@ -1103,7 +1133,7 @@ function PriceSettingsPanel({
               Thường: {formatMoney(regularPrice)}
             </span>
             <span className="rounded-full border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-1.5">
-              Học bù: {formatMoney(makeupPrice)}
+              Học kèm: {formatMoney(makeupPrice)}
             </span>
             <span className="rounded-full border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-1.5">
               Từ: {formatDateInput(toVietnamDateInputValue(priceEffectiveFrom))}
@@ -1118,7 +1148,7 @@ function PriceSettingsPanel({
             value={form.regularPrice}
           />
           <CurrencyField
-            label="Giá học bù / thêm"
+            label="Giá học kèm / thêm"
             onChange={(value) => onChange({ ...form, makeupPrice: value })}
             value={form.makeupPrice}
           />

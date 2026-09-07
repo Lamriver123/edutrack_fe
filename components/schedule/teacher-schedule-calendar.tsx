@@ -245,8 +245,8 @@ export function TeacherScheduleCalendar() {
   const weekRange = schedule
     ? `${formatDate(schedule.weekStart)} - ${formatDate(schedule.weekEnd)}`
     : `${formatDate(selectedWeekStart)} - ${formatDate(
-        addDaysToDateKey(selectedWeekStart, 6),
-      )}`;
+      addDaysToDateKey(selectedWeekStart, 6),
+    )}`;
 
   function goToPreviousWeek() {
     setSelectedWeekStart((current) => addDaysToDateKey(current, -7));
@@ -504,11 +504,9 @@ export function TeacherScheduleCalendar() {
           confirmText={
             adjustmentMode === "cancel" ? "Hủy lịch" : "Lưu lịch dời"
           }
-          description={`Bạn sắp ${
-            adjustmentMode === "cancel" ? "hủy" : "dời"
-          } buổi học ${formatDate(selectedEvent.date)} của lớp ${
-            selectedEvent.className
-          }.`}
+          description={`Bạn sắp ${adjustmentMode === "cancel" ? "hủy" : "dời"
+            } buổi học ${formatDate(selectedEvent.date)} của lớp ${selectedEvent.className
+            }.`}
           isLoading={isSavingTemporary}
           onCancel={() => setIsAdjustmentConfirmOpen(false)}
           onConfirm={() => void executeSaveAdjustment()}
@@ -842,9 +840,8 @@ function ScheduleEventModal({
             </SecondaryAction>
             {event.type !== "cancel" ? (
               <SecondaryAction
-                className={`${styles.dangerButton} ${
-                  mode === "cancel" ? styles.activeDangerButton : ""
-                }`}
+                className={`${styles.dangerButton} ${mode === "cancel" ? styles.activeDangerButton : ""
+                  }`}
                 icon={<Ban size={15} />}
                 onClick={() => onModeChange("cancel")}
                 type="button"
@@ -896,7 +893,7 @@ function ScheduleEventModal({
               ) : null}
 
               {form.action === "reschedule" &&
-              (!form.originalStartTime || !form.originalEndTime) ? (
+                (!form.originalStartTime || !form.originalEndTime) ? (
                 <ScheduleSourcePicker
                   classId={event.classId}
                   date={form.originalDate}
@@ -944,7 +941,7 @@ function ScheduleEventModal({
                     reason: changeEvent.target.value,
                   }))
                 }
-                placeholder="Nghỉ lễ, học bù, đổi phòng học..."
+                placeholder="Nghỉ lễ, học kèm, đổi phòng học..."
                 value={form.reason}
               />
 

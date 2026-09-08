@@ -738,3 +738,36 @@ export type UpdateReceiptPaymentPayload = {
   paymentProofUrl?: string;
   paymentProofPublicId?: string;
 };
+
+// --- AI Schedule Suggestion ---
+
+export type AiChatMessage = {
+  role: "user" | "ai";
+  text: string;
+  timestamp: string;
+};
+
+export type AiScheduleSessionResponse = {
+  sessionId: string;
+  scheduleContext: string;
+  greeting: string;
+};
+
+export type AiChatResponse = {
+  reply: string;
+};
+
+export type AiSessionListItem = {
+  sessionId: string;
+  messageCount: number;
+  lastActivityAt: string;
+  createdAt: string;
+  preview: string;
+};
+
+export type AiSessionDetail = {
+  sessionId: string;
+  messages: AiChatMessage[];
+  scheduleContext: string;
+  createdAt: string;
+};

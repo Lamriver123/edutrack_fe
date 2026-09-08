@@ -49,6 +49,10 @@ import type {
   ScheduleAvailabilityPayload,
   ScheduleAvailability,
   ScheduleTimeSlot,
+  AiScheduleSessionResponse,
+  AiChatResponse,
+  AiSessionListItem,
+  AiSessionDetail,
 } from "@/types/school";
 import { apiBlobRequest, apiRequest } from "./client";
 
@@ -653,6 +657,38 @@ export const schoolApi = {
         method: "POST",
         token: getToken(),
         body: formData,
+      },
+    );
+  },
+
+  // --- AI Schedule Suggestion ---
+
+  createAiScheduleSession() {
+    return apiRequest<AiScheduleSessionResponse>("/ai/schedule-suggest", {
+      method: "POST",
+      token: getToken(),
+    });
+  },
+
+  sendAiScheduleMessage(sessionId: string, message: string) {
+    return apiRequest<AiChatResponse>("/ai/schedule-suggest/chat", {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify({ sessionId, message }),
+    });
+  },
+
+  listAiScheduleSessions() {
+    return apiRequest<AiSessionListItem[]>("/ai/schedule-suggest/sessions", {
+      token: getToken(),
+    });
+  },
+
+  getAiScheduleSession(sessionId: string) {
+    return apiRequest<AiSessionDetail>(
+      `/ai/schedule-suggest/sessions/${sessionId}`,
+      {
+        token: getToken(),
       },
     );
   },

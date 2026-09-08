@@ -29,6 +29,7 @@ import {
 import { authApi } from "@/lib/api/auth";
 import { tokenStorage } from "@/lib/auth/token-storage";
 import type { User } from "@/types/user";
+import { AiScheduleChat, AiScheduleChatButton } from "@/components/schedule/ai-schedule-chat";
 
 type NavigationItem = {
   label: string;
@@ -118,6 +119,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
 
   const updateUser = useCallback((nextUser: User) => {
     setUser(nextUser);
@@ -247,6 +249,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {children}
           </section>
         </div>
+
+        {!isAiChatOpen ? (
+          <AiScheduleChatButton onClick={() => setIsAiChatOpen(true)} />
+        ) : null}
+
+        {isAiChatOpen ? (
+          <AiScheduleChat onClose={() => setIsAiChatOpen(false)} />
+        ) : null}
       </main>
     </DashboardUserContext.Provider>
   );

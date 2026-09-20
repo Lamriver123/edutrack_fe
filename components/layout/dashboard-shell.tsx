@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  FilePenLine,
   Search,
   UserCircle,
   Users,
@@ -81,6 +82,13 @@ const navigationItems: NavigationItem[] = [
     href: "/profile",
     icon: UserCircle,
     match: (pathname) => pathname.startsWith("/profile"),
+  },
+  {
+    label: "Mẫu hóa đơn",
+    description: "Mẫu hóa đơn của giáo viên",
+    href: "/settings/invoice-template",
+    icon: FilePenLine,
+    match: (pathname) => pathname.startsWith("/settings/invoice-template"),
   },
 ];
 
@@ -215,6 +223,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const userInitial = user.fullName?.charAt(0)?.toUpperCase() ?? "G";
+
+  if (pathname === "/settings/invoice-template") {
+    return (
+      <DashboardUserContext.Provider value={{ updateUser, user }}>
+        <main className="h-dvh overflow-hidden bg-white">{children}</main>
+      </DashboardUserContext.Provider>
+    );
+  }
 
   return (
     <DashboardUserContext.Provider value={{ updateUser, user }}>

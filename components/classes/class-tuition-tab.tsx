@@ -22,6 +22,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { schoolApi } from "@/lib/api/school";
+import type { InvoiceTemplate } from "@/types/invoice-template";
+import { ReceiptTemplatePicker } from "./receipt-template-picker";
 import type {
   BillingCandidates,
   BillingOverview,
@@ -182,6 +184,9 @@ export function ClassTuitionTab({
     useState<IssueFormState>(initialIssueForm);
   const [isCandidateLoading, setIsCandidateLoading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<InvoiceTemplate | null>(null);
+  const previewTemplateRef = useRef<{ id: string; revision: string } | null>(null);
   const [isIssueConfirmOpen, setIsIssueConfirmOpen] = useState(false);
   const [isIssuing, setIsIssuing] = useState(false);
   const [receiptToCancel, setReceiptToCancel] =
@@ -310,6 +315,8 @@ export function ClassTuitionTab({
     };
 
     setIssueMode(mode);
+    setSelectedTemplate(null);
+    previewTemplateRef.current = null;
     setSelectedStudent(row.student);
     setIssueForm(nextForm);
     setSelectedClassIds([classroom.id]);
@@ -457,6 +464,7 @@ export function ClassTuitionTab({
       previewWindow.document.write(response.html);
       previewWindow.document.close();
       previewWindow.focus();
+      previewTemplateRef.current = response.template;
     } catch (error) {
       previewWindow.document.open();
       previewWindow.document.write(getReceiptPreviewErrorHtml());
@@ -472,7 +480,7 @@ export function ClassTuitionTab({
       return;
     }
 
-    const payload = buildIssuePayload();
+    const payload = buildIssuePayload(true);
 
     if (!payload) {
       setIsIssueConfirmOpen(false);
@@ -510,7 +518,14 @@ export function ClassTuitionTab({
     }
   }
 
-  function buildIssuePayload(): IssueReceiptPayload | null {
+  function buildIssuePayload(forIssue = false): IssueReceiptPayload | null {
+    if (!selectedTemplate) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng chọn mẫu hóa đơn trước khi tiếp tục.",
+      });
+      return null;
+    }
     if (issueMode === "multi_class" && !selectedClassIds.length) {
       setNotice({
         type: "error",
@@ -528,6 +543,11 @@ export function ClassTuitionTab({
     }
 
     return {
+      templateId: selectedTemplate.id,
+      templateRevision:
+        forIssue && previewTemplateRef.current?.id === selectedTemplate.id
+          ? previewTemplateRef.current.revision
+          : undefined,
       scopeType: issueMode,
       classIds: issueMode === "multi_class" ? selectedClassIds : undefined,
       fromDate: issueForm.fromDate || undefined,
@@ -964,6 +984,8 @@ export function ClassTuitionTab({
 
       {selectedStudent ? (
         <IssueReceiptModal
+          selectedTemplate={selectedTemplate}
+          onTemplateChange={setSelectedTemplate}
           candidates={candidates}
           discountAmount={discountAmount}
           form={issueForm}
@@ -999,7 +1021,7 @@ export function ClassTuitionTab({
       {isIssueConfirmOpen && selectedStudent ? (
         <ConfirmDialog
           confirmText="Phát hành"
-          description={`Bạn sắp phát hành hóa đơn cho ${selectedStudent.fullName}. Các buổi đã chọn sẽ bị khóa để tránh xuất trùng.`}
+          description={`Bạn sắp phát hành hóa đơn cho ${selectedStudent.fullName} bằng mẫu ${selectedTemplate?.name} (V${selectedTemplate?.version}). Các buổi đã chọn sẽ bị khóa để tránh xuất trùng.`}
           isLoading={isIssuing}
           onCancel={() => setIsIssueConfirmOpen(false)}
           onConfirm={() => void issueReceipt()}
@@ -1174,6 +1196,8 @@ function PriceSettingsPanel({
 }
 
 function IssueReceiptModal({
+  selectedTemplate,
+  onTemplateChange,
   candidates,
   discountAmount,
   form,
@@ -1197,6 +1221,8 @@ function IssueReceiptModal({
   student,
   studentBillingOverview,
 }: {
+  selectedTemplate: InvoiceTemplate | null;
+  onTemplateChange: (template: InvoiceTemplate | null) => void;
   candidates: BillingCandidates | null;
   discountAmount: number;
   form: IssueFormState;
@@ -1232,6 +1258,11 @@ function IssueReceiptModal({
       } - ${student.fullName}`}
     >
       <div className="grid gap-5">
+        <ReceiptTemplatePicker
+          value={selectedTemplate}
+          onChange={onTemplateChange}
+          disabled={isIssuing || isPreviewing}
+        />
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <TextInput
             icon={<CalendarDays size={16} />}
@@ -1582,7 +1613,9 @@ function IssueReceiptModal({
             Hủy
           </SecondaryAction>
           <SecondaryAction
-            disabled={isPreviewing || isIssuing || !selectedTuitionIds.length}
+            disabled={
+              isPreviewing || isIssuing || !selectedTuitionIds.length || !selectedTemplate
+            }
             icon={
               isPreviewing ? (
                 <LoaderCircle className="animate-spin" size={16} />
@@ -1596,7 +1629,9 @@ function IssueReceiptModal({
             Xem trước
           </SecondaryAction>
           <PrimaryAction
-            disabled={isIssuing || !selectedTuitionIds.length}
+            disabled={
+              isIssuing || isPreviewing || !selectedTuitionIds.length || !selectedTemplate
+            }
             icon={
               isIssuing ? (
                 <LoaderCircle className="animate-spin" size={16} />

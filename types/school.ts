@@ -550,6 +550,7 @@ export type ReceiptExamSnapshot = {
 };
 
 export type ReceiptDetail = {
+  template?: { id: string; name: string; version: number; revision: string };
   id: string;
   teacherId: string;
   classId: string;
@@ -692,6 +693,8 @@ export type BillingCandidates = {
 };
 
 export type IssueReceiptPayload = {
+  templateId?: string;
+  templateRevision?: string;
   scopeType?: ReceiptScope;
   classIds?: string[];
   fromDate?: string;
@@ -714,6 +717,7 @@ export type IssueReceiptPayload = {
 };
 
 export type ReceiptPreviewResponse = {
+  template: { id: string; name: string; version: number; revision: string };
   receipt: ReceiptDetail;
   html: string;
 };

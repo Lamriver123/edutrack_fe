@@ -36,6 +36,7 @@ export default function InvoiceDesigner() {
   >(null);
   const [focused, setFocused] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [imagePicker, setImagePicker] = useState<{
     target: Component | null;
   } | null>(null);
@@ -101,6 +102,7 @@ export default function InvoiceDesigner() {
       <DesignerToolbar
         {...designer}
         save={() => setSaveOpen(true)}
+        onDeleteTemplate={() => setDeleteOpen(true)}
         onPreview={() => {
           if (designer.editor)
             setPreview({
@@ -191,6 +193,20 @@ export default function InvoiceDesigner() {
           saving={designer.saving}
           onSave={designer.save}
           onClose={() => setSaveOpen(false)}
+        />
+      )}
+      {deleteOpen && designer.template?.type === "CUSTOM" && (
+        <ConfirmDialog
+          title="Xóa mẫu hóa đơn"
+          description={`Bạn có chắc muốn xóa “${designer.template.name}” (V${designer.template.version})? Mẫu sẽ không còn xuất hiện trong danh sách.`}
+          cancelText="Giữ lại"
+          confirmText="Xóa mẫu"
+          tone="danger"
+          isLoading={designer.deleting}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={async () => {
+            if (await designer.deleteTemplate()) setDeleteOpen(false);
+          }}
         />
       )}
       {imagePicker && (

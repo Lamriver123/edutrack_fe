@@ -50,4 +50,13 @@ export const invoiceTemplateApi = {
       },
     );
   },
+  remove(templateId: string) {
+    return apiRequest<{ message: string }>(
+      `/invoice-templates/${templateId}`,
+      {
+        method: "DELETE",
+        token: tokenStorage.getAccessToken(),
+      },
+    );
+  },
 };

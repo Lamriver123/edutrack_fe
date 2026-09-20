@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileText, Pencil, RefreshCw } from "lucide-react";
+import { ChevronDown, FileText, Pencil, RefreshCw } from "lucide-react";
 import { invoiceTemplateApi } from "@/lib/api/invoice-template";
 import type { InvoiceTemplate } from "@/types/invoice-template";
 import { SecondaryAction } from "./classroom-ui";
@@ -64,42 +64,49 @@ export function ReceiptTemplatePicker({
             <FileText size={16} />
             Mẫu hóa đơn
           </span>
-          <select
-            className="h-11 w-full min-w-0 rounded-lg border border-[var(--neutral-200)] bg-white px-3 text-sm font-semibold outline-none focus:border-[var(--brand-400)] disabled:opacity-60"
-            disabled={disabled || loading || Boolean(error)}
-            value={value?.id ?? ""}
-            onChange={(event) =>
-              onChange(
-                templates.find((item) => item.id === event.target.value) ??
-                  null,
-              )
-            }
-          >
-            {!value && (
-              <option value="">
-                {loading ? "Đang tải mẫu..." : "Chưa chọn mẫu"}
-              </option>
-            )}
-            {templates.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.type === "SYSTEM" ? "Mẫu hệ thống" : item.name} · V
-                {item.version}
-              </option>
-            ))}
-          </select>
+          <span className="relative block min-w-0">
+            <select
+              className="h-12 w-full min-w-0 appearance-none rounded-lg border border-[var(--neutral-200)] bg-white py-0 pl-3.5 pr-10 text-[15px] font-extrabold text-[var(--neutral-800)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-[border-color,box-shadow,color] duration-200 hover:border-[var(--brand-400)] focus:border-[var(--brand-400)] focus:text-[var(--brand-900)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:cursor-not-allowed disabled:bg-[var(--neutral-50)] disabled:opacity-60"
+              disabled={disabled || loading || Boolean(error)}
+              value={value?.id ?? ""}
+              onChange={(event) =>
+                onChange(
+                  templates.find((item) => item.id === event.target.value) ??
+                    null,
+                )
+              }
+            >
+              {!value && (
+                <option value="">
+                  {loading ? "Đang tải mẫu..." : "Chưa chọn mẫu"}
+                </option>
+              )}
+              {templates.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.type === "SYSTEM" ? "Mẫu hệ thống" : item.name} · V
+                  {item.version}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--neutral-400)]"
+              size={18}
+            />
+          </span>
         </label>
         <button
           type="button"
           onClick={reload}
           disabled={disabled || loading}
-          className="grid size-11 shrink-0 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-600)] hover:bg-[var(--neutral-50)] disabled:opacity-50"
+          className="grid size-12 shrink-0 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-600)] transition hover:border-[var(--brand-200)] hover:bg-[var(--neutral-50)] focus-visible:border-[var(--brand-400)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:opacity-50"
           title="Tải lại danh sách mẫu"
           aria-label="Tải lại danh sách mẫu"
         >
           <RefreshCw size={17} className={loading ? "animate-spin" : ""} />
         </button>
         <a
-          className="grid size-11 shrink-0 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--brand-700)] hover:bg-[var(--brand-50)]"
+          className="grid size-12 shrink-0 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--brand-700)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] focus-visible:border-[var(--brand-400)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
           href="/settings/invoice-template"
           target="_blank"
           rel="noopener noreferrer"

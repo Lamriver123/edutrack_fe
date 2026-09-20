@@ -47,11 +47,13 @@ type Props = {
   setName: (name: string) => void;
   dirty: boolean;
   saving: boolean;
+  deleting: boolean;
   loading: boolean;
   save: () => void;
   template: InvoiceTemplate | null;
   templates: InvoiceTemplate[];
   selectVersion: (id: string) => void;
+  onDeleteTemplate: () => void;
   toggleComponents: () => void;
   toggleProperties: () => void;
   componentsOpen: boolean;
@@ -68,11 +70,13 @@ export function DesignerToolbar({
   setName,
   dirty,
   saving,
+  deleting,
   loading,
   save,
   template,
   templates,
   selectVersion,
+  onDeleteTemplate,
   toggleComponents,
   toggleProperties,
   componentsOpen,
@@ -130,6 +134,28 @@ export function DesignerToolbar({
             ))}
           </select>
         </label>
+        <ToolButton
+          label={
+            template?.type === "SYSTEM"
+              ? "Không thể xóa mẫu hệ thống"
+              : "Xóa mẫu hóa đơn"
+          }
+          disabled={
+            !template ||
+            template.type === "SYSTEM" ||
+            template.readonly ||
+            loading ||
+            saving ||
+            deleting
+          }
+          onClick={onDeleteTemplate}
+        >
+          {deleting ? (
+            <LoaderCircle size={18} className="animate-spin" />
+          ) : (
+            <Trash2 size={18} />
+          )}
+        </ToolButton>
         <button
           className={styles.saveButton}
           type="button"

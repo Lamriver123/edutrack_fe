@@ -60,6 +60,7 @@ export function useInvoiceDesigner() {
   const [savedName, setSavedName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const { setNotice } = useNotice();
@@ -267,6 +268,38 @@ export function useInvoiceDesigner() {
     else openVersion(id);
   }
 
+  async function deleteTemplate() {
+    if (
+      !template ||
+      template.type === "SYSTEM" ||
+      template.readonly ||
+      savingRef.current ||
+      deleting
+    )
+      return false;
+
+    setDeleting(true);
+    try {
+      await invoiceTemplateApi.remove(template.id);
+      if (!mountedRef.current) return false;
+      const remaining = templates.filter((item) => item.id !== template.id);
+      const next = remaining[0];
+      setTemplates(remaining);
+      if (next) openVersion(next.id);
+      setNotice({ type: "success", text: "Đã xóa mẫu hóa đơn." });
+      return true;
+    } catch (cause) {
+      if (mountedRef.current)
+        setNotice({
+          type: "error",
+          text: `Không thể xóa mẫu. ${errorMessage(cause)}`,
+        });
+      return false;
+    } finally {
+      if (mountedRef.current) setDeleting(false);
+    }
+  }
+
   function confirmDiscard() {
     if (!pendingAction || saving) return;
     if (pendingAction.type === "version") openVersion(pendingAction.id);
@@ -301,10 +334,12 @@ export function useInvoiceDesigner() {
     dirty,
     loading,
     saving,
+    deleting,
     error,
     name,
     setName,
     save,
+    deleteTemplate,
     retry,
   };
 }

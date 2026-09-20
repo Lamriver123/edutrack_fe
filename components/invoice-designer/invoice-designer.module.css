@@ -55,29 +55,11 @@
   border-color: #e5e5e5;
 }
 .versionPicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
+  display: block;
   height: 36px;
   width: 260px;
   max-width: 30%;
   min-width: 0;
-  border: 1px solid #dedee3;
-  border-radius: 6px;
-  background: #fafafa;
-  color: #61616d;
-}
-.versionPicker svg {
-  flex-shrink: 0;
-}
-.versionPicker select {
-  width: 100%;
-  min-width: 0;
-  background: transparent;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  outline: none;
 }
 .editingToolbar {
   display: flex;

@@ -182,6 +182,11 @@ async function setup(page: Page, merged = false, failure = { active: false }) {
   return requests;
 }
 
+async function chooseTemplate(page: Page, picker: ReturnType<Page["getByRole"]>, name: string) {
+  await picker.click();
+  await page.getByRole("option", { name, exact: true }).click();
+}
+
 for (const merged of [false, true]) {
   test(`selects and issues the chosen version for ${merged ? "merged" : "single-class"} invoices`, async ({
     page,
@@ -191,8 +196,8 @@ for (const merged of [false, true]) {
       name: "Mẫu hóa đơn",
       exact: true,
     });
-    await expect(picker).toHaveValue(customId);
-    await picker.selectOption(oldId);
+    await expect(picker).toContainText("My invoice · V3");
+    await chooseTemplate(page, picker, "Previous invoice · V2");
     const popupPromise = page.waitForEvent("popup");
     await page.getByRole("button", { name: "Xem trước", exact: true }).click();
     const popup = await popupPromise;
@@ -240,10 +245,10 @@ test("blocks issuance on template load errors, retries and fits mobile", async (
     name: "Mẫu hóa đơn",
     exact: true,
   });
-  await expect(picker).toHaveValue(customId);
-  await picker.selectOption("SYSTEM_INVOICE_V2");
+  await expect(picker).toContainText("My invoice · V3");
+  await chooseTemplate(page, picker, "Mẫu hệ thống · V2");
   await page.getByRole("button", { name: "Tải lại danh sách mẫu" }).click();
-  await expect(picker).toHaveValue("SYSTEM_INVOICE_V2");
+  await expect(picker).toContainText("Mẫu hệ thống · V2");
   await expect(
     page.getByRole("button", { name: "Phát hành hóa đơn", exact: true }),
   ).toBeEnabled();

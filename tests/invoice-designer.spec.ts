@@ -363,11 +363,15 @@ test("latest version opens by default; save-new preserves old versions and overw
   await openDesigner(page);
   const versions = page.getByRole("combobox", { name: "Phiên bản mẫu" });
   const name = page.getByRole("textbox", { name: "Tên mẫu hóa đơn" });
-  await expect(versions).toHaveValue(latest.id);
-  await versions.selectOption(older.id);
+  await expect(versions).toContainText("V2 · Mẫu mới nhất (Mới nhất)");
+  await versions.click();
+  await page.getByRole("option", { name: "V1 · Mẫu cũ", exact: true }).click();
   await expect(name).toHaveValue(older.name);
   await name.fill("Bản cũ đã chỉnh");
-  await versions.selectOption(latest.id);
+  await versions.click();
+  await page
+    .getByRole("option", { name: "V2 · Mẫu mới nhất (Mới nhất)", exact: true })
+    .click();
   const discard = page.getByRole("dialog", { name: "Thay đổi chưa lưu" });
   await expect(discard).toBeVisible();
   await discard.getByRole("button", { name: "Tiếp tục chỉnh sửa" }).click();
@@ -380,8 +384,9 @@ test("latest version opens by default; save-new preserves old versions and overw
     "Mẫu cũ",
   );
   await page.reload();
-  await expect(versions).toHaveValue(newVersion.id);
-  await versions.selectOption(older.id);
+  await expect(versions).toContainText(`V${newVersion.version} · ${newVersion.name} (Mới nhất)`);
+  await versions.click();
+  await page.getByRole("option", { name: "V1 · Mẫu cũ", exact: true }).click();
   await name.fill("Bản cũ cập nhật");
   await page.getByRole("button", { name: "Lưu mẫu", exact: true }).click();
   const saveDialog = page.getByRole("dialog", { name: "Lưu mẫu hóa đơn" });
@@ -400,8 +405,9 @@ test("latest version opens by default; save-new preserves old versions and overw
     3,
   );
   await page.reload();
-  await expect(versions).toHaveValue(newVersion.id);
-  await versions.selectOption(system.id);
+  await expect(versions).toContainText(`V${newVersion.version} · ${newVersion.name} (Mới nhất)`);
+  await versions.click();
+  await page.getByRole("option", { name: "Mẫu hệ thống V2", exact: true }).click();
   await page.getByRole("button", { name: "Lưu mẫu", exact: true }).click();
   await expect(
     page.getByRole("radio", { name: /Lưu đè mẫu hệ thống/ }),

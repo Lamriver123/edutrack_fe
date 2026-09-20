@@ -17,6 +17,7 @@ import {
 import type { InvoiceTemplate } from "@/types/invoice-template";
 import type { Component, Editor } from "grapesjs";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { SelectPicker } from "@/components/ui/select-picker";
 import styles from "./invoice-designer.module.css";
 
 export function ToolButton({
@@ -116,24 +117,24 @@ export function DesignerToolbar({
                     : "Đã lưu"}
           </span>
         </div>
-        <label className={styles.versionPicker}>
-          <History size={16} aria-hidden="true" />
-          <select
-            aria-label="Phiên bản mẫu"
-            value={template?.id ?? ""}
+        <div className={styles.versionPicker}>
+          <SelectPicker
+            ariaLabel="Phiên bản mẫu"
             disabled={loading || saving}
-            onChange={(event) => selectVersion(event.target.value)}
-          >
-            {!template && <option value="">Đang tải...</option>}
-            {templates.map((item, index) => (
-              <option value={item.id} key={item.id}>
-                {item.type === "SYSTEM"
+            leadingIcon={<History size={16} aria-hidden="true" />}
+            onChange={selectVersion}
+            options={templates.map((item, index) => ({
+              label:
+                item.type === "SYSTEM"
                   ? `Mẫu hệ thống V${item.version}`
-                  : `V${item.version} · ${item.name}${index === 0 ? " (Mới nhất)" : ""}`}
-              </option>
-            ))}
-          </select>
-        </label>
+                  : `V${item.version} · ${item.name}${index === 0 ? " (Mới nhất)" : ""}`,
+              value: item.id,
+            }))}
+            placeholder="Đang tải..."
+            value={template?.id ?? ""}
+            variant="toolbar"
+          />
+        </div>
         <ToolButton
           label={
             template?.type === "SYSTEM"

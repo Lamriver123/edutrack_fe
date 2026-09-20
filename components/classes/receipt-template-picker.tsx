@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, FileText, Pencil, RefreshCw } from "lucide-react";
+import { FileText, Pencil, RefreshCw } from "lucide-react";
 import { invoiceTemplateApi } from "@/lib/api/invoice-template";
+import { SelectPicker } from "@/components/ui/select-picker";
 import type { InvoiceTemplate } from "@/types/invoice-template";
 import { SecondaryAction } from "./classroom-ui";
 
@@ -59,42 +60,27 @@ export function ReceiptTemplatePicker({
   return (
     <div className="grid min-w-0 gap-2">
       <div className="flex min-w-0 items-end gap-2">
-        <label className="grid min-w-0 flex-1 gap-2 text-sm font-bold text-[var(--neutral-700)]">
+        <div className="grid min-w-0 flex-1 gap-2 text-sm font-bold text-[var(--neutral-700)]">
           <span className="flex items-center gap-2">
             <FileText size={16} />
             Mẫu hóa đơn
           </span>
-          <span className="relative block min-w-0">
-            <select
-              className="h-12 w-full min-w-0 appearance-none rounded-lg border border-[var(--neutral-200)] bg-white py-0 pl-3.5 pr-10 text-[15px] font-extrabold text-[var(--neutral-800)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-[border-color,box-shadow,color] duration-200 hover:border-[var(--brand-400)] focus:border-[var(--brand-400)] focus:text-[var(--brand-900)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:cursor-not-allowed disabled:bg-[var(--neutral-50)] disabled:opacity-60"
-              disabled={disabled || loading || Boolean(error)}
-              value={value?.id ?? ""}
-              onChange={(event) =>
-                onChange(
-                  templates.find((item) => item.id === event.target.value) ??
-                    null,
-                )
-              }
-            >
-              {!value && (
-                <option value="">
-                  {loading ? "Đang tải mẫu..." : "Chưa chọn mẫu"}
-                </option>
-              )}
-              {templates.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.type === "SYSTEM" ? "Mẫu hệ thống" : item.name} · V
-                  {item.version}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              aria-hidden="true"
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--neutral-400)]"
-              size={18}
-            />
-          </span>
-        </label>
+          <SelectPicker
+            ariaLabel="Mẫu hóa đơn"
+            disabled={disabled || loading || Boolean(error)}
+            onChange={(templateId) =>
+              onChange(
+                templates.find((item) => item.id === templateId) ?? null,
+              )
+            }
+            options={templates.map((item) => ({
+              label: `${item.type === "SYSTEM" ? "Mẫu hệ thống" : item.name} · V${item.version}`,
+              value: item.id,
+            }))}
+            placeholder={loading ? "Đang tải mẫu..." : "Chưa chọn mẫu"}
+            value={value?.id ?? ""}
+          />
+        </div>
         <button
           type="button"
           onClick={reload}

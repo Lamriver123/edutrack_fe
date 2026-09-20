@@ -10,6 +10,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Eye,
   FileText,
   Loader2,
   Plus,
@@ -20,7 +21,7 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardUser } from "@/components/layout/dashboard-shell";
 import {
   formatMoney,
@@ -28,6 +29,8 @@ import {
   getErrorMessage,
 } from "@/components/classes/classroom-utils";
 import { schoolApi } from "@/lib/api/school";
+import { openPdfInNewTab } from "@/lib/files/open-pdf-in-new-tab";
+import { useNotice } from "@/components/ui/notice-provider";
 import type {
   DashboardOverviewData,
   DashboardPendingPayment,
@@ -65,6 +68,8 @@ export function DashboardOverview() {
   const [overview, setOverview] = useState<DashboardOverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [openingReceiptId, setOpeningReceiptId] = useState("");
+  const { setNotice } = useNotice();
 
   const loadOverview = useCallback(async () => {
     setIsLoading(true);
@@ -114,6 +119,17 @@ export function DashboardOverview() {
     [overview?.revenue.overall.outstandingAmount],
   );
 
+  async function openReceiptPdf(receiptId: string) {
+    setOpeningReceiptId(receiptId);
+    try {
+      await openPdfInNewTab(() => schoolApi.getReceiptDownload(receiptId));
+    } catch (openError) {
+      setNotice({ type: "error", text: getErrorMessage(openError) });
+    } finally {
+      setOpeningReceiptId("");
+    }
+  }
+
   if (isLoading && !overview) {
     return <DashboardSkeleton />;
   }
@@ -137,15 +153,21 @@ export function DashboardOverview() {
         <>
           <StatsGrid overview={overview} />
 
-          <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+          <div className="grid items-stretch gap-5 2xl:grid-cols-[minmax(0,4fr)_minmax(0,4fr)_minmax(260px,2fr)]">
+            <RevenuePanel revenue={overview.revenue} />
+            <YearlyRevenueChart revenue={overview.revenue} />
             <TodayLessonsPanel
+              compact
               lessons={overview.todayLessons}
               today={overview.today}
             />
-            <RevenuePanel revenue={overview.revenue} />
           </div>
 
-          <PendingPaymentsPanel payments={overview.pendingPayments} />
+          <PendingPaymentsPanel
+            openingReceiptId={openingReceiptId}
+            onViewPdf={(receiptId) => void openReceiptPdf(receiptId)}
+            payments={overview.pendingPayments}
+          />
         </>
       ) : null}
     </div>
@@ -307,9 +329,11 @@ function StatsGrid({ overview }: { overview: DashboardOverviewData }) {
 }
 
 function TodayLessonsPanel({
+  compact = false,
   lessons,
   today,
 }: {
+  compact?: boolean;
   lessons: DashboardTodayLesson[];
   today: string;
 }) {
@@ -318,6 +342,7 @@ function TodayLessonsPanel({
       <PanelHeader
         actionHref="/schedule"
         actionLabel="Mở lịch"
+        compact={compact}
         description={`Hôm nay, ${formatDate(today)}`}
         icon={<CalendarDays size={18} />}
         title="Tiết học trong ngày"
@@ -326,7 +351,7 @@ function TodayLessonsPanel({
       <div className="grid gap-3 p-5 sm:p-6">
         {lessons.length ? (
           lessons.map((lesson) => (
-            <TodayLessonItem key={lesson.id} lesson={lesson} />
+            <TodayLessonItem compact={compact} key={lesson.id} lesson={lesson} />
           ))
         ) : (
           <EmptyState
@@ -340,7 +365,13 @@ function TodayLessonsPanel({
   );
 }
 
-function TodayLessonItem({ lesson }: { lesson: DashboardTodayLesson }) {
+function TodayLessonItem({
+  compact = false,
+  lesson,
+}: {
+  compact?: boolean;
+  lesson: DashboardTodayLesson;
+}) {
   const theme = getClassColorTheme(lesson.colorHex);
   const timeText =
     lesson.startTime && lesson.endTime
@@ -349,7 +380,9 @@ function TodayLessonItem({ lesson }: { lesson: DashboardTodayLesson }) {
 
   return (
     <Link
-      className="group grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-3.5 transition hover:border-[var(--brand-200)] hover:bg-white hover:shadow-[var(--shadow-md)] sm:grid-cols-[96px_1fr_auto] sm:items-center"
+      className={`group grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-3.5 transition hover:border-[var(--brand-200)] hover:bg-white hover:shadow-[var(--shadow-md)] ${
+        compact ? "" : "sm:grid-cols-[96px_1fr_auto] sm:items-center"
+      }`}
       href={`/classes/${lesson.classId}`}
     >
       <div
@@ -383,7 +416,11 @@ function TodayLessonItem({ lesson }: { lesson: DashboardTodayLesson }) {
         </p>
       </div>
 
-      <div className="hidden size-10 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-500)] transition group-hover:border-[var(--brand-200)] group-hover:text-[var(--brand-600)] sm:grid">
+      <div
+        className={`size-10 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-500)] transition group-hover:border-[var(--brand-200)] group-hover:text-[var(--brand-600)] ${
+          compact ? "hidden" : "hidden sm:grid"
+        }`}
+      >
         <ArrowRight size={16} />
       </div>
     </Link>
@@ -502,9 +539,193 @@ function RevenueMetric({
   );
 }
 
+function YearlyRevenueChart({
+  revenue,
+}: {
+  revenue: DashboardOverviewData["revenue"];
+}) {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(640);
+  const chartHeight = 300;
+  const plotTop = 24;
+  const plotBottom = 244;
+  const plotHeight = plotBottom - plotTop;
+  const left = chartWidth < 480 ? 48 : 64;
+  const right = chartWidth < 480 ? 10 : 20;
+  const plotWidth = chartWidth - left - right;
+  const slotWidth = plotWidth / 12;
+  const barWidth = Math.min(34, slotWidth * 0.52);
+  const maxValue = Math.max(
+    1,
+    ...revenue.monthly.flatMap((item) => [
+      item.collectedAmount,
+      item.issuedAmount,
+    ]),
+  );
+  const axisMax = getChartAxisMax(maxValue);
+  const points = revenue.monthly
+    .map((item, index) => {
+      const x = left + slotWidth * index + slotWidth / 2;
+      const y = plotBottom - (item.issuedAmount / axisMax) * plotHeight;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const collectedTotal = revenue.monthly.reduce(
+    (sum, item) => sum + item.collectedAmount,
+    0,
+  );
+  const issuedTotal = revenue.monthly.reduce(
+    (sum, item) => sum + item.issuedAmount,
+    0,
+  );
+
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const updateWidth = (width: number) => {
+      setChartWidth(Math.max(300, Math.floor(width)));
+    };
+    updateWidth(container.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) updateWidth(entry.contentRect.width);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="rounded-lg border border-[var(--neutral-200)] bg-white shadow-[var(--shadow-card)]">
+      <div className="flex flex-col gap-4 border-b border-[var(--neutral-100)] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[13px] font-bold text-emerald-700">
+            <TrendingUp size={18} />
+            Năm {revenue.year}
+          </div>
+          <h2 className="text-[19px] font-extrabold text-[var(--brand-950)]">
+            Doanh thu theo 12 tháng
+          </h2>
+          <p className="mt-1 text-[14px] leading-6 text-[var(--neutral-500)]">
+            So sánh tiền đã thu và giá trị hóa đơn đã phát hành trong năm.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-bold text-[var(--neutral-600)]">
+          <span className="inline-flex items-center gap-2">
+            <span className="size-3 rounded-sm bg-emerald-500" />
+            Đã thu {formatCompactMoney(collectedTotal)}
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="h-0.5 w-4 bg-[var(--brand-500)]" />
+            Đã xuất {formatCompactMoney(issuedTotal)}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className="min-w-0 overflow-hidden px-3 pb-4 pt-5 sm:px-5 sm:pb-6"
+        ref={chartContainerRef}
+      >
+        <svg
+          aria-label={`Biểu đồ doanh thu năm ${revenue.year}`}
+          className="block h-[300px] w-full"
+          preserveAspectRatio="none"
+          role="img"
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        >
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = plotBottom - ratio * plotHeight;
+            return (
+              <g key={ratio}>
+                <line
+                  stroke="#e5e7eb"
+                  strokeDasharray={ratio === 0 ? undefined : "4 5"}
+                  x1={left}
+                  x2={chartWidth - right}
+                  y1={y}
+                  y2={y}
+                />
+                <text
+                  fill="#737373"
+                  fontSize="11"
+                  fontWeight="600"
+                  textAnchor="end"
+                  x={left - 10}
+                  y={y + 4}
+                >
+                  {formatAxisMoney(axisMax * ratio)}
+                </text>
+              </g>
+            );
+          })}
+
+          {revenue.monthly.map((item, index) => {
+            const x = left + slotWidth * index + slotWidth / 2;
+            const barHeight = (item.collectedAmount / axisMax) * plotHeight;
+            return (
+              <g key={item.month}>
+                <rect
+                  fill="#10b981"
+                  height={barHeight}
+                  rx="4"
+                  width={barWidth}
+                  x={x - barWidth / 2}
+                  y={plotBottom - barHeight}
+                >
+                  <title>{`Tháng ${item.month}: Đã thu ${formatMoney(item.collectedAmount)}`}</title>
+                </rect>
+                <text
+                  fill="#525252"
+                  fontSize="12"
+                  fontWeight="700"
+                  textAnchor="middle"
+                  x={x}
+                  y={plotBottom + 26}
+                >
+                  T{item.month}
+                </text>
+              </g>
+            );
+          })}
+
+          <polyline
+            fill="none"
+            points={points}
+            stroke="var(--brand-500)"
+            strokeLinejoin="round"
+            strokeWidth="3"
+          />
+          {revenue.monthly.map((item, index) => {
+            const x = left + slotWidth * index + slotWidth / 2;
+            const y = plotBottom - (item.issuedAmount / axisMax) * plotHeight;
+            return (
+              <circle
+                cx={x}
+                cy={y}
+                fill="white"
+                key={item.month}
+                r="4"
+                stroke="var(--brand-600)"
+                strokeWidth="3"
+              >
+                <title>{`Tháng ${item.month}: Đã xuất ${formatMoney(item.issuedAmount)}`}</title>
+              </circle>
+            );
+          })}
+        </svg>
+      </div>
+    </section>
+  );
+}
+
 function PendingPaymentsPanel({
+  openingReceiptId,
+  onViewPdf,
   payments,
 }: {
+  openingReceiptId: string;
+  onViewPdf: (receiptId: string) => void;
   payments: DashboardPendingPayment[];
 }) {
   const totalRemaining = payments.reduce(
@@ -529,7 +750,12 @@ function PendingPaymentsPanel({
       <div className="grid gap-3 p-5 sm:p-6">
         {payments.length ? (
           payments.map((payment) => (
-            <PendingPaymentItem key={payment.id} payment={payment} />
+            <PendingPaymentItem
+              isOpeningPdf={openingReceiptId === payment.id}
+              key={payment.id}
+              onViewPdf={onViewPdf}
+              payment={payment}
+            />
           ))
         ) : (
           <EmptyState
@@ -544,8 +770,12 @@ function PendingPaymentsPanel({
 }
 
 function PendingPaymentItem({
+  isOpeningPdf,
+  onViewPdf,
   payment,
 }: {
+  isOpeningPdf: boolean;
+  onViewPdf: (receiptId: string) => void;
   payment: DashboardPendingPayment;
 }) {
   const theme = getClassColorTheme(payment.colorHex);
@@ -608,13 +838,33 @@ function PendingPaymentItem({
         </div>
       </div>
 
-      <Link
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-3 text-[13px] font-bold text-[var(--neutral-700)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
-        href={href}
-      >
-        Mở lớp
-        <ArrowRight size={14} />
-      </Link>
+      <div className="flex items-center justify-end gap-2">
+        <button
+          aria-label={`Xem PDF hóa đơn ${payment.receiptNumber}`}
+          className="grid size-10 shrink-0 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--brand-700)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] disabled:cursor-not-allowed disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)]"
+          disabled={payment.pdfStatus !== "generated" || isOpeningPdf}
+          onClick={() => onViewPdf(payment.id)}
+          title={
+            payment.pdfStatus === "generated"
+              ? "Xem PDF hóa đơn"
+              : "PDF hóa đơn chưa sẵn sàng"
+          }
+          type="button"
+        >
+          {isOpeningPdf ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <Eye size={17} />
+          )}
+        </button>
+        <Link
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-3 text-[13px] font-bold text-[var(--neutral-700)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+          href={href}
+        >
+          Mở lớp
+          <ArrowRight size={14} />
+        </Link>
+      </div>
     </article>
   );
 }
@@ -622,18 +872,24 @@ function PendingPaymentItem({
 function PanelHeader({
   actionHref,
   actionLabel,
+  compact = false,
   description,
   icon,
   title,
 }: {
   actionHref: string;
   actionLabel: string;
+  compact?: boolean;
   description: string;
   icon: React.ReactNode;
   title: string;
 }) {
   return (
-    <header className="flex flex-col gap-3 border-b border-[var(--neutral-100)] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <header
+      className={`flex flex-col gap-3 border-b border-[var(--neutral-100)] p-5 sm:p-6 ${
+        compact ? "" : "sm:flex-row sm:items-center sm:justify-between"
+      }`}
+    >
       <div className="min-w-0">
         <div className="mb-2 inline-flex items-center gap-2 rounded-lg bg-[var(--brand-50)] px-3 py-1.5 text-[13px] font-bold text-[var(--brand-700)]">
           {icon}
@@ -648,7 +904,7 @@ function PanelHeader({
       </div>
 
       <Link
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 text-[14px] font-bold text-[var(--neutral-700)] transition hover:border-[var(--brand-200)] hover:bg-white hover:text-[var(--brand-700)]"
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 text-[14px] font-bold text-[var(--neutral-700)] transition hover:border-[var(--brand-200)] hover:bg-white hover:text-[var(--brand-700)] ${compact ? "w-full" : ""}`}
         href={actionHref}
       >
         {actionLabel}
@@ -817,6 +1073,39 @@ function formatDate(value?: string | null) {
     month: "2-digit",
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
+  });
+}
+
+function getChartAxisMax(value: number) {
+  if (value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  const rounded =
+    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return rounded * magnitude;
+}
+
+function formatAxisMoney(value: number) {
+  if (value === 0) return "0";
+  if (value >= 1_000_000_000) {
+    return `${trimDecimal(value / 1_000_000_000)} tỷ`;
+  }
+  if (value >= 1_000_000) {
+    return `${trimDecimal(value / 1_000_000)} tr`;
+  }
+  if (value >= 1_000) {
+    return `${trimDecimal(value / 1_000)} k`;
+  }
+  return Math.round(value).toLocaleString("vi-VN");
+}
+
+function formatCompactMoney(value: number) {
+  return `${formatAxisMoney(value)} VNĐ`;
+}
+
+function trimDecimal(value: number) {
+  return value.toLocaleString("vi-VN", {
+    maximumFractionDigits: 1,
   });
 }
 

@@ -270,6 +270,12 @@ export type DashboardRevenueStats = {
   receiptCount: number;
 };
 
+export type DashboardMonthlyRevenue = {
+  month: number;
+  issuedAmount: number;
+  collectedAmount: number;
+};
+
 export type DashboardPendingPayment = {
   id: string;
   classId?: string;
@@ -282,6 +288,7 @@ export type DashboardPendingPayment = {
   parentName: string;
   parentPhone: string;
   paymentStatus: PaymentStatus;
+  pdfStatus?: ReceiptPdfStatus;
   periodEnd?: string;
   periodStart?: string;
   receiptNumber?: string;
@@ -303,6 +310,8 @@ export type DashboardOverviewData = {
     pendingPaymentCount: number;
   };
   revenue: {
+    year: number;
+    monthly: DashboardMonthlyRevenue[];
     currentMonth: DashboardRevenueStats;
     collectedThisMonth: number;
     overall: DashboardRevenueStats;

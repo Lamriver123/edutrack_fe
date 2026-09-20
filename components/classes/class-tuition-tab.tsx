@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Coins,
   Download,
+  Eye,
   FileText,
   LoaderCircle,
   RefreshCw,
@@ -22,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { schoolApi } from "@/lib/api/school";
+import { openPdfInNewTab } from "@/lib/files/open-pdf-in-new-tab";
 import type { InvoiceTemplate } from "@/types/invoice-template";
 import { ReceiptTemplatePicker } from "./receipt-template-picker";
 import type {
@@ -581,6 +583,18 @@ export function ClassTuitionTab({
     }
   }
 
+  async function viewReceipt(receipt: ReceiptListItem) {
+    setIsMutatingReceipt(receipt.id);
+
+    try {
+      await openPdfInNewTab(() => schoolApi.getReceiptDownload(receipt.id));
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsMutatingReceipt("");
+    }
+  }
+
   async function downloadSelectedReceipts(selectedReceipts: ReceiptListItem[]) {
     if (!selectedReceipts.length) {
       setNotice({
@@ -977,6 +991,7 @@ export function ClassTuitionTab({
             onDownload={(receipt) => void downloadReceipt(receipt)}
             onPayment={openPaymentModal}
             onRetryPdf={(receipt) => void retryPdf(receipt)}
+            onView={(receipt) => void viewReceipt(receipt)}
             receipts={receipts}
           />
         </div>
@@ -1853,6 +1868,7 @@ function ReceiptHistory({
   onDownload,
   onPayment,
   onRetryPdf,
+  onView,
   receipts,
 }: {
   isMutatingReceipt: string;
@@ -1861,6 +1877,7 @@ function ReceiptHistory({
   onDownload: (receipt: ReceiptListItem) => void;
   onPayment: (receipt: ReceiptListItem) => void;
   onRetryPdf: (receipt: ReceiptListItem) => void;
+  onView: (receipt: ReceiptListItem) => void;
   receipts: ReceiptListItem[];
 }) {
   const [periodFilter, setPeriodFilter] = useState(ALL_RECEIPT_PERIODS);
@@ -2054,6 +2071,7 @@ function ReceiptHistory({
                   onDownload={onDownload}
                   onPayment={onPayment}
                   onRetryPdf={onRetryPdf}
+                  onView={onView}
                   receipt={receipt}
                 />
               </article>
@@ -2143,6 +2161,7 @@ function ReceiptHistory({
                       onDownload={onDownload}
                       onPayment={onPayment}
                       onRetryPdf={onRetryPdf}
+                      onView={onView}
                       receipt={receipt}
                     />
                   </div>
@@ -2169,6 +2188,7 @@ function ReceiptActions({
   onDownload,
   onPayment,
   onRetryPdf,
+  onView,
   receipt,
 }: {
   className?: string;
@@ -2177,10 +2197,20 @@ function ReceiptActions({
   onDownload: (receipt: ReceiptListItem) => void;
   onPayment: (receipt: ReceiptListItem) => void;
   onRetryPdf: (receipt: ReceiptListItem) => void;
+  onView: (receipt: ReceiptListItem) => void;
   receipt: ReceiptListItem;
 }) {
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
+      <IconButton
+        disabled={
+          isMutatingReceipt === receipt.id || receipt.pdfStatus !== "generated"
+        }
+        label="Xem PDF"
+        onClick={() => onView(receipt)}
+      >
+        <Eye size={15} />
+      </IconButton>
       <IconButton
         disabled={
           isMutatingReceipt === receipt.id || receipt.pdfStatus !== "generated"

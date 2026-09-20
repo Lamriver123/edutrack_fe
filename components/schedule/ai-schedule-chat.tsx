@@ -14,10 +14,11 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent,
 } from "react";
-import ReactMarkdown from "react-markdown";
 import { schoolApi } from "@/lib/api/school";
 import type {
   AiChatMessage,
@@ -30,6 +31,41 @@ type ChatState =
   | { phase: "loading" }
   | { phase: "ready"; sessionId: string; greeting: string }
   | { phase: "error"; message: string };
+
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  0: { transcript: string };
+};
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+};
+
+type SpeechRecognitionErrorLike = {
+  error: string;
+};
+
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorLike) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onstart: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
 
 let fabPosition = { x: 0, y: 0 };
 
@@ -96,7 +132,7 @@ export function AiScheduleChatButton({
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
     if (hasDragged.current) {
       e.preventDefault();
       e.stopPropagation();
@@ -133,7 +169,7 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
   const [sessions, setSessions] = useState<AiSessionListItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
     // Tùy chỉnh vị trí để không bị lẹm ra ngoài màn hình
@@ -153,7 +189,9 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
     const chatX = Math.max(minChatX, fabPosition.x);
     const chatY = Math.max(minChatY, fabPosition.y);
     
-    setChatTransform({ x: chatX, y: chatY });
+    const positionFrame = window.requestAnimationFrame(() => {
+      setChatTransform({ x: chatX, y: chatY });
+    });
 
     // Load TTS Voices
     if (window.speechSynthesis) {
@@ -163,6 +201,7 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
     }
 
     return () => {
+      window.cancelAnimationFrame(positionFrame);
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -235,7 +274,11 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
   );
 
   useEffect(() => {
-    void startNewSession();
+    const startTimer = window.setTimeout(() => {
+      void startNewSession();
+    }, 0);
+
+    return () => window.clearTimeout(startTimer);
   }, [startNewSession]);
 
   useEffect(() => {
@@ -339,7 +382,8 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
   };
 
   const initSpeechRecognition = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói. Vui lòng dùng Chrome hoặc Edge.");
       return;
@@ -353,7 +397,7 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
 
       recognition.onstart = () => setIsListening(true);
       
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEventLike) => {
         let finalTranscript = '';
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -372,7 +416,7 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
         }
       };
       
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorLike) => {
         console.error("Speech error", event.error);
         setIsListening(false);
       };
@@ -427,7 +471,7 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
       style={{
         '--drag-x': `${chatTransform.x}px`,
         '--drag-y': `${chatTransform.y}px`,
-      } as React.CSSProperties}
+      } as CSSProperties}
     >
       <header className={styles.header}>
         <div className={styles.headerLeft}>
@@ -594,9 +638,6 @@ export function AiScheduleChat({ onClose }: { onClose: () => void }) {
                   {isSending ? <LoaderCircle className={styles.spinIcon} size={18} /> : <Send size={18} />}
                 </button>
               </div>
-              <p className={styles.inputHint}>
-                Enter để gửi · Shift+Enter để xuống dòng
-              </p>
             </div>
           </>
         ) : null}

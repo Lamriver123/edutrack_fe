@@ -3,9 +3,10 @@
 import { useState, useRef } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { format } from "date-fns";
-import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2 } from "lucide-react";
 import type { Exam, CreateExamPayload } from "@/types/school";
 import {
+  Modal,
   PrimaryAction,
   SecondaryAction,
   TextInput,
@@ -56,22 +57,12 @@ export function ExamCreateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-[var(--shadow-modal)]">
-        <div className="flex items-center justify-between border-b border-[var(--neutral-100)] px-6 py-4">
-          <h2 className="text-[18px] font-extrabold text-[var(--neutral-800)]">
-            {examToEdit ? "Cập nhật bài kiểm tra" : "Tạo bài kiểm tra"}
-          </h2>
-          <button
-            className="rounded-lg p-2 text-[var(--neutral-400)] transition hover:bg-[var(--neutral-50)] hover:text-[var(--neutral-700)]"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col p-6">
+    <Modal
+      onClose={onClose}
+      size="sm"
+      title={examToEdit ? "Cập nhật bài kiểm tra" : "Tạo bài kiểm tra"}
+    >
+      <form className="grid gap-5" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[14px] font-bold text-[var(--neutral-700)]" htmlFor="title">
@@ -88,13 +79,13 @@ export function ExamCreateModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[14px] font-bold text-[var(--neutral-700)]" htmlFor="testDate">
                   Ngày thi <span className="text-[var(--error-500)]">*</span>
                 </label>
                 <input
-                  className="h-11 rounded-lg border border-[var(--neutral-200)] px-3 text-[14px] font-medium text-[var(--neutral-800)] transition focus:border-[var(--brand-500)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-500)]"
+                  className="h-12 rounded-md border border-[var(--border-strong)] px-3 text-[14px] font-medium text-[var(--neutral-800)] transition focus:border-[var(--brand-400)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-100)]"
                   id="testDate"
                   onChange={(e) => setTestDate(e.target.value)}
                   required
@@ -108,7 +99,7 @@ export function ExamCreateModal({
                   Điểm tối đa <span className="text-[var(--error-500)]">*</span>
                 </label>
                 <input
-                  className="h-11 rounded-lg border border-[var(--neutral-200)] px-3 text-[14px] font-medium text-[var(--neutral-800)] transition focus:border-[var(--brand-500)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-500)]"
+                  className="h-12 rounded-md border border-[var(--border-strong)] px-3 text-[14px] font-medium text-[var(--neutral-800)] transition focus:border-[var(--brand-400)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-100)]"
                   id="maxScore"
                   min="0"
                   onChange={(e) => setMaxScore(e.target.value)}
@@ -146,11 +137,11 @@ export function ExamCreateModal({
               />
 
               <div 
-                className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-[var(--neutral-300)] bg-[var(--neutral-50)] p-4 transition hover:bg-[var(--neutral-100)]"
+                className="flex cursor-pointer items-center justify-between rounded-md border border-dashed border-[var(--neutral-300)] bg-[var(--neutral-50)] p-4 transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)]"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-full bg-white shadow-sm text-[var(--brand-600)]">
+                  <div className="grid size-10 shrink-0 place-items-center rounded-md border border-[var(--border)] bg-white text-[var(--brand-600)]">
                     {file || examToEdit?.fileUrl ? <FileText size={20} /> : <Upload size={20} />}
                   </div>
                   <div className="flex flex-col text-left">
@@ -166,7 +157,7 @@ export function ExamCreateModal({
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-end gap-3">
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
             <SecondaryAction disabled={isSubmitting} onClick={onClose} type="button">
               Hủy
             </SecondaryAction>
@@ -183,8 +174,7 @@ export function ExamCreateModal({
               )}
             </PrimaryAction>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

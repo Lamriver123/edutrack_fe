@@ -1,13 +1,13 @@
 .sheetContainer {
   position: relative;
-  border-radius: 0.5rem;
-  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
 .sheetWrapper {
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
 }
 
 .sheetTable {
@@ -33,7 +33,7 @@
 }
 
 .sheetHeader {
-  background: #f8fafc; /* slate-50 */
+  background: var(--neutral-50);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -57,7 +57,7 @@
   left: 32px; /* Offset by STT width on mobile */
   background: white;
   z-index: 20;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.03);
+  box-shadow: 4px 0 12px rgba(15, 23, 42, 0.04);
 }
 
 @media (min-width: 640px) {
@@ -74,7 +74,7 @@
   padding: 0.75rem;
   text-align: center;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--neutral-500);
   text-transform: uppercase;
@@ -110,7 +110,7 @@
   transition: background-color 0.15s ease;
 }
 .attendanceCell:hover {
-  background: #f8fafc;
+  background: var(--neutral-50);
 }
 
 .cellContent {
@@ -164,7 +164,5 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #3b82f6; /* blue-500 */
-  height: 100%;
-  min-height: 52px;
+  background-color: var(--brand-500);
 }

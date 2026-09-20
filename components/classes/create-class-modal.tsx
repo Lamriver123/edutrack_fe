@@ -61,7 +61,9 @@ function CurrencyInput({
         <input
           className="h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white px-4 pl-11 pr-16 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-200)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)]"
           inputMode="numeric"
-          onChange={(event) => onChange(formatCurrencyInput(event.target.value))}
+          onChange={(event) =>
+            onChange(formatCurrencyInput(event.target.value))
+          }
           placeholder={placeholder}
           type="text"
           value={value}
@@ -264,7 +266,7 @@ function ClassFormModal({
             value={form.regularPrice}
           />
           <CurrencyInput
-            label="Giá học kèm"
+            label="Giá học kèm 1:1"
             onChange={(value) =>
               onChange({
                 ...form,
@@ -305,10 +307,7 @@ function ClassFormModal({
           <SecondaryAction onClick={onClose} type="button">
             Hủy
           </SecondaryAction>
-          <PrimaryAction
-            disabled={isSubmitting}
-            type="submit"
-          >
+          <PrimaryAction disabled={isSubmitting} type="submit">
             {isSubmitting ? submitLoadingIcon : submitIcon}
             {isUploadingImage ? "Đang tải ảnh..." : submitText}
           </PrimaryAction>
@@ -353,8 +352,8 @@ function ClassImagePicker({
         <ImageIcon size={16} />
         Ảnh lớp học
       </span>
-      <div className="grid gap-3 rounded-xl border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2.5 sm:grid-cols-[180px_1fr]">
-        <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-white bg-white shadow-[0_8px_22px_rgba(15,23,42,0.08)]">
+      <div className="grid gap-3 rounded-md border border-[var(--border)] bg-[var(--neutral-50)] p-2.5 sm:grid-cols-[180px_1fr]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-md border border-white bg-white shadow-[var(--shadow-sm)]">
           <img
             alt="Preview ảnh lớp học"
             className="size-full object-cover"
@@ -417,8 +416,7 @@ function ClassColorPicker({
   const selectedColorHex = normalizeClassColorHex(value);
   const selectedColor = getClassColorTheme(selectedColorHex);
   const selectedUsedBy = usedColorUsages.filter(
-    (usage) =>
-      normalizeClassColorHex(usage.colorHex) === selectedColorHex,
+    (usage) => normalizeClassColorHex(usage.colorHex) === selectedColorHex,
   );
   const selectedUsageText = selectedUsedBy.length
     ? `Đang dùng: ${selectedUsedBy
@@ -451,27 +449,29 @@ function ClassColorPicker({
           const colorTheme = getClassColorTheme(colorHex);
           const isActive = selectedColorHex === colorHex;
           const isUsed = usedColorUsages.some(
-            (usage) =>
-              normalizeClassColorHex(usage.colorHex) === colorHex,
+            (usage) => normalizeClassColorHex(usage.colorHex) === colorHex,
           );
 
           return (
             <button
               aria-label={`Chọn màu ${color.label}${isUsed ? ", màu đã có lớp dùng" : ""}`}
               aria-pressed={isActive}
-              className={`relative h-10 w-[52px] rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-400)] ${
+              className={`relative h-10 w-[52px] overflow-hidden rounded-md border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-400)] ${
                 isActive
                   ? "border-[var(--brand-500)] shadow-[0_0_0_3px_rgba(99,102,241,0.18)]"
                   : "border-[var(--neutral-200)] hover:border-[var(--brand-300)]"
               }`}
               key={color.label}
               onClick={() => onChange(colorHex, colorIndex)}
-              style={{
-                background: `linear-gradient(135deg, ${colorTheme.accent} 0%, ${colorTheme.accent} 48%, ${colorTheme.background} 48%, ${colorTheme.background} 100%)`,
-              }}
+              style={{ background: colorTheme.background }}
               title={`${color.label}${isUsed ? " - đã có lớp dùng" : ""}`}
               type="button"
             >
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-0 w-1/2"
+                style={{ background: colorTheme.accent }}
+              />
               <span className="sr-only">{color.label}</span>
               {isActive ? (
                 <span className="absolute inset-1 rounded-lg border-2 border-white shadow-[0_0_0_1px_rgba(15,23,42,0.14)]" />
@@ -484,7 +484,7 @@ function ClassColorPicker({
         })}
 
         <label
-          className="relative grid h-10 min-w-[116px] cursor-pointer grid-cols-[40px_1fr] items-center overflow-hidden rounded-xl border border-[var(--neutral-200)] bg-white text-[12px] font-extrabold text-[var(--neutral-600)] transition hover:border-[var(--brand-300)]"
+          className="relative grid h-10 min-w-[116px] cursor-pointer grid-cols-[40px_1fr] items-center overflow-hidden rounded-md border border-[var(--border)] bg-white text-[12px] font-extrabold text-[var(--neutral-600)] transition hover:border-[var(--brand-300)]"
           title="Chọn màu bất kỳ"
         >
           <span

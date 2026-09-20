@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Check,
-  LoaderCircle,
-  Plus,
-  Search,
-  UserPlus,
-} from "lucide-react";
+import { Check, LoaderCircle, Plus, Search, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { schoolApi } from "@/lib/api/school";
@@ -16,10 +10,7 @@ import {
   initialStudentForm,
   type StudentFormState,
 } from "./classroom-types";
-import {
-  getErrorMessage,
-  getStudentAvatar,
-} from "./classroom-utils";
+import { getErrorMessage, getStudentAvatar } from "./classroom-utils";
 import {
   ConfirmDialog,
   EmptyState,
@@ -35,8 +26,7 @@ import { useDeferredStudentAvatarUpload } from "./use-deferred-student-avatar-up
 
 type AddMode = "existing" | "new";
 type PendingStudentAction =
-  | { students: Student[]; type: "enroll" }
-  | { type: "create" };
+  { students: Student[]; type: "enroll" } | { type: "create" };
 
 export function StudentPickerModal({
   classroom,
@@ -63,7 +53,6 @@ export function StudentPickerModal({
   const [pendingAction, setPendingAction] =
     useState<PendingStudentAction | null>(null);
   const {
-    avatarFileName,
     avatarPreviewUrl,
     isUploadingAvatar,
     resetAvatarSelection,
@@ -122,7 +111,7 @@ export function StudentPickerModal({
       );
       const studentCountLabel =
         result.successCount === 1
-          ? result.enrollments[0]?.student.fullName ?? "1 học sinh"
+          ? (result.enrollments[0]?.student.fullName ?? "1 học sinh")
           : `${result.successCount} học sinh`;
 
       if (!result.successCount) {
@@ -161,7 +150,9 @@ export function StudentPickerModal({
     );
   }
 
-  async function handleCreateStudentAndEnroll(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateStudentAndEnroll(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     if (!studentForm.fullName.trim()) {
@@ -218,156 +209,160 @@ export function StudentPickerModal({
     <>
       <Modal onClose={onClose} title="Thêm học sinh vào lớp">
         <div className="grid gap-5">
-        <div className="grid gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-1.5 sm:grid-cols-2">
-          <button
-            className={`h-12 rounded-lg text-[14px] font-bold transition ${
-              mode === "existing"
-                ? "bg-white text-[var(--brand-700)] shadow-[var(--shadow-sm)]"
-                : "text-[var(--neutral-500)] hover:bg-white/70"
-            }`}
-            onClick={() => setMode("existing")}
-            type="button"
-          >
-            Học sinh có sẵn
-          </button>
-          <button
-            className={`h-12 rounded-lg text-[14px] font-bold transition ${
-              mode === "new"
-                ? "bg-white text-[var(--brand-700)] shadow-[var(--shadow-sm)]"
-                : "text-[var(--neutral-500)] hover:bg-white/70"
-            }`}
-            onClick={() => setMode("new")}
-            type="button"
-          >
-            Tạo mới
-          </button>
-        </div>
+          <div className="grid gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-1.5 sm:grid-cols-2">
+            <button
+              className={`h-12 rounded-lg text-[14px] font-bold transition ${
+                mode === "existing"
+                  ? "bg-white text-[var(--brand-700)] shadow-[var(--shadow-sm)]"
+                  : "text-[var(--neutral-500)] hover:bg-white/70"
+              }`}
+              onClick={() => setMode("existing")}
+              type="button"
+            >
+              Học sinh có sẵn
+            </button>
+            <button
+              className={`h-12 rounded-lg text-[14px] font-bold transition ${
+                mode === "new"
+                  ? "bg-white text-[var(--brand-700)] shadow-[var(--shadow-sm)]"
+                  : "text-[var(--neutral-500)] hover:bg-white/70"
+              }`}
+              onClick={() => setMode("new")}
+              type="button"
+            >
+              Tạo mới
+            </button>
+          </div>
 
-        {mode === "existing" ? (
-          <div className="grid gap-4">
-            <TextInput
-              icon={<Search size={16} />}
-              label="Tìm học sinh"
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Nhập tên học sinh..."
-              type="search"
-              value={search}
-            />
+          {mode === "existing" ? (
+            <div className="grid gap-4">
+              <TextInput
+                icon={<Search size={16} />}
+                label="Tìm học sinh"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Nhập tên học sinh..."
+                type="search"
+                value={search}
+              />
 
-            <div className="grid max-h-[440px] gap-3 overflow-y-auto pr-1">
-              {isSearching ? (
-                <InlineLoading text="Đang tìm học sinh..." />
-              ) : students.length ? (
-                students.map((student) => {
-                  const isInClass = selectedStudentIds.has(student.id);
-                  const isSelected = selectedExistingStudentIds.has(student.id);
+              <div className="grid max-h-[440px] gap-3 overflow-y-auto pr-1">
+                {isSearching ? (
+                  <InlineLoading text="Đang tìm học sinh..." />
+                ) : students.length ? (
+                  students.map((student) => {
+                    const isInClass = selectedStudentIds.has(student.id);
+                    const isSelected = selectedExistingStudentIds.has(
+                      student.id,
+                    );
 
-                  return (
-                    <StudentOption
-                      isInClass={isInClass}
-                      isSelected={isSelected}
-                      key={student.id}
-                      onToggle={() => toggleExistingStudent(student)}
-                      student={student}
-                    />
-                  );
-                })
-              ) : (
-                <EmptyState
-                  action={
-                    <SecondaryAction
-                      icon={<UserPlus size={15} />}
-                      onClick={() => setMode("new")}
-                      type="button"
-                    >
-                      Tạo học sinh mới
-                    </SecondaryAction>
-                  }
-                  icon={<Search size={22} />}
-                  text="Không tìm thấy học sinh phù hợp."
-                />
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-[var(--neutral-200)] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-h-6 text-[14px] font-semibold text-[var(--neutral-500)]">
-                {selectedExistingStudents.length ? (
-                  <span>
-                    Đã chọn{" "}
-                    <strong className="text-[var(--brand-700)]">
-                      {selectedExistingStudents.length}
-                    </strong>{" "}
-                    học sinh
-                  </span>
+                    return (
+                      <StudentOption
+                        isInClass={isInClass}
+                        isSelected={isSelected}
+                        key={student.id}
+                        onToggle={() => toggleExistingStudent(student)}
+                        student={student}
+                      />
+                    );
+                  })
                 ) : (
-                  <span>Chọn một hoặc nhiều học sinh để thêm vào lớp.</span>
+                  <EmptyState
+                    action={
+                      <SecondaryAction
+                        icon={<UserPlus size={15} />}
+                        onClick={() => setMode("new")}
+                        type="button"
+                      >
+                        Tạo học sinh mới
+                      </SecondaryAction>
+                    }
+                    icon={<Search size={22} />}
+                    text="Không tìm thấy học sinh phù hợp."
+                  />
                 )}
               </div>
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <SecondaryAction
-                  disabled={isEnrollingExisting}
-                  onClick={onClose}
-                  type="button"
-                >
+
+              <div className="flex flex-col gap-3 border-t border-[var(--neutral-200)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-h-6 text-[14px] font-semibold text-[var(--neutral-500)]">
+                  {selectedExistingStudents.length ? (
+                    <span>
+                      Đã chọn{" "}
+                      <strong className="text-[var(--brand-700)]">
+                        {selectedExistingStudents.length}
+                      </strong>{" "}
+                      học sinh
+                    </span>
+                  ) : (
+                    <span>Chọn một hoặc nhiều học sinh để thêm vào lớp.</span>
+                  )}
+                </div>
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <SecondaryAction
+                    disabled={isEnrollingExisting}
+                    onClick={onClose}
+                    type="button"
+                  >
+                    Hủy
+                  </SecondaryAction>
+                  <PrimaryAction
+                    disabled={
+                      !selectedExistingStudents.length || isEnrollingExisting
+                    }
+                    icon={
+                      isEnrollingExisting ? (
+                        <LoaderCircle className="animate-spin" size={16} />
+                      ) : (
+                        <UserPlus size={16} />
+                      )
+                    }
+                    onClick={() =>
+                      setPendingAction({
+                        students: selectedExistingStudents,
+                        type: "enroll",
+                      })
+                    }
+                    type="button"
+                  >
+                    {selectedExistingStudents.length
+                      ? `Thêm ${selectedExistingStudents.length} học sinh`
+                      : "Thêm học sinh"}
+                  </PrimaryAction>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="grid gap-5"
+              onSubmit={handleCreateStudentAndEnroll}
+            >
+              <StudentFormFields
+                avatarPreviewUrl={avatarPreviewUrl}
+                form={studentForm}
+                isUploadingAvatar={isUploadingAvatar}
+                onAvatarUpload={(event) => selectAvatarFile(event, onError)}
+                onChange={setStudentForm}
+              />
+
+              <div className="flex flex-col-reverse gap-3 border-t border-[var(--neutral-200)] pt-4 sm:flex-row sm:justify-end">
+                <SecondaryAction onClick={onClose} type="button">
                   Hủy
                 </SecondaryAction>
                 <PrimaryAction
-                  disabled={
-                    !selectedExistingStudents.length || isEnrollingExisting
-                  }
+                  disabled={isCreating || isUploadingAvatar}
                   icon={
-                    isEnrollingExisting ? (
+                    isCreating ? (
                       <LoaderCircle className="animate-spin" size={16} />
                     ) : (
                       <UserPlus size={16} />
                     )
                   }
-                  onClick={() =>
-                    setPendingAction({
-                      students: selectedExistingStudents,
-                      type: "enroll",
-                    })
-                  }
-                  type="button"
+                  type="submit"
                 >
-                  {selectedExistingStudents.length
-                    ? `Thêm ${selectedExistingStudents.length} học sinh`
-                    : "Thêm học sinh"}
+                  Tạo và thêm
                 </PrimaryAction>
               </div>
-            </div>
-          </div>
-        ) : (
-          <form className="grid gap-5" onSubmit={handleCreateStudentAndEnroll}>
-            <StudentFormFields
-              avatarFileName={avatarFileName}
-              avatarPreviewUrl={avatarPreviewUrl}
-              form={studentForm}
-              isUploadingAvatar={isUploadingAvatar}
-              onAvatarUpload={(event) => selectAvatarFile(event, onError)}
-              onChange={setStudentForm}
-            />
-
-            <div className="flex flex-col-reverse gap-3 border-t border-[var(--neutral-200)] pt-4 sm:flex-row sm:justify-end">
-              <SecondaryAction onClick={onClose} type="button">
-                Hủy
-              </SecondaryAction>
-              <PrimaryAction
-                disabled={isCreating || isUploadingAvatar}
-                icon={
-                  isCreating ? (
-                    <LoaderCircle className="animate-spin" size={16} />
-                  ) : (
-                    <UserPlus size={16} />
-                  )
-                }
-                type="submit"
-              >
-                Tạo và thêm
-              </PrimaryAction>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
         </div>
       </Modal>
 
@@ -417,10 +412,7 @@ function StudentOption({
       }`}
     >
       <div className="grid min-w-0 grid-cols-[48px_1fr] items-center gap-3">
-        <StudentAvatar
-          alt={student.fullName}
-          src={getStudentAvatar(student)}
-        />
+        <StudentAvatar alt={student.fullName} src={getStudentAvatar(student)} />
         <span className="min-w-0">
           <span className="block truncate text-[15px] font-bold text-[var(--neutral-800)]">
             {student.fullName}
@@ -444,11 +436,7 @@ function StudentOption({
         onClick={onToggle}
         type="button"
       >
-        {isInClass || isSelected ? (
-          <Check size={15} />
-        ) : (
-          <Plus size={15} />
-        )}
+        {isInClass || isSelected ? <Check size={15} /> : <Plus size={15} />}
         {isInClass ? "Đã có" : isSelected ? "Đã chọn" : "Chọn"}
       </button>
     </div>

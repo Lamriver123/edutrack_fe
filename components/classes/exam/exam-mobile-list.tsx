@@ -68,11 +68,12 @@ export function ExamMobileList({
             <button
               key={exam.id}
               onClick={() => setSelectedExamId(exam.id)}
-              className={`flex-shrink-0 snap-start flex flex-col items-start p-3 rounded-lg border min-w-[160px] text-left transition ${
+              className={`flex min-w-[168px] flex-shrink-0 snap-start flex-col items-start rounded-md border p-3 text-left transition ${
                 isSelected
                   ? "border-[var(--brand-500)] bg-[var(--brand-50)] ring-1 ring-[var(--brand-500)]"
                   : "border-[var(--neutral-200)] bg-white hover:border-[var(--neutral-300)]"
               }`}
+              type="button"
             >
               <span className="font-bold text-[14px] text-[var(--neutral-800)] truncate w-full mb-1">
                 {exam.title}
@@ -90,7 +91,7 @@ export function ExamMobileList({
       </div>
 
       {selectedExam && (
-        <div className="bg-white rounded-lg border border-[var(--neutral-200)] shadow-sm overflow-hidden flex flex-col">
+        <div className="flex flex-col overflow-hidden rounded-md border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           <div className="p-4 border-b border-[var(--neutral-100)] flex justify-between items-start bg-[var(--neutral-50)]">
             <div>
               <h3 className="font-bold text-[16px] text-[var(--neutral-800)]">{selectedExam.title}</h3>
@@ -98,7 +99,8 @@ export function ExamMobileList({
             </div>
             <button
               onClick={() => onEditExam(selectedExam)}
-              className="text-[var(--brand-600)] text-[13px] font-semibold flex items-center gap-1 bg-white px-3 py-1.5 rounded-md border border-[var(--neutral-200)]"
+              className="flex h-9 items-center gap-1 rounded-md border border-[var(--border)] bg-white px-3 text-[13px] font-bold text-[var(--brand-600)] transition hover:bg-[var(--brand-50)]"
+              type="button"
             >
               Sửa
             </button>
@@ -138,8 +140,10 @@ export function ExamMobileList({
                     
                     <div className="flex items-center gap-2">
                       <button
-                        className="p-2 text-[var(--neutral-400)] hover:text-[var(--brand-500)]"
+                        aria-label={`Thêm minh chứng cho ${student.fullName}`}
+                        className="grid size-10 place-items-center rounded-md text-[var(--neutral-400)] transition hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)]"
                         onClick={() => onUploadEvidence(selectedExam.id, student.id)}
+                        type="button"
                       >
                         <Camera size={18} />
                       </button>

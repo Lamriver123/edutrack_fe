@@ -48,10 +48,10 @@ export function AttendanceTable({
   const paddingColumns = Array.from({ length: paddingCount }).map((_, i) => `pad-${i}`);
 
   return (
-    <div className="overflow-x-auto" ref={scrollContainerRef}>
-      <table className="w-full text-left border-collapse min-w-[950px]">
+    <div className="overflow-x-auto overscroll-x-contain" ref={scrollContainerRef}>
+      <table className="min-w-[980px] w-full border-collapse text-left">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50/75 text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+          <tr className="border-b border-[var(--border)] bg-[var(--neutral-50)] text-[12px] font-bold text-[var(--neutral-500)]">
             <th className={`py-3 sm:py-4 px-1 sm:px-2 w-8 sm:w-14 min-w-[32px] sm:min-w-[56px] text-center ${styles.sttCol}`} scope="col">STT</th>
             <th className={`py-3 sm:py-4 px-2 sm:px-4 w-[120px] sm:w-[280px] min-w-[120px] sm:min-w-[280px] ${styles.stickyCol}`} scope="col">Học sinh & Thống kê</th>
             {sessions.map((s, idx) => {
@@ -67,49 +67,49 @@ export function AttendanceTable({
 
               if (today) {
                 return (
-                  <th id={idAttr} key={s.id} className="py-4 px-2 sm:px-3 text-center border-l border-indigo-100 bg-indigo-50/70 w-[90px] sm:w-[100px] min-w-[90px] sm:min-w-[100px]" scope="col">
-                    <div className="inline-flex items-center justify-center gap-1.5 font-black text-indigo-800">
+                  <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--brand-100)] bg-[var(--brand-50)] px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
+                    <div className="inline-flex items-center justify-center gap-1.5 font-extrabold text-[var(--brand-800)]">
                       {displayDate}
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                      <span className="size-1.5 rounded-full bg-[var(--brand-600)]"></span>
                       {isSaved && !isEditing && !isFullyBilled && (
-                        <button onClick={() => onUnlockSession(s.id)} className="text-indigo-400 hover:text-indigo-600 ml-1 transition" title="Sửa điểm danh">
+                        <button onClick={() => onUnlockSession(s.id)} className="ml-1 rounded p-1 text-[var(--brand-400)] transition hover:bg-white hover:text-[var(--brand-700)]" title="Sửa điểm danh" type="button">
                           <Pencil size={12} />
                         </button>
                       )}
                     </div>
-                    <div className="text-[10px] font-bold text-indigo-600">Hôm nay {s.startTime}</div>
+                    <div className="mt-1 text-[11px] font-bold text-[var(--brand-600)]">Hôm nay {s.startTime}</div>
                   </th>
                 );
               }
               return (
-                <th id={idAttr} key={s.id} className="py-4 px-2 sm:px-3 text-center border-l border-slate-200 bg-slate-100/50 w-[80px] sm:w-[90px] min-w-[80px] sm:min-w-[90px]" scope="col">
-                  <div className="flex items-center justify-center gap-1.5 font-bold text-slate-800">
+                <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--border)] bg-white px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
+                  <div className="flex items-center justify-center gap-1.5 font-bold text-[var(--neutral-800)]">
                     {displayDate}
                     {isSaved && !isEditing && !isFullyBilled && (
-                      <button onClick={() => onUnlockSession(s.id)} className="text-slate-400 hover:text-indigo-600 transition" title="Sửa điểm danh">
+                      <button onClick={() => onUnlockSession(s.id)} className="rounded p-1 text-[var(--neutral-400)] transition hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)]" title="Sửa điểm danh" type="button">
                         <Pencil size={12} />
                       </button>
                     )}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-normal lowercase">{s.startTime}</div>
+                  <div className="mt-1 text-[11px] font-medium text-[var(--neutral-400)]">{s.startTime}</div>
                 </th>
               );
             })}
             {paddingColumns.map((id) => (
-              <th key={id} className="py-4 px-2 sm:px-3 text-center border-l border-slate-200 bg-slate-100/50 min-w-[90px] sm:min-w-[95px] pr-4 sm:pr-6" scope="col"></th>
+              <th key={id} className="min-w-[96px] border-l border-[var(--border)] bg-white px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col"></th>
             ))}
             <th className="w-full" aria-hidden="true"></th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-slate-100 text-sm font-medium">
+        <tbody className="divide-y divide-[var(--neutral-100)] text-[14px] font-medium">
           {activeStudents.map((student, i) => {
             const stats = overviewStats[student.id] || { present: 0, absent: 0, excused: 0 };
-            const rowBg = i % 2 === 1 ? "bg-slate-50/30" : "";
+            const rowBg = i % 2 === 1 ? "bg-[var(--neutral-50)]/50" : "";
 
             return (
-              <tr key={student.id} className={`hover:bg-slate-50/80 transition group ${rowBg}`}>
-                <td className={`py-3 sm:py-4 px-1 sm:px-2 text-center text-[11px] sm:text-xs text-slate-400 font-bold ${styles.sttCol}`}>
+              <tr key={student.id} className={`group transition hover:bg-[var(--brand-50)]/45 ${rowBg}`}>
+                <td className={`px-1 py-3 text-center text-[12px] font-bold text-[var(--neutral-400)] sm:px-2 sm:py-4 sm:text-[13px] ${styles.sttCol}`}>
                   {String(i + 1).padStart(2, "0")}
                 </td>
                 <td className={`py-2 sm:py-4 px-2 sm:px-4 ${styles.stickyCol}`}>
@@ -118,13 +118,13 @@ export function AttendanceTable({
                     <img
                       src={getStudentAvatar(student)}
                       alt={student.fullName}
-                      className="w-0 h-0 sm:w-10 sm:h-10 rounded-full object-cover border border-neutral-200 flex-shrink-0 hidden sm:block"
+                      className="hidden size-10 shrink-0 rounded-md border border-[var(--border)] object-cover sm:block"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 leading-tight sm:leading-normal">
-                        <span className="font-bold text-[12px] sm:text-base text-slate-900 group-hover:text-indigo-600 transition line-clamp-2 sm:line-clamp-1">{student.fullName}</span>
+                        <span className="line-clamp-2 text-[13px] font-bold text-[var(--neutral-900)] transition group-hover:text-[var(--brand-700)] sm:line-clamp-1 sm:text-[15px]">{student.fullName}</span>
                       </div>
-                      <div className="flex items-center gap-1 sm:gap-2 text-[9px] sm:text-[11px] font-semibold mt-0.5 sm:mt-1">
+                      <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold sm:gap-2 sm:text-[12px]">
                         <span className="text-emerald-600">{stats.present} CM</span>
                         <span className="text-slate-300">•</span>
                         <span className="text-rose-500">{stats.absent} KP</span>
@@ -148,28 +148,30 @@ export function AttendanceTable({
                       ? "Bấm để đổi trạng thái"
                       : "Mở khóa buổi học để sửa điểm danh";
 
-                  const cellBg = today ? "bg-indigo-50/20 border-indigo-50" : "border-slate-100";
+                  const cellBg = today ? "bg-[var(--brand-50)]/45 border-[var(--brand-100)]" : "border-[var(--neutral-100)]";
 
-                  let btnClass = "w-9 h-9 rounded-full text-[11px] sm:text-xs inline-flex items-center justify-center transition font-bold shrink-0";
+                  let btnClass =
+                    "inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-transparent px-2 text-[12px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
                   let displayContent = null;
 
                   if (status === "present") {
-                    btnClass += " bg-emerald-50 border border-emerald-200 text-emerald-700";
-                    if (canEdit) btnClass += " hover:bg-emerald-100";
+                    btnClass +=
+                      " bg-emerald-500 focus-visible:ring-emerald-300";
+                    if (canEdit) btnClass += " hover:bg-emerald-600";
                     displayContent = "CM";
                   } else if (status === "absent") {
-                    btnClass += " bg-rose-50 border border-rose-200 text-rose-700";
-                    if (canEdit) btnClass += " hover:bg-rose-100";
+                    btnClass += " bg-rose-500 focus-visible:ring-rose-300";
+                    if (canEdit) btnClass += " hover:bg-rose-600";
                     displayContent = "KP";
                   } else if (status === "excused") {
-                    btnClass += " bg-amber-50 border border-amber-200 text-amber-700";
-                    if (canEdit) btnClass += " hover:bg-amber-100";
+                    btnClass += " bg-amber-500 focus-visible:ring-amber-300";
+                    if (canEdit) btnClass += " hover:bg-amber-600";
                     displayContent = "CP";
                   } else {
                     return (
                       <td
                         key={s.id}
-                        className={`py-3 sm:py-4 px-2 sm:px-3 text-center border-l ${cellBg} text-slate-300 font-mono text-xs ${canEdit ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}
+                        className={`border-l px-2 py-3 text-center text-[13px] font-semibold text-[var(--neutral-300)] sm:px-3 sm:py-4 ${cellBg} ${canEdit ? "cursor-pointer hover:bg-[var(--neutral-50)]" : "opacity-50"}`}
                         onClick={() => canEdit && onToggleStatus(s.id, student.id)}
                         title={cellTitle}
                       >
@@ -185,17 +187,22 @@ export function AttendanceTable({
                       onClick={() => canEdit && onToggleStatus(s.id, student.id)}
                       title={cellTitle}
                     >
-                      <button className={`${btnClass} ${isBilled ? "ring-2 ring-slate-200 ring-offset-1" : ""} ${!canEdit ? "opacity-70 cursor-not-allowed" : ""}`}>
+                      <button
+                        aria-label={`${displayContent}${isBilled ? ", đã khóa do đã xuất hóa đơn" : ""}`}
+                        className={`${btnClass} ${isBilled ? "ring-2 ring-[var(--neutral-300)] ring-offset-1" : ""} ${!canEdit ? "cursor-not-allowed" : ""}`}
+                        disabled={!canEdit}
+                        type="button"
+                      >
                         {displayContent}
                         {isBilled && (
-                          <Lock size={10} className="ml-0.5 text-slate-500" />
+                          <Lock size={10} className="ml-0.5 text-white/90" />
                         )}
                       </button>
                     </td>
                   );
                 })}
                 {paddingColumns.map((id) => (
-                  <td key={id} className="py-3 sm:py-4 px-2 sm:px-3 text-center border-l border-slate-100 text-slate-300 font-mono text-xs pr-4 sm:pr-6">
+                  <td key={id} className="border-l border-[var(--neutral-100)] px-2 py-3 text-center text-[13px] font-semibold text-[var(--neutral-300)] sm:px-3 sm:py-4">
                     --
                   </td>
                 ))}

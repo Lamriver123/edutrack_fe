@@ -361,24 +361,25 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+    <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-[18px] font-extrabold text-[var(--neutral-800)]">
             Bảng điểm học sinh
           </h2>
-          <p className="mt-1 text-[13px] text-[var(--neutral-500)]">
+          <p className="mt-1 text-[14px] text-[var(--neutral-500)]">
             Quản lý các bài kiểm tra và điểm số của {activeStudents.length} học sinh.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="grid gap-2 sm:flex sm:items-center">
           <button
             onClick={() => {
               setExamToEdit(undefined);
               setIsCreateModalOpen(true);
             }}
-            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand-50)] px-4 text-[14px] font-bold text-[var(--brand-700)] transition hover:bg-[var(--brand-100)]"
+            className="flex h-11 items-center justify-center gap-2 rounded-md border border-[var(--brand-200)] bg-white px-4 text-[14px] font-bold text-[var(--brand-700)] transition hover:bg-[var(--brand-50)]"
+            type="button"
           >
             <Plus size={16} />
             Tạo bài KT
@@ -468,10 +469,11 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
 
       {/* Quick edit delete button from the modal if editing */}
       {examToEdit && isCreateModalOpen && (
-         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60]">
+         <div className="fixed bottom-4 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:bottom-6 sm:w-auto">
             <button
               onClick={() => setDeleteExamConfirmId(examToEdit.id)}
-              className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-bold text-[var(--error-600)] shadow-lg border border-[var(--error-200)] hover:bg-[var(--error-50)]"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--error-200)] bg-white px-4 text-[14px] font-bold text-[var(--error-600)] shadow-[var(--shadow-md)] transition hover:bg-[var(--error-50)]"
+              type="button"
             >
               <Trash2 size={16} />
               Xóa bài kiểm tra này

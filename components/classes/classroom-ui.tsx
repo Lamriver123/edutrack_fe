@@ -38,13 +38,13 @@ export function Modal({
           size === "sm" ? styles.modalPanelSm : ""
         } ${size === "wide" ? styles.modalPanelWide : ""}`}
       >
-        <div className="flex min-h-[72px] items-center justify-between gap-3 border-b border-[var(--neutral-200)] px-5 py-4">
-          <h3 className="truncate text-[20px] font-extrabold text-[var(--brand-950)]">
+        <div className="flex min-h-[64px] items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3.5 sm:px-5">
+          <h3 className="truncate text-[18px] font-extrabold text-[var(--brand-950)] sm:text-[20px]">
             {title}
           </h3>
           <button
             aria-label="Đóng"
-            className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-500)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)]"
+            className="grid size-10 place-items-center rounded-md border border-[var(--neutral-200)] bg-white text-[var(--neutral-500)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-200)]"
             onClick={onClose}
             type="button"
           >
@@ -241,7 +241,7 @@ function getNoticeToastConfig(type: Notice["type"]) {
 
 export function InlineLoading({ text }: { text: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 py-5 text-[14px] font-semibold text-[var(--neutral-500)]">
+    <div className="flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-5 text-[14px] font-semibold text-[var(--neutral-500)]">
       <LoaderCircle className="animate-spin text-[var(--brand-500)]" size={17} />
       {text}
     </div>
@@ -260,9 +260,9 @@ export function EmptyState({
   title?: string;
 }) {
   return (
-    <div className="grid min-h-[150px] place-items-center rounded-lg border border-dashed border-[var(--neutral-300)] bg-[var(--neutral-50)] px-4 py-7 text-center">
+    <div className="grid min-h-[150px] place-items-center rounded-md border border-dashed border-[var(--neutral-300)] bg-[var(--neutral-50)] px-4 py-7 text-center">
       <div>
-        <div className="mx-auto grid size-11 place-items-center rounded-lg bg-white text-[var(--brand-500)] shadow-[var(--shadow-sm)]">
+        <div className="mx-auto grid size-11 place-items-center rounded-md border border-[var(--border)] bg-white text-[var(--brand-500)] shadow-[var(--shadow-xs)]">
           {icon}
         </div>
         {title ? (
@@ -288,8 +288,8 @@ export function TextInput({
   label: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid gap-1.5">
+      <span className="text-[13px] font-bold text-[var(--neutral-700)]">
         {label}
       </span>
       <span className="relative">
@@ -299,7 +299,7 @@ export function TextInput({
           </span>
         ) : null}
         <input
-          className={`h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white px-4 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-200)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
+          className={`h-12 w-full rounded-md border border-[var(--border-strong)] bg-white px-4 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
             icon ? "pl-11" : ""
           }`}
           {...props}
@@ -318,8 +318,8 @@ export function TextArea({
   label: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid gap-1.5">
+      <span className="text-[13px] font-bold text-[var(--neutral-700)]">
         {label}
       </span>
       <span className="relative">
@@ -329,7 +329,7 @@ export function TextArea({
           </span>
         ) : null}
         <textarea
-          className={`min-h-[104px] w-full resize-y rounded-lg border border-[var(--neutral-200)] bg-white px-4 py-3.5 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-200)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
+          className={`min-h-[104px] w-full resize-y rounded-md border border-[var(--border-strong)] bg-white px-4 py-3.5 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
             icon ? "pl-11" : ""
           }`}
           {...props}
@@ -349,7 +349,7 @@ export function PrimaryAction({
 }) {
   return (
     <button
-      className={`inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[var(--brand-500)] to-[var(--brand-700)] px-5 text-[14px] font-bold text-white shadow-[var(--shadow-brand)] transition hover:from-[var(--brand-400)] hover:to-[var(--brand-600)] disabled:pointer-events-none disabled:from-[var(--neutral-300)] disabled:to-[var(--neutral-400)] ${className}`}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[var(--brand-600)] px-4 text-[14px] font-bold text-white shadow-[var(--shadow-brand)] transition hover:-translate-y-0.5 hover:bg-[var(--brand-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 disabled:pointer-events-none disabled:translate-y-0 disabled:bg-[var(--neutral-300)] disabled:shadow-none ${className}`}
       {...props}
     >
       {icon}
@@ -368,7 +368,7 @@ export function SecondaryAction({
 }) {
   return (
     <button
-      className={`inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-5 text-[14px] font-bold text-[var(--neutral-700)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)] disabled:pointer-events-none disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${className}`}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[var(--neutral-200)] bg-white px-4 text-[14px] font-bold text-[var(--neutral-700)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-200)] disabled:pointer-events-none disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${className}`}
       {...props}
     >
       {icon}
@@ -392,7 +392,7 @@ export function StudentAvatar({
   return (
     <img
       alt={alt}
-      className={`${sizeClass} rounded-lg border border-[var(--neutral-200)] object-cover`}
+      className={`${sizeClass} rounded-md border border-[var(--neutral-200)] object-cover`}
       src={src}
     />
   );

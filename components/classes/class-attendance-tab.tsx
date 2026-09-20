@@ -273,7 +273,7 @@ export function ClassAttendanceTab({ classroom }: ClassAttendanceTabProps) {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-sm text-neutral-500">Đang tải dữ liệu điểm danh...</div>;
+    return <div className="rounded-md border border-[var(--border)] bg-white p-8 text-center text-[14px] font-semibold text-[var(--neutral-500)]">Đang tải dữ liệu điểm danh...</div>;
   }
 
   // Calculate overview based on current localRecords
@@ -292,16 +292,16 @@ export function ClassAttendanceTab({ classroom }: ClassAttendanceTabProps) {
   return (
     <div className="flex flex-col min-w-0">
       <main className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Bảng điểm danh</h2>
-          <button className="px-4 py-2 text-sm font-bold rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition flex items-center gap-2 shrink-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-[18px] font-extrabold text-[var(--brand-950)]">Bảng điểm danh</h2>
+          <button className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 text-[14px] font-bold text-[var(--neutral-700)] shadow-[var(--shadow-xs)] transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" type="button">
             <FileSpreadsheet size={16} className="text-emerald-600 shrink-0" />
             <span>Excel</span>
           </button>
         </div>
 
         {/* AttendanceMatrixSection */}
-        <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+        <section className="flex flex-col overflow-hidden rounded-md border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           <AttendanceTable
             sessions={sessions}
             activeStudents={activeStudents}

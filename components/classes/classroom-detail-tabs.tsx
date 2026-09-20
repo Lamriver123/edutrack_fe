@@ -12,13 +12,16 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import type { Classroom, ClassroomDetail, Student } from "@/types/school";
 import { ClassScheduleTab } from "./class-schedule-tab";
 import { ClassAttendanceTab } from "./class-attendance-tab";
 import { ClassExamTab } from "./exam/class-exam-tab";
 import { ClassTuitionTab } from "./class-tuition-tab";
 import {
+  formatMoney,
+  getClassColorHex,
+  getClassColorTheme,
   getGenderLabel,
   getStudentAvatar,
   normalizeVisibleText,
@@ -151,26 +154,58 @@ export function ClassroomDetailTabs({
     );
   }
 
+  const classColor = getClassColorHex(classroom);
+  const classColorTheme = getClassColorTheme(classColor);
+  const detailTheme = {
+    "--class-accent": classColorTheme.accent,
+    "--class-accent-soft": classColorTheme.background,
+    "--class-accent-border": classColorTheme.border,
+    "--class-accent-text": classColorTheme.text,
+  } as CSSProperties;
+  const statusLabel =
+    classroom.status === "active"
+      ? "Đang hoạt động"
+      : classroom.status === "inactive"
+        ? "Tạm ngưng"
+        : "Đã lưu trữ";
+
   return (
     <>
-      <section className="rounded-lg border border-[var(--neutral-200)] bg-white shadow-[var(--shadow-card)]">
-        <div className="grid gap-4 border-b border-[var(--neutral-100)] p-5 lg:grid-cols-[1fr_auto] lg:items-start">
-          <div className="min-w-0">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)] px-3 py-1.5 text-[13px] font-bold text-[var(--brand-700)]">
-              <BookOpenCheck size={14} />
-              Chi tiết lớp học
+      <section className={styles.classDetailShell} style={detailTheme}>
+        <div className={styles.classDetailHeader}>
+          <div className={styles.classDetailIdentity}>
+            <span className={styles.classDetailMark} aria-hidden="true">
+              <BookOpenCheck size={25} strokeWidth={2.2} />
+            </span>
+            <div className={styles.classDetailCopy}>
+              <div className={styles.classDetailEyebrow}>
+                <span aria-hidden="true" />
+                Chi tiết lớp học
+              </div>
+              <h3>{classroom.name}</h3>
+              <p>
+                {classroom.description || "Chưa có mô tả cho lớp học này."}
+              </p>
+              <div className={styles.classDetailMeta}>
+                <span data-status={classroom.status} data-tone="status">
+                  <i aria-hidden="true" />
+                  {statusLabel}
+                </span>
+                <span data-tone="students">
+                  <Users size={14} />
+                  {classroom.students.length} học sinh
+                </span>
+                <span data-tone="fee">
+                  <Coins size={14} />
+                  {formatMoney(classroom.regularPrice)} / buổi
+                </span>
+              </div>
             </div>
-            <h3 className="truncate text-[24px] font-extrabold leading-tight text-[var(--brand-950)]">
-              {classroom.name}
-            </h3>
-            <p className="mt-2 max-w-3xl text-[15px] leading-7 text-[var(--neutral-500)]">
-              {classroom.description || "Chưa có mô tả cho lớp học này."}
-            </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+          <div className={styles.classDetailActions}>
             {onEditClass ? (
               <SecondaryAction
-                className="w-full sm:w-auto"
+                className={styles.classEditButton}
                 icon={<Pencil size={15} />}
                 onClick={onEditClass}
                 type="button"
@@ -180,7 +215,7 @@ export function ClassroomDetailTabs({
             ) : null}
             {onArchiveClass ? (
               <button
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-5 text-[14px] font-bold text-red-600 transition hover:border-red-200 hover:bg-red-100 sm:w-auto"
+                className={styles.classArchiveButton}
                 onClick={onArchiveClass}
                 type="button"
               >
@@ -191,20 +226,16 @@ export function ClassroomDetailTabs({
           </div>
         </div>
 
-        <div
-          className={`border-b border-[var(--neutral-100)] p-3 ${styles.tabScroller}`}
-        >
-          <div className="flex flex-wrap gap-2">
+        <div className={`${styles.detailTabBar} ${styles.tabScroller}`}>
+          <div className={styles.detailTabList}>
             {detailTabs.map(({ icon: Icon, label, value }) => {
               const isActive = effectiveActiveTab === value;
 
               return (
                 <button
-                  className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-[14px] font-bold transition ${
-                    isActive
-                      ? "bg-[var(--brand-50)] text-[var(--brand-700)] ring-1 ring-[var(--brand-100)]"
-                      : "text-[var(--neutral-500)] hover:bg-[var(--neutral-50)] hover:text-[var(--brand-600)]"
-                  }`}
+                  aria-pressed={isActive}
+                  className={styles.detailTab}
+                  data-active={isActive}
                   key={value}
                   onClick={() => setActiveTab(value)}
                   type="button"
@@ -217,7 +248,7 @@ export function ClassroomDetailTabs({
           </div>
         </div>
 
-        <div className="p-5">
+        <div className={styles.classDetailContent}>
           {effectiveActiveTab === "students" ? (
             <StudentsTab
               filteredStudents={filteredStudents}
@@ -364,19 +395,7 @@ function StudentsTab({
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TabStatCard
-          icon={<Users size={18} />}
-          label="Tổng học sinh"
-          value={`${totalStudents} học sinh`}
-        />
-        <TabStatCard
-          icon={<Search size={18} />}
-          label="Kết quả đang hiển thị"
-          value={`${filteredStudents.length} hồ sơ`}
-        />
-      </div>
-
+      
       <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
         <TextInput
           icon={<Search size={16} />}
@@ -541,24 +560,22 @@ function StudentsTab({
 function TabStatCard({
   icon,
   label,
+  tone,
   value,
 }: {
   icon: ReactNode;
   label: string;
+  tone: "search" | "students";
   value: string;
 }) {
   return (
-    <div className="grid min-w-0 grid-cols-[42px_1fr] items-center gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-3">
-      <span className="grid size-[42px] place-items-center rounded-lg bg-white text-[var(--brand-600)] shadow-[var(--shadow-sm)]">
+    <div className={styles.tabStatCard} data-tone={tone}>
+      <span className={styles.tabStatIcon}>
         {icon}
       </span>
-      <span className="min-w-0">
-        <span className="block text-[13px] font-bold text-[var(--neutral-500)]">
-          {label}
-        </span>
-        <strong className="mt-0.5 block truncate text-[18px] font-extrabold text-[var(--brand-950)]">
-          {value}
-        </strong>
+      <span className={styles.tabStatCopy}>
+        <span>{label}</span>
+        <strong>{value}</strong>
       </span>
     </div>
   );

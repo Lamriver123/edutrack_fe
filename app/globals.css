@@ -46,35 +46,30 @@
   --error-text: #b91c1c;
 
   /* Surface */
-  --background: #f8faff;
-  --foreground: #1e1b4b;
+  --background: #f7f8fc;
+  --foreground: #172033;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
+  --border: #e5e7f0;
+  --border-strong: #d9deea;
 
-  /* Shadows — layered for depth */
+  /* Shadows */
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06),
-    0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 8px -2px rgba(15, 23, 42, 0.08),
-    0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1),
-    0 4px 8px -4px rgba(15, 23, 42, 0.06);
-  --shadow-xl: 0 24px 48px -12px rgba(15, 23, 42, 0.16);
-  --shadow-brand: 0 8px 24px -4px rgba(99, 102, 241, 0.28),
-    0 4px 12px -4px rgba(99, 102, 241, 0.16);
-  --shadow-brand-lg: 0 16px 40px -8px rgba(99, 102, 241, 0.36),
-    0 8px 20px -8px rgba(99, 102, 241, 0.2);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04),
-    0 1px 2px rgba(15, 23, 42, 0.02),
-    0 0 0 1px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.055);
+  --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 14px 30px rgba(15, 23, 42, 0.1);
+  --shadow-xl: 0 22px 48px rgba(15, 23, 42, 0.13);
+  --shadow-brand: 0 6px 14px rgba(79, 70, 229, 0.18);
+  --shadow-brand-lg: 0 10px 24px rgba(79, 70, 229, 0.22);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.035);
 
-  /* Radii — progressive scale */
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-2xl: 36px;
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
 
   /* Transition */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -92,6 +87,7 @@
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0 !important;
 }
 
 html {
@@ -127,6 +123,38 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline-color: var(--brand-400);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 ::selection {

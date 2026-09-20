@@ -4,7 +4,7 @@
   height: 100dvh;
   overflow: hidden;
   min-width: 0;
-  color: #262626;
+  color: var(--neutral-800);
   background: #fff;
   letter-spacing: 0;
 }
@@ -15,7 +15,8 @@
   gap: 10px;
   padding: 10px 16px;
   min-height: 68px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
 }
 .toolButton {
   display: inline-flex;
@@ -32,16 +33,16 @@
 }
 .toolButton:hover:not(:disabled),
 .toolButton[aria-pressed="true"] {
-  color: #0f766e;
-  background: #f0fdfa;
-  border-color: #99f6e4;
+  color: var(--brand-700);
+  background: var(--brand-50);
+  border-color: var(--brand-200);
 }
 .toolButton:disabled {
   cursor: default;
   opacity: 0.35;
 }
 .designer :is(button, a, input, select):focus-visible {
-  outline: 2px solid #0d9488;
+  outline: 2px solid var(--brand-500);
   outline-offset: 2px;
 }
 .documentName {
@@ -120,14 +121,15 @@
 }
 .saveButton {
   color: #fff;
-  background: #0f766e;
+  background: var(--brand-600);
+  box-shadow: var(--shadow-brand);
 }
 .saveButton:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .saveButton:hover:not(:disabled) {
-  background: #115e59;
+  background: var(--brand-700);
 }
 .secondaryButton {
   border: 1px solid #d4d4d4;
@@ -169,8 +171,8 @@
   cursor: pointer;
 }
 .sidebarTabs [aria-selected="true"] {
-  background: #eaf5f2;
-  color: #0f766e;
+  background: var(--brand-50);
+  color: var(--brand-700);
 }
 .regionList {
   max-height: calc(100dvh - 240px);
@@ -212,10 +214,10 @@
   grid-template-columns: 80px minmax(0, 1fr) 34px auto;
   align-items: center;
   gap: 12px;
-  border: 1px solid #d4e9e3;
+  border: 1px solid var(--brand-100);
   padding: 12px;
   border-radius: 8px;
-  background: #f4faf8;
+  background: #f8f9ff;
 }
 .uploadPreview img {
   width: 80px;
@@ -256,7 +258,7 @@
   text-align: left;
 }
 .libraryItem > button:first-child:hover {
-  background: #f0fdfa;
+  background: var(--brand-50);
 }
 .libraryItem img {
   width: 100%;
@@ -402,9 +404,9 @@
   color: #525252;
 }
 .blockList :global(.gjs-block:hover) {
-  color: #0f766e;
-  border-color: #5eead4;
-  background: #f0fdfa;
+  color: var(--brand-700);
+  border-color: var(--brand-300);
+  background: var(--brand-50);
 }
 .blockList :global(.gjs-block-label) {
   font-size: 11px;
@@ -480,15 +482,15 @@
   color: #404040;
 }
 .canvas :global(.gjs-color-warn) {
-  color: #0f766e;
+  color: var(--brand-700);
 }
 .canvas :global(.gjs-toolbar),
 .canvas :global(.gjs-badge),
 .canvas :global(.gjs-resizer-h) {
-  background: #0f766e;
+  background: var(--brand-600);
 }
 .canvas :global(.gjs-selected) {
-  outline-color: #0f766e !important;
+  outline-color: var(--brand-600) !important;
 }
 .canvas :global(.gjs-toolbar-item) {
   color: white;
@@ -539,8 +541,8 @@
   cursor: pointer;
 }
 .propertyTabs button[aria-selected="true"] {
-  border-color: #0f766e;
-  color: #0f766e;
+  border-color: var(--brand-600);
+  color: var(--brand-700);
   font-weight: 650;
 }
 .propertySection h3 {

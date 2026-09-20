@@ -47,9 +47,9 @@ export function ExamEvidenceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white shadow-[var(--shadow-modal)] max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-[var(--neutral-100)] px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--neutral-950)]/45 p-3 backdrop-blur-[2px] sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-md border border-white/70 bg-white shadow-[var(--shadow-modal)] sm:max-h-[90dvh]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-4 sm:px-5">
           <div>
             <h2 className="text-[18px] font-extrabold text-[var(--neutral-800)]">
               Minh chứng bài làm
@@ -59,7 +59,7 @@ export function ExamEvidenceModal({
             </p>
           </div>
           <button
-            className="rounded-lg p-2 text-[var(--neutral-400)] transition hover:bg-[var(--neutral-50)] hover:text-[var(--neutral-700)] self-start"
+            className="grid size-10 place-items-center self-start rounded-md text-[var(--neutral-400)] transition hover:bg-[var(--neutral-50)] hover:text-[var(--neutral-700)]"
             onClick={onClose}
             type="button"
           >
@@ -67,13 +67,13 @@ export function ExamEvidenceModal({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="overflow-y-auto p-4 sm:p-5">
           <div className="mb-6">
             <label className="text-[14px] font-bold text-[var(--neutral-700)] block mb-2">
               Điểm số (Tối đa: {maxScore})
             </label>
             <input
-              className="w-full text-left h-12 px-4 border border-[var(--neutral-200)] rounded-lg font-bold text-[15px] focus:outline-none focus:border-[var(--brand-500)] focus:ring-1 focus:ring-[var(--brand-500)]"
+              className="h-12 w-full rounded-md border border-[var(--border-strong)] px-4 text-left text-[15px] font-bold focus:border-[var(--brand-400)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-100)]"
               max={maxScore}
               min={0}
               onChange={(e) => onScoreChange(e.target.value)}
@@ -89,7 +89,7 @@ export function ExamEvidenceModal({
               Ghi chú điểm
             </label>
             <input
-              className="w-full h-12 rounded-lg border border-[var(--neutral-200)] px-4 text-[15px] font-semibold text-[var(--neutral-700)] outline-none transition placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-500)] focus:ring-1 focus:ring-[var(--brand-500)]"
+              className="h-12 w-full rounded-md border border-[var(--border-strong)] px-4 text-[15px] font-semibold text-[var(--neutral-700)] outline-none transition placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-400)] focus:ring-2 focus:ring-[var(--brand-100)]"
               maxLength={80}
               onChange={(e) => onNoteChange(e.target.value)}
               placeholder="VD: 20/30 câu"
@@ -106,7 +106,7 @@ export function ExamEvidenceModal({
           {existingImages.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
               {existingImages.map((img, i) => (
-                <div key={i} className="aspect-square rounded-lg border border-[var(--neutral-200)] overflow-hidden relative group">
+                <div key={i} className="group relative aspect-square overflow-hidden rounded-md border border-[var(--border)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img} alt="Evidence" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
@@ -126,7 +126,7 @@ export function ExamEvidenceModal({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-[var(--neutral-200)] rounded-lg mb-6 bg-[var(--neutral-50)]">
+            <div className="mb-6 flex flex-col items-center justify-center rounded-md border border-dashed border-[var(--neutral-300)] bg-[var(--neutral-50)] py-8 text-center">
               <ImageIcon className="text-[var(--neutral-300)] mb-2" size={32} />
               <p className="text-[14px] text-[var(--neutral-500)]">Chưa có ảnh minh chứng nào.</p>
             </div>
@@ -145,7 +145,7 @@ export function ExamEvidenceModal({
             />
             
             <button 
-              className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--brand-300)] bg-[var(--brand-50)] p-4 text-[var(--brand-700)] transition hover:bg-[var(--brand-100)]"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-dashed border-[var(--brand-300)] bg-[var(--brand-50)] p-4 text-[var(--brand-700)] transition hover:bg-[var(--brand-100)]"
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
               type="button"

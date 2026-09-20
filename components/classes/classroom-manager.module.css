@@ -1,6 +1,6 @@
 .workspace {
   display: grid;
-  gap: 22px;
+  gap: 16px;
 }
 
 .classToolbar {
@@ -16,12 +16,12 @@
   min-width: 0;
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--neutral-200);
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: #ffffff;
   padding: 0 15px;
   color: var(--neutral-400);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
@@ -65,8 +65,8 @@
   align-content: start;
   gap: 12px;
   overflow: hidden;
-  border: 1px solid var(--neutral-200);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   background: #ffffff;
   padding: 16px;
   text-decoration: none;
@@ -79,7 +79,7 @@
 
 .classGridItem:hover {
   border-color: var(--brand-200);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -93,7 +93,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 10;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--brand-50);
 }
 
@@ -177,7 +177,7 @@
   gap: 8px;
   overflow: hidden;
   border: 1px solid var(--neutral-200);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--neutral-50);
   padding: 0 11px;
   color: var(--neutral-600);
@@ -460,7 +460,8 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
-  background: rgba(15, 23, 42, 0.42);
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
   padding: 18px;
 }
 
@@ -468,8 +469,8 @@
   width: min(100%, 760px);
   max-height: calc(100vh - 36px);
   overflow: hidden;
-  border: 1px solid var(--neutral-200);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow: var(--shadow-xl);
 }
@@ -534,17 +535,17 @@
 .confirmDangerButton {
   display: inline-flex;
   width: 100%;
-  height: 48px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: 1px solid #ef4444;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  border-radius: var(--radius-sm);
+  background: #dc2626;
   color: #ffffff;
   font-size: 14px;
   font-weight: 800;
-  box-shadow: 0 18px 30px rgba(220, 38, 38, 0.18);
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.16);
   transition:
     border-color 180ms ease,
     filter 180ms ease,
@@ -563,8 +564,309 @@
   transform: none;
 }
 
+.classDetailShell {
+  --class-accent: var(--brand-600);
+  --class-accent-soft: var(--brand-50);
+  --class-accent-border: var(--brand-100);
+  --class-accent-text: var(--brand-800);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
+}
+
+.classDetailHeader {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: start;
+  border-bottom: 1px solid var(--border);
+  background: #fbfcff;
+  padding: 22px 22px 20px 26px;
+}
+
+.classDetailHeader::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--class-accent);
+  content: "";
+}
+
+.classDetailIdentity {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 15px;
+  align-items: start;
+}
+
+.classDetailMark {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid var(--class-accent-border);
+  border-radius: 8px;
+  background: var(--class-accent-soft);
+  color: var(--class-accent);
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--class-accent) 10%, transparent);
+}
+
+.classDetailCopy {
+  min-width: 0;
+}
+
+.classDetailEyebrow {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 7px;
+  color: var(--class-accent-text);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.classDetailEyebrow > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--class-accent);
+  box-shadow: 0 0 0 4px var(--class-accent-soft);
+}
+
+.classDetailCopy h3 {
+  overflow: hidden;
+  color: var(--brand-950);
+  font-size: 27px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.classDetailCopy > p {
+  max-width: 780px;
+  margin-top: 7px;
+  color: var(--neutral-500);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.classDetailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.classDetailMeta > span {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--neutral-200);
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 0 10px;
+  color: var(--neutral-700);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.classDetailMeta > span[data-tone="status"] {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.classDetailMeta > span[data-status="inactive"] {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.classDetailMeta > span[data-status="archived"] {
+  border-color: var(--neutral-200);
+  background: var(--neutral-100);
+  color: var(--neutral-600);
+}
+
+.classDetailMeta > span[data-tone="students"] {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.classDetailMeta > span[data-tone="fee"] {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.classDetailMeta i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.classDetailActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.classEditButton,
+.classArchiveButton {
+  min-width: 116px;
+}
+
+.classArchiveButton {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  background: #fff7f7;
+  padding: 0 15px;
+  color: #c24141;
+  font-size: 14px;
+  font-weight: 800;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.classArchiveButton:hover {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.detailTabBar {
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+  padding: 10px 14px;
+}
+
+.detailTabList {
+  display: flex;
+  min-width: max-content;
+  gap: 7px;
+}
+
+.detailTab {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  padding: 0 14px;
+  color: var(--neutral-500);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.detailTab:hover {
+  border-color: var(--neutral-200);
+  background: #ffffff;
+  color: var(--neutral-800);
+}
+
+.detailTab[data-active="true"] {
+  border-color: var(--brand-200);
+  background: var(--brand-50);
+  color: var(--brand-700);
+  box-shadow: var(--shadow-xs);
+}
+
+.detailTab:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.16);
+  outline-offset: 1px;
+}
+
+.classDetailContent {
+  background: #ffffff;
+  padding: 20px;
+}
+
+.tabStatCard {
+  --stat-accent: #0369a1;
+  --stat-soft: #f0f9ff;
+  --stat-border: #bae6fd;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--stat-border);
+  border-radius: 8px;
+  background: var(--stat-soft);
+  padding: 13px;
+}
+
+.tabStatCard[data-tone="search"] {
+  --stat-accent: #7c3aed;
+  --stat-soft: #f5f3ff;
+  --stat-border: #ddd6fe;
+}
+
+.tabStatIcon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--stat-accent) 18%, #ffffff);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--stat-accent);
+  box-shadow: var(--shadow-xs);
+}
+
+.tabStatCopy {
+  min-width: 0;
+}
+
+.tabStatCopy > span {
+  display: block;
+  color: var(--neutral-500);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tabStatCopy strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--brand-950);
+  font-size: 19px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tabScroller {
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
 }
 
@@ -875,6 +1177,12 @@
 
 @media (min-width: 1200px) {
   .classGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1536px) {
+  .classGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
@@ -985,5 +1293,83 @@
   .studentTableHeader,
   .studentTableRow {
     gap: 10px;
+  }
+}
+
+@media (max-width: 760px) {
+  .classDetailHeader {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 17px 14px 16px 18px;
+  }
+
+  .classDetailIdentity {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .classDetailMark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .classDetailCopy h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 22px;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .classDetailCopy > p {
+    margin-top: 5px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .classDetailMeta {
+    gap: 6px;
+    margin-top: 11px;
+  }
+
+  .classDetailMeta > span {
+    min-height: 30px;
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .classDetailActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .classEditButton,
+  .classArchiveButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .detailTabBar {
+    padding: 8px 10px;
+  }
+
+  .detailTabList {
+    gap: 5px;
+  }
+
+  .detailTab {
+    height: 40px;
+    gap: 7px;
+    padding-inline: 11px;
+    font-size: 13px;
+  }
+
+  .classDetailContent {
+    padding: 12px;
+  }
+
+  .tabStatCard {
+    padding: 11px;
   }
 }

@@ -8,6 +8,7 @@ import {
   Sparkles,
   UserPlus,
 } from "lucide-react";
+import styles from "./auth-shell.module.css";
 
 type AuthShellProps = {
   eyebrow: string;
@@ -53,7 +54,9 @@ export function AuthShell({
   steps = defaultOnboardingSteps,
 }: AuthShellProps) {
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <main
+      className={`${styles.authRoot} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+    >
       <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
         {/* ─── Branding panel (desktop only) ─────────────────── */}
         <section className="relative isolate hidden min-h-screen overflow-hidden px-8 py-10 lg:flex lg:flex-col lg:justify-center xl:px-14 2xl:px-20">

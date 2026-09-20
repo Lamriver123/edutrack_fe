@@ -59,6 +59,7 @@ export function ExamDesktopTable({
                   <button
                     className={styles.examHeaderButton}
                     onClick={() => onEditExam(exam)}
+                    type="button"
                   >
                     <span className={styles.examTitle} title={exam.title}>
                       {exam.title}
@@ -113,6 +114,7 @@ export function ExamDesktopTable({
                         className={`${styles.cellContent} w-full h-full hover:bg-[var(--neutral-50)] transition`}
                         onClick={() => onUploadEvidence(exam.id, student.id)}
                         title="Nhập điểm và minh chứng"
+                        type="button"
                       >
                         <span className="font-bold text-[14px] text-[var(--neutral-800)]">
                           {score !== undefined && score !== null ? score : "-"}

@@ -321,21 +321,13 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
 
   return (
     <section className="grid gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Link
-            className="inline-flex min-h-10 items-center gap-2 text-[14px] font-bold text-[var(--brand-600)] transition hover:text-[var(--brand-800)]"
-            href="/classes"
-          >
-            <ArrowLeft size={15} />
-            Quay lại danh sách lớp
-          </Link>
-          
-        </div>
-        
-      </div>
-
-
+      <Link
+        className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md px-1 text-[14px] font-bold text-[var(--brand-600)] transition hover:text-[var(--brand-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-200)]"
+        href="/classes"
+      >
+        <ArrowLeft size={15} />
+        Quay lại danh sách lớp
+      </Link>
 
       {!isLoadingDetail && !classDetail ? (
         <EmptyState

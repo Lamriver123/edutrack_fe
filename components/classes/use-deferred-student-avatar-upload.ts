@@ -8,7 +8,6 @@ const MAX_STUDENT_AVATAR_SIZE = 5 * 1024 * 1024;
 
 export function useDeferredStudentAvatarUpload() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarFileName, setAvatarFileName] = useState("");
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -22,7 +21,6 @@ export function useDeferredStudentAvatarUpload() {
 
   const resetAvatarSelection = useCallback(() => {
     setAvatarFile(null);
-    setAvatarFileName("");
     setAvatarPreviewUrl("");
   }, []);
 
@@ -49,7 +47,6 @@ export function useDeferredStudentAvatarUpload() {
       }
 
       setAvatarFile(file);
-      setAvatarFileName(file.name);
       setAvatarPreviewUrl(URL.createObjectURL(file));
     },
     [],
@@ -72,7 +69,6 @@ export function useDeferredStudentAvatarUpload() {
   }, [avatarFile]);
 
   return {
-    avatarFileName,
     avatarPreviewUrl,
     isUploadingAvatar,
     resetAvatarSelection,

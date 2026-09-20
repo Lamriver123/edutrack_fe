@@ -12,7 +12,11 @@ export type ClassScheduleSlot = {
   endTime: string;
 };
 
-export type ScheduleOverrideAction = "reschedule" | "cancel" | "extra";
+export type ScheduleOverrideAction =
+  | "reschedule"
+  | "cancel"
+  | "extra"
+  | "one_on_one";
 
 export type LatestFixedSchedule = {
   id: string;
@@ -183,6 +187,7 @@ export type ClassSessionScheduleType =
   | "fixed"
   | "temporary"
   | "extra"
+  | "one_on_one"
   | "manual";
 
 export type SaveClassSessionContentPayload = {
@@ -209,6 +214,7 @@ export type ClassSessionContent = {
 export type TeacherScheduleEventType =
   | "fixed"
   | "extra"
+  | "one_on_one"
   | "reschedule"
   | "cancel"
   | "manual";

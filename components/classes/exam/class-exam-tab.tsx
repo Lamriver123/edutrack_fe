@@ -11,7 +11,7 @@ import type {
   TakeExamScoreEntry,
   UpdateExamPayload,
 } from "@/types/school";
-import { Plus, Save, Loader2, Trash2 } from "lucide-react";
+import { Plus, Save, Loader2 } from "lucide-react";
 import { ConfirmDialog, PrimaryAction } from "../classroom-ui";
 import { useNotice } from "@/components/ui/notice-provider";
 import { ExamDesktopTable } from "./exam-desktop-table";
@@ -439,6 +439,11 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
             setIsCreateModalOpen(false);
             setExamToEdit(undefined);
           }}
+          onDelete={examToEdit ? () => {
+            setIsCreateModalOpen(false);
+            setExamToEdit(undefined);
+            setDeleteExamConfirmId(examToEdit.id);
+          } : undefined}
           onSubmit={handleCreateOrUpdateExam}
           isSubmitting={isSubmittingExam}
         />
@@ -465,20 +470,6 @@ export function ClassExamTab({ classroom }: ClassExamTabProps) {
           onNoteChange={(value) => handleNoteChange(evidenceModalData.examId, evidenceModalData.studentId, value)}
           onRemove={handleRemoveEvidence}
         />
-      )}
-
-      {/* Quick edit delete button from the modal if editing */}
-      {examToEdit && isCreateModalOpen && (
-         <div className="fixed bottom-4 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:bottom-6 sm:w-auto">
-            <button
-              onClick={() => setDeleteExamConfirmId(examToEdit.id)}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--error-200)] bg-white px-4 text-[14px] font-bold text-[var(--error-600)] shadow-[var(--shadow-md)] transition hover:bg-[var(--error-50)]"
-              type="button"
-            >
-              <Trash2 size={16} />
-              Xóa bài kiểm tra này
-            </button>
-         </div>
       )}
 
       {deleteExamConfirmId !== null && (

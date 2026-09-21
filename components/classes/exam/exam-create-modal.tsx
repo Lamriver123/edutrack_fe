@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { format } from "date-fns";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, Trash2 } from "lucide-react";
 import type { Exam, CreateExamPayload } from "@/types/school";
 import {
   Modal,
@@ -15,6 +15,7 @@ import {
 type ExamCreateModalProps = {
   examToEdit?: Exam;
   onClose: () => void;
+  onDelete?: () => void;
   onSubmit: (payload: CreateExamPayload, file?: File | null) => Promise<void>;
   isSubmitting: boolean;
 };
@@ -22,6 +23,7 @@ type ExamCreateModalProps = {
 export function ExamCreateModal({
   examToEdit,
   onClose,
+  onDelete,
   onSubmit,
   isSubmitting,
 }: ExamCreateModalProps) {
@@ -157,22 +159,38 @@ export function ExamCreateModal({
             </div>
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
-            <SecondaryAction disabled={isSubmitting} onClick={onClose} type="button">
-              Hủy
-            </SecondaryAction>
-            <PrimaryAction disabled={!isFormValid || isSubmitting} type="submit">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={18} />
-                  Đang lưu...
-                </>
-              ) : examToEdit ? (
-                "Cập nhật"
-              ) : (
-                "Tạo bài kiểm tra"
-              )}
-            </PrimaryAction>
+          <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            {examToEdit && onDelete ? (
+              <button
+                className="flex h-11 items-center justify-center gap-2 rounded-md border border-[var(--error-200)] bg-[var(--error-50)] px-4 text-[14px] font-bold text-[var(--error-600)] transition hover:border-[var(--error-300)] hover:bg-[var(--error-100)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--error-200)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSubmitting}
+                onClick={onDelete}
+                type="button"
+              >
+                <Trash2 size={16} />
+                Xóa bài kiểm tra
+              </button>
+            ) : (
+              <span />
+            )}
+
+            <div className="grid gap-3 sm:flex sm:justify-end">
+              <SecondaryAction disabled={isSubmitting} onClick={onClose} type="button">
+                Hủy
+              </SecondaryAction>
+              <PrimaryAction disabled={!isFormValid || isSubmitting} type="submit">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Đang lưu...
+                  </>
+                ) : examToEdit ? (
+                  "Cập nhật"
+                ) : (
+                  "Tạo bài kiểm tra"
+                )}
+              </PrimaryAction>
+            </div>
           </div>
       </form>
     </Modal>

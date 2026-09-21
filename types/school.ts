@@ -503,6 +503,10 @@ export type ReceiptTeacherSnapshot = {
   avatarUrl?: string;
   bankAccountName?: string;
   bankAccountNumber?: string;
+  bankName?: string;
+  bankCode?: string;
+  bankBin?: string;
+  bankLogoUrl?: string;
   hasPaymentQr: boolean;
 };
 

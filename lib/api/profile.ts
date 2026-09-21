@@ -1,6 +1,8 @@
 import type { AuthResponse } from "@/types/auth";
 import type {
   ChangePasswordPayload,
+  PaymentBank,
+  PaymentQrUploadResponse,
   UpdateProfilePayload,
   User,
 } from "@/types/user";
@@ -75,6 +77,12 @@ export const profileApi = {
     });
   },
 
+  getBanks() {
+    return apiRequest<PaymentBank[]>("/users/banks", {
+      token: getToken(),
+    });
+  },
+
   updateProfile(payload: UpdateProfilePayload) {
     return apiRequest<User>("/users/me", {
       method: "PATCH",
@@ -102,11 +110,17 @@ export const profileApi = {
     });
   },
 
-  uploadPaymentQr(file: File) {
+  uploadPaymentQr(file: File, qrContent?: string, allowUnrecognized = false) {
     const formData = new FormData();
     formData.append("file", file);
+    if (qrContent) {
+      formData.append("qrContent", qrContent);
+    }
+    if (allowUnrecognized) {
+      formData.append("allowUnrecognized", "true");
+    }
 
-    return apiRequest<User>("/users/me/payment-qr", {
+    return apiRequest<PaymentQrUploadResponse>("/users/me/payment-qr", {
       method: "POST",
       token: getToken(),
       body: formData,

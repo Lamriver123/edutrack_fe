@@ -160,10 +160,7 @@ export function NoticeBanner({
   }, [durationMs, notice.text, notice.title, notice.type]);
 
   return (
-    <div
-      className={styles.toast}
-      role={toastConfig.role}
-    >
+    <div className={styles.toast} role={toastConfig.role}>
       <span
         className={`${styles.toastIcon} ${toastConfig.iconClassName}`}
         aria-hidden="true"
@@ -242,7 +239,10 @@ function getNoticeToastConfig(type: Notice["type"]) {
 export function InlineLoading({ text }: { text: string }) {
   return (
     <div className="flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-5 text-[14px] font-semibold text-[var(--neutral-500)]">
-      <LoaderCircle className="animate-spin text-[var(--brand-500)]" size={17} />
+      <LoaderCircle
+        className="animate-spin text-[var(--brand-500)]"
+        size={17}
+      />
       {text}
     </div>
   );
@@ -299,7 +299,7 @@ export function TextInput({
           </span>
         ) : null}
         <input
-          className={`h-12 w-full rounded-md border border-[var(--border-strong)] bg-white px-4 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
+          className={`h-12 w-full rounded-md border border-[var(--border-strong)] bg-white px-4 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] read-only:cursor-default read-only:bg-[var(--neutral-50)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
             icon ? "pl-11" : ""
           }`}
           {...props}

@@ -25,13 +25,14 @@ import {
   X,
 } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import type { User } from "@/types/user";
+import type { PaymentBank, User } from "@/types/user";
 import {
   PrimaryAction,
   SecondaryAction,
   TextArea,
   TextInput,
 } from "@/components/classes/classroom-ui";
+import { ProfileBankSelect } from "@/components/profile/profile-bank-select";
 import {
   QrCropBox,
   QrCropToolbar,
@@ -125,13 +126,21 @@ export function TeacherProfileCard({
 }
 
 export function ProfileEditFields({
+  banks,
   form,
+  isBanksLoading,
   onAvatarUrlChange,
+  onBankAccountNumberChange,
+  onBankChange,
   onChange,
   userEmail,
 }: {
+  banks: PaymentBank[];
   form: ProfileFormState;
+  isBanksLoading: boolean;
   onAvatarUrlChange: (avatarUrl: string) => void;
+  onBankAccountNumberChange: (accountNumber: string) => void;
+  onBankChange: (bankBin: string) => void;
   onChange: (form: ProfileFormState) => void;
   userEmail: string;
 }) {
@@ -181,31 +190,40 @@ export function ProfileEditFields({
           placeholder="Nhập địa chỉ"
           value={form.address}
         />
-        <TextInput
-          icon={<UserCircle size={16} />}
-          label="Tên tài khoản"
-          onChange={(event) =>
-            onChange({
-              ...form,
-              bankAccountName: event.target.value,
-            })
-          }
-          placeholder="VD: NGUYEN HUU NGOC LAM"
-          value={form.bankAccountName}
-        />
-        <TextInput
-          icon={<CreditCard size={16} />}
-          inputMode="numeric"
-          label="Số tài khoản"
-          onChange={(event) =>
-            onChange({
-              ...form,
-              bankAccountNumber: event.target.value,
-            })
-          }
-          placeholder="Nhập số tài khoản nhận học phí"
-          value={form.bankAccountNumber}
-        />
+      </div>
+
+      <div className="grid gap-3 border-t border-[var(--border)] pt-4">
+        <h3 className="flex items-center gap-2 text-[14px] font-extrabold text-[var(--brand-950)]">
+          <Landmark className="text-[var(--brand-600)]" size={17} />
+          Thông tin nhận học phí
+        </h3>
+        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          <ProfileBankSelect
+            banks={banks}
+            disabled={isBanksLoading || (!banks.length && !form.bankBin)}
+            isLoading={isBanksLoading}
+            onChange={onBankChange}
+            value={form.bankBin}
+          />
+          <TextInput
+            icon={<CreditCard size={16} />}
+            inputMode="numeric"
+            label="Số tài khoản"
+            onChange={(event) => onBankAccountNumberChange(event.target.value)}
+            placeholder="Nhập số tài khoản nhận học phí"
+            value={form.bankAccountNumber}
+          />
+          <TextInput
+            autoComplete="name"
+            icon={<UserCircle size={16} />}
+            label="Tên chủ tài khoản"
+            onChange={(event) =>
+              onChange({ ...form, bankAccountName: event.target.value })
+            }
+            placeholder="Nhập tên chủ tài khoản ngân hàng"
+            value={form.bankAccountName}
+          />
+        </div>
       </div>
 
       <TextInput
@@ -258,20 +276,6 @@ export function ProfileReadonlyFields({ user }: { user: User }) {
         {user.address || "Chưa cập nhật"}
       </ReadonlyItem>
       <ReadonlyItem
-        icon={<Landmark size={17} />}
-        label="Tên tài khoản"
-        tone="violet"
-      >
-        {user.bankAccountName || "Chưa cập nhật"}
-      </ReadonlyItem>
-      <ReadonlyItem
-        icon={<CreditCard size={17} />}
-        label="Số tài khoản"
-        tone="rose"
-      >
-        {user.bankAccountNumber || "Chưa cập nhật"}
-      </ReadonlyItem>
-      <ReadonlyItem
         className="md:col-span-2"
         icon={<FileText size={17} />}
         label="Ghi chú cá nhân"
@@ -279,6 +283,38 @@ export function ProfileReadonlyFields({ user }: { user: User }) {
       >
         {user.bio || "Chưa có ghi chú"}
       </ReadonlyItem>
+      <div className="grid md:col-span-2 md:grid-cols-3 md:gap-x-6">
+        <ReadonlyItem
+          icon={<Landmark size={17} />}
+          label="Ngân hàng"
+          tone="sky"
+        >
+          <span className="flex min-w-0 items-center gap-2.5">
+            {user.bankLogoUrl ? (
+              <img
+                alt=""
+                className="h-7 w-10 shrink-0 rounded-sm object-contain"
+                src={user.bankLogoUrl}
+              />
+            ) : null}
+            <span className="truncate">{user.bankName || "Chưa cập nhật"}</span>
+          </span>
+        </ReadonlyItem>
+        <ReadonlyItem
+          icon={<Landmark size={17} />}
+          label="Tên tài khoản"
+          tone="violet"
+        >
+          {user.bankAccountName || "Chưa cập nhật"}
+        </ReadonlyItem>
+        <ReadonlyItem
+          icon={<CreditCard size={17} />}
+          label="Số tài khoản"
+          tone="rose"
+        >
+          {user.bankAccountNumber || "Chưa cập nhật"}
+        </ReadonlyItem>
+      </div>
     </div>
   );
 }
@@ -444,6 +480,27 @@ export function PaymentQrPanel({
 
           {qrFile ? (
             <QrCropToolbar onReset={() => onQrCropChange(INITIAL_QR_CROP)} />
+          ) : null}
+
+          {user.bankName ? (
+            <div className="flex min-h-11 items-center justify-center rounded-md border border-sky-100 bg-sky-50/70 px-3">
+              <div className="flex min-w-0 max-w-full items-center justify-center gap-3">
+                {user.bankLogoUrl ? (
+                  <img
+                    alt=""
+                    className="h-10 w-18 shrink-0 rounded-sm bg-white object-contain p-0.5"
+                    src={user.bankLogoUrl}
+                  />
+                ) : (
+                  <span className="grid size-8 shrink-0 place-items-center rounded-md bg-white text-sky-700">
+                    <Landmark size={16} />
+                  </span>
+                )}
+                <span className="min-w-0 truncate text-center text-[13px] font-extrabold text-sky-900">
+                  {user.bankName}
+                </span>
+              </div>
+            </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-2">

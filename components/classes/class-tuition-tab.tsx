@@ -10,20 +10,19 @@ import {
   LoaderCircle,
   RefreshCw,
   Save,
-  Search,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { schoolApi } from "@/lib/api/school";
 import { openPdfInNewTab } from "@/lib/files/open-pdf-in-new-tab";
 import type { InvoiceTemplate } from "@/types/invoice-template";
 import { ReceiptHistory } from "./tuition/receipt-history";
+import { BillingStudentList } from "./tuition/billing-student-list";
 import { TuitionMetric } from "./tuition/tuition-metric";
 import {
   BULK_RECEIPT_DOWNLOAD_ID,
   CurrencyField,
   IssueReceiptModal,
   PaymentModal,
-  StatusPill,
   buildPriceForm,
   formatDateInput,
   getReceiptPreviewErrorHtml,
@@ -53,17 +52,14 @@ import {
   formatCurrencyInput,
   formatMoney,
   getErrorMessage,
-  getStudentAvatar,
   parseCurrencyInput,
   toVietnamDateInputValue,
 } from "./classroom-utils";
 import {
   ConfirmDialog,
-  EmptyState,
   InlineLoading,
   PrimaryAction,
   SecondaryAction,
-  StudentAvatar,
   TextInput,
 } from "./classroom-ui";
 
@@ -112,7 +108,7 @@ export function ClassTuitionTab({
   const [filters, setFilters] = useState<BillingFilterState>(initialFilters);
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [receipts, setReceipts] = useState<ReceiptListItem[]>([]);
-  const { setNotice, watchReceipt } = useNotice();
+  const { setNotice, unwatchReceipt, watchReceipt } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [issueMode, setIssueMode] = useState<IssueMode>("class");
@@ -599,6 +595,7 @@ export function ClassTuitionTab({
 
     try {
       await schoolApi.cancelReceipt(receiptToCancel.id);
+      unwatchReceipt(receiptToCancel.id);
       await loadBillingData();
       setReceiptToCancel(null);
       setNotice({
@@ -883,68 +880,10 @@ export function ClassTuitionTab({
               </div>
             </div>
 
-            {overview?.students.length ? (
-              <div className="max-w-full overflow-x-auto pb-2">
-                <div className="grid min-w-[860px] gap-2">
-                  <div className="grid grid-cols-[minmax(280px,1.45fr)_130px_150px_150px_140px] gap-3 rounded-lg bg-[var(--neutral-50)] px-4 py-3 text-[13px] font-bold text-[var(--neutral-500)]">
-                    <span>Học sinh</span>
-                    <span>Chờ xuất</span>
-                    <span>Tạm tính</span>
-                    <span>Hóa đơn gần nhất</span>
-                    <span>Thao tác</span>
-                  </div>
-                  {overview.students.map((row) => (
-                    <div
-                      className="grid grid-cols-[minmax(280px,1.45fr)_130px_150px_150px_140px] items-center gap-3 rounded-lg border border-[var(--neutral-200)] px-4 py-3"
-                      key={row.student.id}
-                    >
-                      <div className="grid min-w-0 grid-cols-[48px_1fr] items-center gap-3 max-sm:grid-cols-1">
-                        <span className="hidden sm:block">
-                          <StudentAvatar
-                            alt={row.student.fullName}
-                            src={getStudentAvatar(row.student)}
-                          />
-                        </span>
-                        <span className="min-w-0">
-                          <p className="truncate text-[15px] font-extrabold text-[var(--neutral-800)]">
-                            {row.student.fullName}
-                          </p>
-                          <p className="truncate text-[13px] font-semibold text-[var(--neutral-500)]">
-                            {row.student.studentCode}
-                          </p>
-                        </span>
-                      </div>
-                      <StatusPill
-                        tone={row.reachedSuggestedCycle ? "success" : "neutral"}
-                      >
-                        {row.unbilledLessonCount} buổi
-                      </StatusPill>
-                      <strong className="text-[15px] text-[var(--brand-950)]">
-                        {formatMoney(row.unbilledAmount)}
-                      </strong>
-                      <span className="truncate text-[13px] font-semibold text-[var(--neutral-500)]">
-                        {row.latestReceipt?.receiptNumber ?? "Chưa có"}
-                      </span>
-                      <PrimaryAction
-                        className="h-10 px-3"
-                        disabled={row.unbilledLessonCount === 0}
-                        icon={<FileText size={15} />}
-                        onClick={() => void openIssueModal(row)}
-                        type="button"
-                      >
-                        Xuất
-                      </PrimaryAction>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                icon={<Search size={22} />}
-                text="Chưa có học sinh hoặc buổi học nào cần xuất hóa đơn trong kỳ đang chọn."
-                title="Chưa có dữ liệu học phí"
-              />
-            )}
+            <BillingStudentList
+              onIssue={(row) => void openIssueModal(row)}
+              students={overview?.students ?? []}
+            />
           </section>
 
           <ReceiptHistory

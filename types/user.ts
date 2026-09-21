@@ -1,5 +1,14 @@
 export type UserRole = "teacher";
 
+export type PaymentBank = {
+  id: number;
+  name: string;
+  code: string;
+  bin: string;
+  shortName: string;
+  logo: string;
+};
+
 export type User = {
   id: string;
   fullName: string;
@@ -9,6 +18,10 @@ export type User = {
   bio?: string;
   bankAccountName?: string;
   bankAccountNumber?: string;
+  bankName?: string;
+  bankCode?: string;
+  bankBin?: string;
+  bankLogoUrl?: string;
   email: string;
   role: UserRole;
   isEmailVerified: boolean;
@@ -26,6 +39,15 @@ export type UpdateProfilePayload = {
   bio?: string;
   bankAccountName?: string;
   bankAccountNumber?: string;
+  bankBin?: string;
+};
+
+export type PaymentQrUploadResponse = User & {
+  paymentQrBankDetection?: {
+    bankBin: string;
+    bankLogoUrl: string;
+    bankName: string;
+  };
 };
 
 export type ChangePasswordPayload = {

@@ -610,6 +610,7 @@ export const schoolApi = {
 
   getReceiptDetail(receiptId: string) {
     return apiRequest<ReceiptDetail>(`/receipts/${receiptId}`, {
+      cache: "no-store",
       token: getToken(),
     });
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -12,8 +12,10 @@ import {
 import { createPortal } from "react-dom";
 
 export type SelectPickerOption = {
+  description?: string;
   icon?: ReactNode;
   label: string;
+  searchText?: string;
   tone?: "default" | "success" | "warning" | "danger";
   value: string;
 };
@@ -25,6 +27,9 @@ export function SelectPicker({
   onChange,
   options,
   placeholder = "Chọn giá trị",
+  searchable = false,
+  searchEmptyText = "Không tìm thấy kết quả phù hợp.",
+  searchPlaceholder = "Tìm kiếm...",
   value,
   variant = "form",
 }: {
@@ -34,13 +39,19 @@ export function SelectPicker({
   onChange: (value: string) => void;
   options: SelectPickerOption[];
   placeholder?: string;
+  searchable?: boolean;
+  searchEmptyText?: string;
+  searchPlaceholder?: string;
   value: string;
   variant?: "form" | "toolbar";
 }) {
   const listboxId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [menuPosition, setMenuPosition] = useState({
     bottom: undefined as number | undefined,
     left: 0,
@@ -51,6 +62,17 @@ export function SelectPicker({
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selectedOption = options[selectedIndex];
   const selectedIcon = selectedOption?.icon ?? leadingIcon;
+  const normalizedSearchQuery = normalizeSearchText(searchQuery);
+  const visibleOptions = normalizedSearchQuery
+    ? options.filter((option) =>
+        normalizeSearchText(
+          `${option.label} ${option.description ?? ""} ${option.searchText ?? ""} ${option.value}`,
+        ).includes(normalizedSearchQuery),
+      )
+    : options;
+  const selectedVisibleIndex = visibleOptions.findIndex(
+    (option) => option.value === value,
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,31 +104,37 @@ export function SelectPicker({
       if (!(target instanceof Node)) return;
       if (
         triggerRef.current?.contains(target) ||
-        optionRefs.current.some((option) => option?.contains(target))
+        menuRef.current?.contains(target)
       )
         return;
       setIsOpen(false);
+      setSearchQuery("");
     };
 
     updatePosition();
     document.addEventListener("pointerdown", closeOnOutsideClick);
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
-    const focusTimer = window.setTimeout(
-      () => optionRefs.current[Math.max(0, selectedIndex)]?.focus(),
-      0,
-    );
+    const focusTimer = window.setTimeout(() => {
+      if (searchable) {
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      optionRefs.current[Math.max(0, selectedVisibleIndex)]?.focus();
+    }, 0);
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, selectedIndex]);
+  }, [isOpen, searchable, selectedVisibleIndex]);
 
   function choose(nextValue: string) {
     onChange(nextValue);
     setIsOpen(false);
+    setSearchQuery("");
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
 
@@ -117,14 +145,35 @@ export function SelectPicker({
     if (event.key === "Escape") {
       event.preventDefault();
       setIsOpen(false);
+      setSearchQuery("");
       triggerRef.current?.focus();
       return;
     }
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
     const direction = event.key === "ArrowDown" ? 1 : -1;
-    const nextIndex = (index + direction + options.length) % options.length;
+    const nextIndex =
+      (index + direction + visibleOptions.length) % visibleOptions.length;
     optionRefs.current[nextIndex]?.focus();
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+      setSearchQuery("");
+      triggerRef.current?.focus();
+      return;
+    }
+
+    if (
+      visibleOptions.length > 0 &&
+      (event.key === "ArrowDown" || event.key === "ArrowUp")
+    ) {
+      event.preventDefault();
+      const nextIndex = event.key === "ArrowDown" ? 0 : visibleOptions.length - 1;
+      optionRefs.current[nextIndex]?.focus();
+    }
   }
 
   const toolbar = variant === "toolbar";
@@ -144,10 +193,20 @@ export function SelectPicker({
               )}`
         } disabled:cursor-not-allowed disabled:bg-[var(--neutral-50)] disabled:opacity-60`}
         disabled={disabled}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => {
+          if (isOpen) {
+            setIsOpen(false);
+            setSearchQuery("");
+            return;
+          }
+
+          setSearchQuery("");
+          setIsOpen(true);
+        }}
         onKeyDown={(event) => {
           if (["ArrowDown", "ArrowUp"].includes(event.key)) {
             event.preventDefault();
+            setSearchQuery("");
             setIsOpen(true);
           }
         }}
@@ -173,9 +232,8 @@ export function SelectPicker({
       {isOpen &&
         createPortal(
           <div
-            className="fixed z-[1000] grid overflow-y-auto rounded-md border border-[var(--border-strong)] bg-white p-1.5 shadow-[0_16px_36px_rgba(15,23,42,0.14)]"
-            id={listboxId}
-            role="listbox"
+            className="fixed z-[1000] flex flex-col overflow-hidden rounded-md border border-[var(--border-strong)] bg-white p-1.5 shadow-[0_16px_36px_rgba(15,23,42,0.14)]"
+            ref={menuRef}
             style={{
               left: menuPosition.left,
               maxHeight: menuPosition.maxHeight,
@@ -184,39 +242,95 @@ export function SelectPicker({
               width: menuPosition.width,
             }}
           >
-            {options.map((option, index) => {
-              const selected = option.value === value;
-              return (
-                <button
-                  aria-selected={selected}
-                  className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm font-bold outline-none transition ${getOptionToneClass(
-                    option.tone,
-                    selected,
-                  )}`}
-                  key={option.value}
-                  onClick={() => choose(option.value)}
-                  onKeyDown={(event) => handleOptionKeyDown(event, index)}
-                  ref={(element) => {
-                    optionRefs.current[index] = element;
-                  }}
-                  role="option"
-                  type="button"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    {option.icon ? (
-                      <span className="shrink-0">{option.icon}</span>
-                    ) : null}
-                    <span className="min-w-0 break-words">{option.label}</span>
-                  </span>
-                  {selected ? <Check className="shrink-0" size={16} /> : null}
-                </button>
-              );
-            })}
+            {searchable ? (
+              <label className="mb-1.5 flex h-10 shrink-0 items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--neutral-25)] px-2.5 text-[var(--neutral-500)] focus-within:border-[var(--brand-300)] focus-within:ring-2 focus-within:ring-[rgba(99,102,241,0.08)]">
+                <Search className="shrink-0" size={16} />
+                <input
+                  aria-label={`Tìm kiếm trong ${ariaLabel.toLowerCase()}`}
+                  autoComplete="off"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder={searchPlaceholder}
+                  ref={searchInputRef}
+                  type="search"
+                  value={searchQuery}
+                />
+              </label>
+            ) : null}
+
+            <div
+              className="grid min-h-0 flex-1 overflow-y-auto"
+              id={listboxId}
+              role="listbox"
+            >
+              {visibleOptions.length ? (
+                visibleOptions.map((option, index) => {
+                  const selected = option.value === value;
+                  return (
+                    <button
+                      aria-selected={selected}
+                      className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm font-bold outline-none transition ${getOptionToneClass(
+                        option.tone,
+                        selected,
+                      )}`}
+                      key={option.value}
+                      onClick={() => choose(option.value)}
+                      onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                      ref={(element) => {
+                        optionRefs.current[index] = element;
+                      }}
+                      role="option"
+                      type="button"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        {option.icon ? (
+                          <span className="shrink-0">{option.icon}</span>
+                        ) : null}
+                        <span className="grid min-w-0 gap-0.5">
+                          <span className="min-w-0 break-words">
+                            {option.label}
+                          </span>
+                          {option.description ? (
+                            <span
+                              className={`truncate text-[11px] font-semibold ${
+                                selected
+                                  ? "text-white/75"
+                                  : "text-[var(--neutral-500)]"
+                              }`}
+                            >
+                              {option.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                      {selected ? (
+                        <Check className="shrink-0" size={16} />
+                      ) : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="px-3 py-5 text-center text-[13px] font-semibold text-[var(--neutral-500)]">
+                  {searchEmptyText}
+                </p>
+              )}
+            </div>
           </div>,
           document.body,
         )}
     </>
   );
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
 }
 
 function getTriggerToneClass(tone?: SelectPickerOption["tone"]) {

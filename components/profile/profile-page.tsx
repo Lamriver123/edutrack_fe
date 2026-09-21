@@ -14,6 +14,7 @@ import {
   useDashboardSession,
   useDashboardUser,
 } from "@/components/layout/dashboard-shell";
+import { ApiError } from "@/lib/api/client";
 import { profileApi } from "@/lib/api/profile";
 import {
   ConfirmDialog,
@@ -27,6 +28,7 @@ import {
   buildProfileForm,
   buildProfilePayload,
   createCroppedQrFile,
+  decodeQrContent,
   getConfirmConfig,
   type ConfirmAction,
   type ProfileFormState,
@@ -40,6 +42,7 @@ import {
   TeacherProfileCard,
   type PasswordFormState,
 } from "@/components/profile/profile-sections";
+import type { PaymentBank, PaymentQrUploadResponse } from "@/types/user";
 
 const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const PAYMENT_QR_MAX_SIZE_BYTES = 2 * 1024 * 1024;
@@ -48,6 +51,14 @@ const PAYMENT_QR_ACCEPTED_TYPES = new Set([
   "image/png",
   "image/webp",
 ]);
+const PAYMENT_QR_INFO_NOT_FOUND_CODE = "PAYMENT_QR_INFO_NOT_FOUND";
+
+type PendingQrUpload = {
+  file: File;
+  qrContent?: string;
+  warningDescription?: string;
+};
+
 export function ProfilePage() {
   const user = useDashboardUser();
   const { updateUser } = useDashboardSession();
@@ -79,6 +90,10 @@ export function ProfilePage() {
   const [qrCrop, setQrCrop] = useState<QrCropState>(INITIAL_QR_CROP);
   const [localQrPreviewUrl, setLocalQrPreviewUrl] = useState("");
   const [remoteQrPreviewUrl, setRemoteQrPreviewUrl] = useState("");
+  const [pendingQrUpload, setPendingQrUpload] =
+    useState<PendingQrUpload | null>(null);
+  const [banks, setBanks] = useState<PaymentBank[]>([]);
+  const [isBanksLoading, setIsBanksLoading] = useState(true);
 
   const userInitial = user.fullName?.charAt(0)?.toUpperCase() ?? "G";
   const savedAvatarUrl = isProfileEditing
@@ -88,6 +103,7 @@ export function ProfilePage() {
   const qrPreviewUrl = localQrPreviewUrl || remoteQrPreviewUrl;
   const isBusy =
     isSavingProfile || isChangingPassword || isUploadingQr || isRemovingQr;
+  const isProfileBusy = isBusy;
   const confirmConfig = confirmAction
     ? getConfirmConfig(confirmAction, {
         hasAvatarFile: Boolean(avatarFile),
@@ -98,9 +114,55 @@ export function ProfilePage() {
         onChangePassword: () => void handleConfirmChangePassword(),
         onRemoveQr: () => void handleConfirmRemoveQr(),
         onSaveProfile: () => void handleConfirmSaveProfile(),
+        onUploadUnrecognizedQr: () => void handleConfirmUploadUnrecognizedQr(),
         onUploadQr: () => void handleConfirmUploadQr(),
+        unrecognizedPaymentQrDescription: pendingQrUpload?.warningDescription,
       })
     : null;
+  const availableBanks = [...banks];
+
+  if (
+    user.bankBin &&
+    user.bankName &&
+    !availableBanks.some((bank) => bank.bin === user.bankBin)
+  ) {
+    availableBanks.unshift({
+      bin: user.bankBin,
+      code: user.bankCode ?? user.bankName,
+      id: -1,
+      logo: user.bankLogoUrl ?? "",
+      name: user.bankName,
+      shortName: user.bankName,
+    });
+  }
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadBanks() {
+      try {
+        const bankDirectory = await profileApi.getBanks();
+
+        if (isCurrent) {
+          setBanks(bankDirectory);
+        }
+      } catch {
+        if (isCurrent) {
+          setBanks([]);
+        }
+      } finally {
+        if (isCurrent) {
+          setIsBanksLoading(false);
+        }
+      }
+    }
+
+    void loadBanks();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user.hasPaymentQr) {
@@ -195,6 +257,43 @@ export function ProfilePage() {
       return;
     }
 
+    const accountNumber = normalizeBankAccountNumber(
+      profileForm.bankAccountNumber,
+    );
+    const accountName = profileForm.bankAccountName.trim();
+
+    if ((accountNumber || accountName) && !profileForm.bankBin.trim()) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng chọn ngân hàng nhận học phí.",
+      });
+      return;
+    }
+
+    if (accountNumber && !/^\d{6,19}$/.test(accountNumber)) {
+      setNotice({
+        type: "error",
+        text: "Số tài khoản phải gồm từ 6 đến 19 chữ số.",
+      });
+      return;
+    }
+
+    if (accountName && !accountNumber) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng nhập số tài khoản ngân hàng.",
+      });
+      return;
+    }
+
+    if (accountNumber && !accountName) {
+      setNotice({
+        type: "error",
+        text: "Vui lòng nhập tên chủ tài khoản ngân hàng.",
+      });
+      return;
+    }
+
     setConfirmAction("profile");
   }
 
@@ -260,6 +359,20 @@ export function ProfilePage() {
     setProfileForm((current) => ({
       ...current,
       avatarUrl,
+    }));
+  }
+
+  function handleBankChange(bankBin: string) {
+    setProfileForm((current) => ({
+      ...current,
+      bankBin,
+    }));
+  }
+
+  function handleBankAccountNumberChange(value: string) {
+    setProfileForm((current) => ({
+      ...current,
+      bankAccountNumber: normalizeBankAccountNumber(value).slice(0, 19),
     }));
   }
 
@@ -357,6 +470,7 @@ export function ProfilePage() {
   }
 
   function resetQrSelection() {
+    setPendingQrUpload(null);
     setQrFile(null);
     setQrFileName("");
     setQrCrop(INITIAL_QR_CROP);
@@ -392,16 +506,94 @@ export function ProfilePage() {
         );
       }
 
-      const updatedUser = await profileApi.uploadPaymentQr(croppedQrFile);
-      updateUser(updatedUser);
-      resetQrSelection();
-      setNotice({ type: "success", text: "Đã lưu QR thanh toán." });
-      setConfirmAction(null);
+      let qrContent: string | undefined;
+
+      try {
+        qrContent =
+          (await decodeQrContent(croppedQrFile)) ??
+          (await decodeQrContent(qrFile));
+      } catch {
+        qrContent = undefined;
+      }
+
+      const preparedUpload = { file: croppedQrFile, qrContent };
+      setPendingQrUpload(preparedUpload);
+
+      if (!qrContent) {
+        setConfirmAction("unrecognizedPaymentQr");
+        return;
+      }
+
+      try {
+        const updatedUser = await profileApi.uploadPaymentQr(
+          croppedQrFile,
+          qrContent,
+        );
+        applyPaymentQrUpdate(updatedUser);
+      } catch (error) {
+        if (isPaymentQrInfoNotFoundError(error)) {
+          setPendingQrUpload({
+            ...preparedUpload,
+            warningDescription: getPaymentQrWarningDescription(error),
+          });
+          setConfirmAction("unrecognizedPaymentQr");
+          return;
+        }
+
+        throw error;
+      }
     } catch (error) {
       setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
       setIsUploadingQr(false);
     }
+  }
+
+  async function handleConfirmUploadUnrecognizedQr() {
+    if (!pendingQrUpload) {
+      setNotice({
+        type: "error",
+        text: "Không còn ảnh QR chờ lưu. Vui lòng chọn lại ảnh.",
+      });
+      setConfirmAction(null);
+      return;
+    }
+
+    setIsUploadingQr(true);
+
+    try {
+      const updatedUser = await profileApi.uploadPaymentQr(
+        pendingQrUpload.file,
+        pendingQrUpload.qrContent,
+        true,
+      );
+      applyPaymentQrUpdate(updatedUser);
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsUploadingQr(false);
+    }
+  }
+
+  function applyPaymentQrUpdate(updatedUser: PaymentQrUploadResponse) {
+    updateUser(updatedUser);
+    setProfileForm(buildProfileForm(updatedUser));
+    resetQrSelection();
+    setNotice({
+      type: "success",
+      text: updatedUser.paymentQrBankDetection
+        ? `Đã lưu QR và nhận diện ngân hàng ${updatedUser.paymentQrBankDetection.bankName} cùng logo. Tên chủ tài khoản và số tài khoản được giữ theo thông tin bạn đã nhập.`
+        : "Đã lưu QR. Thông tin ngân hàng và tài khoản hiện tại được giữ nguyên.",
+    });
+    setConfirmAction(null);
+  }
+
+  function handleConfirmCancel() {
+    if (confirmAction === "unrecognizedPaymentQr") {
+      setPendingQrUpload(null);
+    }
+
+    setConfirmAction(null);
   }
 
   async function handleConfirmRemoveQr() {
@@ -464,7 +656,7 @@ export function ProfilePage() {
                 </SecondaryAction>
                 <PrimaryAction
                   className="w-full sm:w-auto"
-                  disabled={isBusy}
+                  disabled={isProfileBusy}
                   icon={
                     isSavingProfile ? (
                       <LoaderCircle className="animate-spin" size={16} />
@@ -504,8 +696,12 @@ export function ProfilePage() {
 
             {isProfileEditing ? (
               <ProfileEditFields
+                banks={availableBanks}
                 form={profileForm}
+                isBanksLoading={isBanksLoading}
                 onAvatarUrlChange={handleAvatarUrlChange}
+                onBankAccountNumberChange={handleBankAccountNumberChange}
+                onBankChange={handleBankChange}
                 onChange={setProfileForm}
                 userEmail={user.email}
               />
@@ -551,7 +747,7 @@ export function ProfilePage() {
           confirmText={confirmConfig.confirmText}
           description={confirmConfig.description}
           isLoading={confirmConfig.isLoading}
-          onCancel={() => setConfirmAction(null)}
+          onCancel={handleConfirmCancel}
           onConfirm={confirmConfig.onConfirm}
           title={confirmConfig.title}
           tone={confirmConfig.tone}
@@ -559,4 +755,18 @@ export function ProfilePage() {
       ) : null}
     </section>
   );
+}
+
+function isPaymentQrInfoNotFoundError(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError && error.code === PAYMENT_QR_INFO_NOT_FOUND_CODE
+  );
+}
+
+function getPaymentQrWarningDescription(error: ApiError) {
+  return `${error.message} Nếu vẫn lưu QR, thông tin ngân hàng, tên và số tài khoản hiện tại sẽ được giữ nguyên.`;
+}
+
+function normalizeBankAccountNumber(value: string) {
+  return value.replace(/\D/g, "");
 }

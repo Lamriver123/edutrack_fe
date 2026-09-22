@@ -110,6 +110,23 @@ export const profileApi = {
     });
   },
 
+  uploadMedia(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return apiRequest<{ url: string; recentMediaUrls: string[] }>("/users/me/media", {
+      method: "POST",
+      token: getToken(),
+      body: formData,
+    });
+  },
+
+  getMediaHistory() {
+    return apiRequest<{ recentMediaUrls: string[] }>("/users/me/media", {
+      token: getToken(),
+    });
+  },
+
   uploadPaymentQr(file: File, qrContent?: string, allowUnrecognized = false) {
     const formData = new FormData();
     formData.append("file", file);

@@ -9,6 +9,9 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Coins,
+  CoinsIcon,
+  DollarSign,
   Eye,
   FileText,
   Loader2,
@@ -470,22 +473,22 @@ function RevenuePanel({
         />
         <RevenueMetric
           description={`${revenue.currentMonth.receiptCount} hóa đơn trong tháng`}
-          icon={<FileText size={16} />}
+          icon={<CoinsIcon size={16} />}
           label="Đã xuất tháng này"
           tone="brand"
           value={formatMoney(revenue.currentMonth.issuedAmount)}
         />
         <RevenueMetric
           description={`${revenue.overall.pendingReceiptCount} hóa đơn đang chờ phụ huynh`}
-          icon={<AlertCircle size={16} />}
-          label="Còn phải thu"
+          icon={<DollarSign size={16} />}
+          label="Số tiền chưa thu"
           tone="amber"
           value={formatMoney(revenue.overall.outstandingAmount)}
         />
         <RevenueMetric
           description={`${paidRatio}% hóa đơn đã hoàn tất`}
-          icon={<TrendingUp size={16} />}
-          label="Tổng đã thu lũy kế"
+          icon={<Coins size={16} />}
+          label="Tổng số tiền đã thu"
           tone="violet"
           value={formatMoney(revenue.overall.paidAmount)}
         />

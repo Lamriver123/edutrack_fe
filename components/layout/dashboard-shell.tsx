@@ -15,6 +15,7 @@ import {
   Search,
   UserCircle,
   Users,
+  UploadCloud,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -89,6 +90,14 @@ const navigationItems: NavigationItem[] = [
     icon: FilePenLine,
     group: "account",
     match: (pathname) => pathname.startsWith("/settings/invoice-template"),
+  },
+  {
+    label: "Upload file",
+    description: "Thư viện phương tiện cá nhân",
+    href: "/upload",
+    icon: UploadCloud,
+    group: "account",
+    match: (pathname) => pathname.startsWith("/upload"),
   },
   {
     label: "Thông tin cá nhân",

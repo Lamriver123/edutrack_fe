@@ -25,6 +25,9 @@ import type {
   UpdateClassPayload,
   UpdateStudentPayload,
   UpdateTemporarySchedulePayload,
+  SuspendFixedSchedulePayload,
+  ResumeFixedSchedulePayload,
+  UpdateEnrollmentStatusPayload,
   AttendanceSheetResponse,
   Exam,
   CreateExamPayload,
@@ -201,6 +204,33 @@ export const schoolApi = {
     });
   },
 
+  previewSuspendFixedSchedule(classId: string, payload: SuspendFixedSchedulePayload) {
+    return apiRequest<{ orphanedOverrides: ClassTemporarySchedule[] }>(
+      `/classes/${classId}/schedules/fixed/suspend-preview`,
+      {
+        method: "POST",
+        token: getToken(),
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+
+  suspendFixedSchedule(classId: string, payload: SuspendFixedSchedulePayload) {
+    return apiRequest<LatestFixedSchedule>(`/classes/${classId}/schedules/fixed/suspend`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  resumeFixedSchedule(classId: string, payload: ResumeFixedSchedulePayload) {
+    return apiRequest<LatestFixedSchedule>(`/classes/${classId}/schedules/fixed/resume`, {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
   createTemporarySchedule(
     classId: string,
     payload: CreateTemporarySchedulePayload,
@@ -356,6 +386,21 @@ export const schoolApi = {
         body: JSON.stringify({ studentIds }),
       },
     );
+  },
+
+  updateStudentEnrollmentStatus(classId: string, studentId: string, payload: UpdateEnrollmentStatusPayload) {
+    return apiRequest<EnrollmentResponse>(`/classes/${classId}/students/${studentId}/status`, {
+      method: "PATCH",
+      token: getToken(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  hardDeleteStudentFromClass(classId: string, studentId: string) {
+    return apiRequest<{ message: string }>(`/classes/${classId}/students/${studentId}/hard`, {
+      method: "DELETE",
+      token: getToken(),
+    });
   },
 
   getTeacherWeekSchedule(weekStart?: string) {

@@ -18,6 +18,18 @@ export type ScheduleOverrideAction =
   | "extra"
   | "one_on_one";
 
+export type SuspendFixedSchedulePayload = {
+  suspendFrom: string;
+};
+
+export type ResumeFixedSchedulePayload = {
+  resumeFrom: string;
+};
+
+export type UpdateEnrollmentStatusPayload = {
+  status: EnrollmentStatus;
+};
+
 export type LatestFixedSchedule = {
   id: string;
   version: number;
@@ -30,6 +42,7 @@ export type LatestFixedSchedule = {
 export type ClassScheduleOverview = {
   fixedSchedules: LatestFixedSchedule[];
   latestFixedSchedule: LatestFixedSchedule | null;
+  isFixedScheduleSuspended: boolean;
   temporarySchedules: ClassTemporarySchedule[];
 };
 

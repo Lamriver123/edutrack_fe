@@ -242,8 +242,14 @@ export function SummaryItem({
 
 export function CurrentFixedSchedule({
   schedule,
+  isSuspended,
+  onSuspend,
+  onResume,
 }: {
   schedule: LatestFixedSchedule | null;
+  isSuspended?: boolean;
+  onSuspend?: () => void;
+  onResume?: () => void;
 }) {
   if (!schedule?.schedules.length) {
     return (
@@ -274,6 +280,24 @@ export function CurrentFixedSchedule({
           </span>
         ))}
       </div>
+      {(onSuspend || onResume) && (
+        <div className={styles.fixedSlotActions} style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+          {isSuspended ? (
+            <>
+              <span className={styles.previewLabel} style={{ color: "var(--red-600)", alignSelf: "center", marginRight: "1rem" }}>
+                Đang tạm hoãn
+              </span>
+              <PrimaryAction onClick={onResume} type="button">
+                Khôi phục lịch
+              </PrimaryAction>
+            </>
+          ) : (
+            <SecondaryAction className={styles.dangerButton} onClick={onSuspend} type="button">
+              Tạm hoãn lịch
+            </SecondaryAction>
+          )}
+        </div>
+      )}
     </section>
   );
 }

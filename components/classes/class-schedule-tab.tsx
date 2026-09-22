@@ -131,6 +131,13 @@ export function ClassScheduleTab({
   const [isSavingTemporary, setIsSavingTemporary] = useState(false);
   const [isRevokingTemporary, setIsRevokingTemporary] = useState(false);
   const [isSavingLesson, setIsSavingLesson] = useState(false);
+  const [isSuspending, setIsSuspending] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [isResumeConfirmOpen, setIsResumeConfirmOpen] = useState(false);
+  const [suspendFrom, setSuspendFrom] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [resumeFrom, setResumeFrom] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [suspendOrphanedOverrides, setSuspendOrphanedOverrides] = useState<ClassTemporarySchedule[] | null>(null);
   const [confirmAction, setConfirmAction] =
     useState<ScheduleConfirmAction | null>(null);
   const fixedCheck = useScheduleCheck();
@@ -164,7 +171,7 @@ export function ClassScheduleTab({
   const classEvents = useMemo(
     () =>
       (weekSchedule?.events ?? []).filter(
-        (event) => event.classId === classroom.id,
+        (event) => event.classId === classroom.id && event.type !== "cancel",
       ),
     [classroom.id, weekSchedule?.events],
   );
@@ -202,9 +209,7 @@ export function ClassScheduleTab({
     [overview?.temporarySchedules, selectedWeekStart],
   );
   const fixedSlotCount = overview?.latestFixedSchedule?.schedules.length ?? 0;
-  const activeEventCount = classEvents.filter(
-    (event) => event.type !== "cancel",
-  ).length;
+  const activeEventCount = classEvents.length;
   const weekRange = weekSchedule
     ? `${formatDate(weekSchedule.weekStart)} - ${formatDate(
         weekSchedule.weekEnd,
@@ -578,6 +583,80 @@ export function ClassScheduleTab({
     );
   }
 
+  async function handleSuspendSchedule(e?: FormEvent) {
+    e?.preventDefault();
+    if (!suspendFrom) return;
+
+    if (!suspendOrphanedOverrides) {
+      setIsSuspending(true);
+      try {
+        const { orphanedOverrides } = await schoolApi.previewSuspendFixedSchedule(classroom.id, { suspendFrom });
+        if (orphanedOverrides.length > 0) {
+          setSuspendOrphanedOverrides(orphanedOverrides);
+          setIsSuspending(false);
+          return;
+        }
+      } catch (error) {
+        setNotice({ type: "error", text: getErrorMessage(error) });
+        setIsSuspending(false);
+        return;
+      }
+    }
+
+    setIsSuspending(true);
+    try {
+      await schoolApi.suspendFixedSchedule(classroom.id, {
+        suspendFrom,
+      });
+      setNotice({ type: "success", text: "Đã tạm hoãn lịch cố định." });
+      setIsSuspendModalOpen(false);
+      setSuspendOrphanedOverrides(null);
+      await loadSchedules();
+      if (onScheduleChanged) await onScheduleChanged();
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsSuspending(false);
+    }
+  }
+
+  async function handleResumeSchedule(e?: FormEvent) {
+    e?.preventDefault();
+    if (!resumeFrom) return;
+
+    setIsResuming(true);
+    try {
+      if (overview?.latestFixedSchedule) {
+        const result = await fixedCheck.check(() =>
+          schoolApi.checkFixedSchedule(classroom.id, {
+            effectiveFrom: resumeFrom,
+            schedules: overview.latestFixedSchedule!.schedules
+          })
+        );
+        if (!result) {
+          setIsResumeConfirmOpen(false);
+          setFixedForm({ effectiveFrom: resumeFrom, schedules: overview.latestFixedSchedule!.schedules });
+          setIsFixedModalOpen(true);
+          setNotice({ type: "warning", text: "Khung giờ cũ đã bị trùng. Vui lòng chọn giờ mới để khôi phục." });
+          setIsResuming(false);
+          return;
+        }
+      }
+
+      await schoolApi.resumeFixedSchedule(classroom.id, {
+        resumeFrom,
+      });
+      setNotice({ type: "success", text: "Đã khôi phục lịch cố định." });
+      setIsResumeConfirmOpen(false);
+      await loadSchedules();
+      if (onScheduleChanged) await onScheduleChanged();
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setIsResuming(false);
+    }
+  }
+
   function updateFixedSlot(
     index: number,
     field: keyof ClassScheduleSlot,
@@ -832,7 +911,12 @@ export function ClassScheduleTab({
         />
       </div>
 
-      <CurrentFixedSchedule schedule={overview?.latestFixedSchedule ?? null} />
+      <CurrentFixedSchedule 
+        schedule={overview?.latestFixedSchedule ?? null} 
+        isSuspended={overview?.isFixedScheduleSuspended}
+        onSuspend={() => setIsSuspendModalOpen(true)}
+        onResume={() => setIsResumeConfirmOpen(true)}
+      />
 
       <section className={styles.calendarFrame}>
         {isLoading ? (
@@ -979,6 +1063,103 @@ export function ClassScheduleTab({
             </div>
           </form>
         </Modal>
+      ) : null}
+
+      {isResumeConfirmOpen ? (
+        <Modal
+          onClose={() => setIsResumeConfirmOpen(false)}
+          title="Khôi phục lịch cố định"
+        >
+          <form className={styles.modalForm} onSubmit={handleResumeSchedule}>
+            <div className={styles.temporaryFormGrid}>
+              <div style={{ gridColumn: "1 / -1", color: "var(--neutral-600)", fontSize: 14, marginBottom: 8 }}>
+                Lịch cố định đang tạm hoãn sẽ được mở lại và áp dụng từ ngày bạn chọn. 
+                Ngày khôi phục phải sau ngày bắt đầu tạm hoãn.
+              </div>
+              <DateField
+                label="Ngày khôi phục"
+                onChange={setResumeFrom}
+                value={resumeFrom}
+              />
+            </div>
+            <div className={styles.modalActionsEnd} style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <SecondaryAction onClick={() => setIsResumeConfirmOpen(false)} type="button">
+                Hủy
+              </SecondaryAction>
+              <PrimaryAction
+                disabled={isResuming}
+                icon={
+                  isResuming ? (
+                    <LoaderCircle className="animate-spin" size={16} />
+                  ) : (
+                    <Save size={16} />
+                  )
+                }
+                type="submit"
+              >
+                Xác nhận
+              </PrimaryAction>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+
+      {isSuspendModalOpen ? (
+        <Modal
+          onClose={() => setIsSuspendModalOpen(false)}
+          title="Tạm hoãn lịch cố định"
+        >
+          <form className={styles.modalForm} onSubmit={handleSuspendSchedule}>
+            <div className={styles.temporaryFormGrid}>
+              <div style={{ gridColumn: "1 / -1", color: "var(--neutral-600)", fontSize: 14, marginBottom: 8 }}>
+                Lịch cố định sẽ bị tạm dừng và không sinh ra buổi học mới từ ngày bạn chọn. 
+                Bạn có thể khôi phục lại lịch bất cứ lúc nào.
+              </div>
+              <DateField
+                label="Ngày bắt đầu tạm hoãn"
+                onChange={(val) => {
+                  setSuspendFrom(val);
+                  setSuspendOrphanedOverrides(null);
+                }}
+                value={suspendFrom}
+              />
+            </div>
+            <div className={styles.modalActionsEnd} style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <SecondaryAction onClick={() => setIsSuspendModalOpen(false)} type="button">
+                Hủy
+              </SecondaryAction>
+              <PrimaryAction
+                disabled={isSuspending}
+                icon={
+                  isSuspending ? (
+                    <LoaderCircle className="animate-spin" size={16} />
+                  ) : (
+                    <Save size={16} />
+                  )
+                }
+                type="submit"
+              >
+                Xác nhận
+              </PrimaryAction>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+
+      {suspendOrphanedOverrides ? (
+        <ConfirmDialog
+          description={`Có ${suspendOrphanedOverrides.length} buổi học thay đổi nằm trong thời gian tạm hoãn sẽ bị huỷ (xoá khỏi hệ thống). Bạn có chắc chắn muốn tiếp tục tạm hoãn?`}
+          isLoading={isSuspending}
+          onCancel={() => setSuspendOrphanedOverrides(null)}
+          onConfirm={() => {
+            // Bypass preview
+            const fakeEvent = { preventDefault: () => {} } as FormEvent;
+            void handleSuspendSchedule(fakeEvent);
+          }}
+          title="Lịch tạm bị ảnh hưởng"
+          tone="danger"
+          confirmText="Đồng ý, xoá và tạm hoãn"
+        />
       ) : null}
 
       {isTemporaryModalOpen ? (

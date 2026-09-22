@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   Coins,
+  EllipsisVertical,
   LoaderCircle,
   Pencil,
   Plus,
@@ -11,7 +12,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import type { Classroom, ClassroomDetail, Student } from "@/types/school";
 import { ClassScheduleTab } from "./class-schedule-tab";
@@ -64,9 +65,11 @@ export function ClassroomDetailTabs({
   onInitialIssueHandled,
   onRemoveStudent,
   onRemoveStudents,
+  onDeleteStudent,
   onScheduleChanged,
   removingStudentId,
   removingStudentIds = [],
+  deletingStudentId,
 }: {
   classroom: ClassroomDetail | null;
   isLoading: boolean;
@@ -80,9 +83,11 @@ export function ClassroomDetailTabs({
   onInitialIssueHandled?: () => void;
   onRemoveStudent: (student: Student) => void;
   onRemoveStudents: (students: Student[]) => void;
+  onDeleteStudent: (student: Student) => void;
   onScheduleChanged?: () => Promise<void> | void;
   removingStudentId: string;
   removingStudentIds?: string[];
+  deletingStudentId: string;
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(
     initialActiveTab ?? "students",
@@ -255,9 +260,11 @@ export function ClassroomDetailTabs({
               onAddStudent={onAddStudent}
               onRemoveStudent={onRemoveStudent}
               onRemoveStudents={onRemoveStudents}
+              onDeleteStudent={onDeleteStudent}
               onSelectStudent={setSelectedStudent}
               removingStudentId={removingStudentId}
               removingStudentIds={removingStudentIds}
+              deletingStudentId={deletingStudentId}
               searchValue={studentFilter}
               setSearchValue={setStudentFilter}
               totalStudents={classroom.students.length}
@@ -308,14 +315,166 @@ export function ClassroomDetailTabs({
   );
 }
 
+function StudentActionMenu({
+  student,
+  isRemoving,
+  isDeleting,
+  disabled,
+  onRemove,
+  onDelete,
+}: {
+  student: Student;
+  isRemoving: boolean;
+  isDeleting: boolean;
+  disabled: boolean;
+  onRemove: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isBusy = isRemoving || isDeleting;
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleScrollOrResize() {
+      setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [open]);
+
+  function toggleMenu(event: React.MouseEvent) {
+    event.stopPropagation();
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const menuWidth = 228;
+    const menuHeight = 140;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < menuHeight + 8
+      ? rect.top - menuHeight - 4
+      : rect.bottom + 4;
+    const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
+    setMenuPos({ top, left });
+    setOpen(true);
+  }
+
+  return (
+    <div className="flex items-center justify-end">
+      {isBusy ? (
+        <span className="inline-flex h-8 w-8 items-center justify-center">
+          <LoaderCircle
+            className="animate-spin"
+            size={16}
+            style={{ color: isDeleting ? "#ef4444" : "#f59e0b" }}
+          />
+        </span>
+      ) : (
+        <button
+          ref={triggerRef}
+          aria-label={`Thao tác với ${student.fullName}`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--neutral-400)] transition-colors hover:bg-[var(--neutral-100)] hover:text-[var(--neutral-600)] disabled:pointer-events-none disabled:opacity-40"
+          disabled={disabled}
+          onClick={toggleMenu}
+          type="button"
+        >
+          <EllipsisVertical size={16} />
+        </button>
+      )}
+
+      {open && !isBusy && menuPos ? (
+        <div
+          ref={menuRef}
+          className="fixed z-[200] w-[228px] rounded-xl border border-[var(--neutral-200)] bg-white py-1.5 shadow-xl shadow-black/10"
+          onClick={(event) => event.stopPropagation()}
+          role="menu"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          <button
+            className="flex w-full items-start gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-amber-50 group"
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 transition-colors group-hover:bg-amber-200">
+              <BookOpenCheck size={14} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-semibold text-[var(--neutral-700)]">
+                Cho nghỉ học
+              </span>
+              <span className="block text-[12px] leading-snug text-[var(--neutral-400)]">
+                Tạm ngưng, giữ lại lịch sử học
+              </span>
+            </span>
+          </button>
+
+          <div className="mx-3 my-1 h-px bg-[var(--neutral-100)]" />
+
+          <button
+            className="flex w-full items-start gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-red-50 group"
+            onClick={() => {
+              setOpen(false);
+              onDelete();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600 transition-colors group-hover:bg-red-200">
+              <Trash2 size={14} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-semibold text-red-600">
+                Xóa khỏi lớp
+              </span>
+              <span className="block text-[12px] leading-snug text-[var(--neutral-400)]">
+                Xóa hoàn toàn nếu thêm nhầm
+              </span>
+            </span>
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StudentsTab({
   filteredStudents,
   onAddStudent,
   onRemoveStudent,
   onRemoveStudents,
+  onDeleteStudent,
   onSelectStudent,
   removingStudentId,
   removingStudentIds,
+  deletingStudentId,
   searchValue,
   setSearchValue,
   totalStudents,
@@ -324,9 +483,11 @@ function StudentsTab({
   onAddStudent: () => void;
   onRemoveStudent: (student: Student) => void;
   onRemoveStudents: (students: Student[]) => void;
+  onDeleteStudent: (student: Student) => void;
   onSelectStudent: (student: Student) => void;
   removingStudentId: string;
   removingStudentIds: string[];
+  deletingStudentId: string;
   searchValue: string;
   setSearchValue: (value: string) => void;
   totalStudents: number;
@@ -507,27 +668,17 @@ function StudentsTab({
                     {student.parent?.phone || "Chưa có số điện thoại"}
                   </span>
                 </span>
-                <button
-                  aria-label={`Cho ${student.fullName} nghỉ lớp`}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 text-[13px] font-bold text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:pointer-events-none disabled:text-red-300"
+                <StudentActionMenu
+                  student={student}
+                  isRemoving={removingStudentId === student.id}
+                  isDeleting={deletingStudentId === student.id}
                   disabled={
                     isBulkRemoving ||
-                    removingStudentId === student.id ||
                     removingStudentIdSet.has(student.id)
                   }
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRemoveStudent(student);
-                  }}
-                  type="button"
-                >
-                  {removingStudentId === student.id ? (
-                    <LoaderCircle className="animate-spin" size={14} />
-                  ) : (
-                    <Trash2 size={14} />
-                  )}
-                  Nghỉ
-                </button>
+                  onRemove={() => onRemoveStudent(student)}
+                  onDelete={() => onDeleteStudent(student)}
+                />
               </div>
             ))}
           </div>

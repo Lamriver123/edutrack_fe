@@ -54,6 +54,8 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
   const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
   const [studentsToRemove, setStudentsToRemove] = useState<Student[]>([]);
   const [isRemovingStudents, setIsRemovingStudents] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const [isDeletingStudent, setIsDeletingStudent] = useState(false);
   const [handledIssueRequestKey, setHandledIssueRequestKey] = useState("");
   const {
     classImageFileName,
@@ -134,6 +136,26 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
       setStudentToRemove(null);
     } finally {
       setRemovingStudentId("");
+    }
+  }
+
+  async function handleDeleteStudent(student: Student) {
+    setNotice(null);
+    setIsDeletingStudent(true);
+
+    try {
+      await schoolApi.hardDeleteStudentFromClass(classId, student.id);
+      await loadClassDetail();
+      setNotice({
+        type: "success",
+        text: `Đã xóa hoàn toàn ${student.fullName} khỏi lớp.`,
+      });
+      setStudentToDelete(null);
+    } catch (error) {
+      setNotice({ type: "error", text: getErrorMessage(error) });
+      setStudentToDelete(null);
+    } finally {
+      setIsDeletingStudent(false);
     }
   }
 
@@ -366,6 +388,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
           onInitialIssueHandled={handleInitialIssueHandled}
           onRemoveStudent={setStudentToRemove}
           onRemoveStudents={setStudentsToRemove}
+          onDeleteStudent={setStudentToDelete}
           onScheduleChanged={loadClassDetail}
           removingStudentId={removingStudentId}
           removingStudentIds={
@@ -375,6 +398,7 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
                 ? [removingStudentId]
                 : []
           }
+          deletingStudentId={isDeletingStudent && studentToDelete ? studentToDelete.id : ""}
         />
       )}
 
@@ -394,7 +418,19 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
           isLoading={removingStudentId === studentToRemove.id}
           onCancel={() => setStudentToRemove(null)}
           onConfirm={() => void handleRemoveStudent(studentToRemove)}
-          title="Xác nhận cho nghỉ lớp"
+          title="Xác nhận cho nghỉ học"
+          tone="danger"
+        />
+      ) : null}
+
+      {studentToDelete ? (
+        <ConfirmDialog
+          confirmText="Xóa hoàn toàn"
+          description={`Bạn sắp xóa hoàn toàn ${studentToDelete.fullName} khỏi lớp học này (chỉ khả dụng nếu học sinh chưa có điểm danh, học phí, hay điểm số trong lớp). Không thể hoàn tác hành động này.`}
+          isLoading={isDeletingStudent}
+          onCancel={() => setStudentToDelete(null)}
+          onConfirm={() => void handleDeleteStudent(studentToDelete)}
+          title="Xác nhận xóa học sinh khỏi lớp"
           tone="danger"
         />
       ) : null}

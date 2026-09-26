@@ -50,11 +50,11 @@ function CurrencyInput({
   value: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid min-w-0 gap-2">
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
-      <span className="relative">
+      <span className="relative min-w-0">
         <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[var(--neutral-400)]">
           <Coins size={16} />
         </span>

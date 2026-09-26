@@ -288,18 +288,18 @@ export function TextInput({
   label: string;
 }) {
   return (
-    <label className="grid gap-1.5">
-      <span className="text-[13px] font-bold text-[var(--neutral-700)]">
+    <label className="grid min-w-0 gap-1.5">
+      <span className="text-[13px] font-bold text-[var(--neutral-700)] truncate">
         {label}
       </span>
-      <span className="relative">
+      <span className="relative min-w-0">
         {icon ? (
           <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[var(--neutral-400)]">
             {icon}
           </span>
         ) : null}
         <input
-          className={`h-12 w-full rounded-md border border-[var(--border-strong)] bg-white px-4 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] read-only:cursor-default read-only:bg-[var(--neutral-50)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
+          className={`min-w-0 h-12 w-full rounded-md border border-[var(--border-strong)] bg-white px-4 text-[14px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-300)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] read-only:cursor-default read-only:bg-[var(--neutral-50)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)] ${
             icon ? "pl-11" : ""
           }`}
           {...props}
@@ -318,11 +318,11 @@ export function TextArea({
   label: string;
 }) {
   return (
-    <label className="grid gap-1.5">
-      <span className="text-[13px] font-bold text-[var(--neutral-700)]">
+    <label className="grid min-w-0 gap-1.5">
+      <span className="text-[13px] font-bold text-[var(--neutral-700)] truncate">
         {label}
       </span>
-      <span className="relative">
+      <span className="relative min-w-0">
         {icon ? (
           <span className="pointer-events-none absolute left-3.5 top-3.5 text-[var(--neutral-400)]">
             {icon}

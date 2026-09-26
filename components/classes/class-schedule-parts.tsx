@@ -822,8 +822,8 @@ export function SelectField({
   }, [isOpen, updateMenuPosition]);
 
   return (
-    <div className="grid gap-2" ref={rootRef}>
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <div className="grid min-w-0 gap-2" ref={rootRef}>
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
       <div className={formStyles.scheduleSelect}>
@@ -907,12 +907,12 @@ export function DateField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid min-w-0 gap-2">
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
       <input
-        className={formStyles.scheduleControl}
+        className={`${formStyles.scheduleControl} min-w-0`}
         lang="vi-VN"
         onChange={(event) => onChange(event.target.value)}
         type="date"
@@ -932,12 +932,12 @@ export function TimeField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid min-w-0 gap-2">
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
       <input
-        className={formStyles.scheduleControl}
+        className={`${formStyles.scheduleControl} min-w-0`}
         inputMode="numeric"
         lang="vi-VN"
         maxLength={5}

@@ -935,11 +935,11 @@ export function CurrencyField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid min-w-0 gap-2">
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
-      <span className="relative">
+      <span className="relative min-w-0">
         <input
           className="h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white px-4 pr-14 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
           inputMode="numeric"

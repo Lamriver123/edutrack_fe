@@ -51,6 +51,10 @@ export function YearlyRevenueChart({
   const hoveredX =
     hoveredIndex >= 0 ? left + slotWidth * hoveredIndex + slotWidth / 2 : left;
 
+  let tooltipLeft = hoveredX - 95; // Tooltip width is 190px, so half is 95
+  if (tooltipLeft < 4) tooltipLeft = 4;
+  if (tooltipLeft + 190 > chartWidth - 4) tooltipLeft = chartWidth - 190 - 4;
+
   useEffect(() => {
     const container = chartContainerRef.current;
     if (!container) return;
@@ -104,16 +108,7 @@ export function YearlyRevenueChart({
         {hoveredItem ? (
           <div
             className="pointer-events-none absolute top-2 z-10 w-[190px] rounded-md border border-white/10 bg-[#111827] p-3 text-white shadow-[0_14px_32px_rgba(15,23,42,0.3)]"
-            style={
-              hoveredIndex === 0
-                ? { left: 4 }
-                : hoveredIndex === 11
-                  ? { right: 4 }
-                  : {
-                      left: `${(hoveredX / chartWidth) * 100}%`,
-                      transform: "translateX(-50%)",
-                    }
-            }
+            style={{ left: tooltipLeft }}
           >
             <p className="text-[13px] font-extrabold">
               Tháng {String(hoveredItem.month).padStart(2, "0")}/{revenue.year}

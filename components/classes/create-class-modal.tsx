@@ -54,12 +54,12 @@ function CurrencyInput({
       <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         {label}
       </span>
-      <span className="relative min-w-0">
+      <span className="relative block min-w-0">
         <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[var(--neutral-400)]">
           <Coins size={16} />
         </span>
         <input
-          className="h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white px-4 pl-11 pr-16 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-200)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)]"
+          className="min-w-0 max-w-full h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white px-4 pl-11 pr-16 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition placeholder:text-[var(--neutral-400)] hover:border-[var(--brand-200)] focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] disabled:bg-[var(--neutral-100)] disabled:text-[var(--neutral-400)]"
           inputMode="numeric"
           onChange={(event) =>
             onChange(formatCurrencyInput(event.target.value))
@@ -206,7 +206,7 @@ function ClassFormModal({
 }) {
   return (
     <Modal onClose={onClose} title={title}>
-      <form className="grid gap-4" onSubmit={onSubmit}>
+      <form className="grid min-w-0 gap-4" onSubmit={onSubmit}>
         <TextInput
           icon={<BookOpenCheck size={16} />}
           label="Tên lớp"
@@ -253,7 +253,7 @@ function ClassFormModal({
           />
         ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <CurrencyInput
             label="Giá buổi thường"
             onChange={(value) =>

@@ -27,7 +27,7 @@ import {
   UserCircle,
   X,
 } from "lucide-react";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import type { PaymentBank, User } from "@/types/user";
 import {
   PrimaryAction,

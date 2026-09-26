@@ -1,6 +1,6 @@
 {
-  "name": "Ms. Cheese – Quản lý học sinh",
-  "short_name": "Ms. Cheese",
+  "name": "EduTrack – Quản lý học sinh",
+  "short_name": "Edu Track",
   "description": "Hệ thống quản lý học sinh dành cho giáo viên. Quản lý lớp học, điểm danh, học phí và theo dõi học sinh.",
   "start_url": "/",
   "display": "standalone",

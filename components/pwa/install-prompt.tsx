@@ -99,10 +99,10 @@ export function PWAInstallPrompt() {
       <div className="pwa-install-banner">
         <div className="pwa-install-banner-content">
           <div className="pwa-install-icon">
-            <img src="/icons/icon-72x72.png" alt="Ms. Cheese" width={40} height={40} />
+            <img src="/icons/icon-72x72.png" alt="Edu Track" width={40} height={40} />
           </div>
           <div className="pwa-install-text">
-            <strong>Cài đặt Ms. Cheese</strong>
+            <strong>Cài đặt Edu Track</strong>
             <span>
               {isIOS
                 ? 'Thêm vào Màn hình chính để sử dụng như ứng dụng'

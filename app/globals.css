@@ -358,3 +358,18 @@ button:not(:disabled),
 .stagger > *:nth-child(10) {
   animation-delay: 450ms;
 }
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+input[type="date"],
+input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+}

@@ -6,9 +6,49 @@ import "./globals.css";
 import "./pwa.css";
 
 export const metadata: Metadata = {
-  title: "EduTrack – Quản lý học sinh",
+  title: {
+    default: "EduTrack – Hệ thống quản lý học sinh thông minh",
+    template: "%s | EduTrack",
+  },
   description:
-    "Hệ thống quản lý học sinh dành cho giáo viên. Đăng ký, đăng nhập, quản lý lớp học và theo dõi học sinh.",
+    "Phần mềm quản lý học sinh, điểm danh, lịch học và học phí tối ưu dành cho giáo viên và trung tâm gia sư. Đăng ký ngay để trải nghiệm miễn phí.",
+  keywords: ["quản lý học sinh", "điểm danh", "phần mềm giáo viên", "quản lý lớp học", "EduTrack", "quản lý học phí"],
+  authors: [{ name: "EduTrack Team" }],
+  creator: "EduTrack",
+  publisher: "EduTrack",
+  openGraph: {
+    title: "EduTrack – Giải pháp quản lý học sinh toàn diện",
+    description: "Tối ưu hóa việc quản lý lớp học, điểm danh và học phí. Giúp giáo viên tiết kiệm thời gian và nâng cao hiệu quả.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://edutrack-fe.vercel.app",
+    siteName: "EduTrack",
+    images: [
+      {
+        url: "/icons/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "EduTrack Logo",
+      }
+    ],
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EduTrack – Quản lý học sinh thông minh",
+    description: "Giải pháp quản lý lớp học, điểm danh, và học phí tối ưu dành riêng cho giáo viên.",
+    images: ["/icons/icon-512x512.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

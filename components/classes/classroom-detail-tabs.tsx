@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import type { Classroom, ClassroomDetail, Student } from "@/types/school";
 import { ClassScheduleTab } from "./class-schedule-tab";
 import { ClassAttendanceTab } from "./class-attendance-tab";
@@ -704,30 +704,6 @@ function StudentsTab({
           }
         />
       )}
-    </div>
-  );
-}
-
-function TabStatCard({
-  icon,
-  label,
-  tone,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  tone: "search" | "students";
-  value: string;
-}) {
-  return (
-    <div className={styles.tabStatCard} data-tone={tone}>
-      <span className={styles.tabStatIcon}>
-        {icon}
-      </span>
-      <span className={styles.tabStatCopy}>
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </span>
     </div>
   );
 }

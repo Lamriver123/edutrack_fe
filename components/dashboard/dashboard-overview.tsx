@@ -13,11 +13,9 @@ import {
   CoinsIcon,
   DollarSign,
   Eye,
-  FileText,
   Loader2,
   ReceiptText,
   RefreshCw,
-  TrendingUp,
   Users,
   WalletCards,
 } from "lucide-react";

@@ -1,8 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useRef, type ChangeEvent, useEffect } from "react";
 
-import { UploadCloud, Scissors, ZoomIn, X, Loader2, Image as ImageIcon, Video, File as FileIcon, Mic, Square, PlayCircle } from "lucide-react";
+import { UploadCloud, Scissors, X, Loader2, Image as ImageIcon, Video, File as FileIcon, Mic, Square, PlayCircle } from "lucide-react";
 import { profileApi } from "@/lib/api/profile";
 import { QrCropBox, QrCropToolbar, type QrCropState, normalizeQrCrop } from "@/components/profile/profile-qr-crop";
 import { useNotice } from "@/components/ui/notice-provider";
@@ -69,7 +70,6 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
-  const [uploadProgress, setUploadProgress] = useState(0);
   const { setNotice } = useNotice();
 
   // Editor states
@@ -79,7 +79,6 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
   const [isRecording, setIsRecording] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
 
   // Recording states
   const [isRecordingMic, setIsRecordingMic] = useState(false);
@@ -133,7 +132,7 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
         setRecordTime(prev => prev + 1);
       }, 1000);
       setError("");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       setError("Không thể truy cập Micro. Vui lòng kiểm tra quyền trên trình duyệt.");
     }
@@ -287,9 +286,9 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
       setIsRecording(false);
       setError("");
       audioCtx.close();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Lỗi cắt audio.");
+      setError(err instanceof Error ? err.message : "Lỗi cắt audio.");
       setIsRecording(false);
     }
   };
@@ -302,7 +301,7 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
       setError("Đang xử lý cắt video (đợi theo thời gian thực)...");
       const video = videoRef.current;
 
-      const anyVideo = video as any;
+      const anyVideo = video as HTMLVideoElement & { captureStream?: () => MediaStream; mozCaptureStream?: () => MediaStream };
       const stream = anyVideo.captureStream ? anyVideo.captureStream() : anyVideo.mozCaptureStream ? anyVideo.mozCaptureStream() : null;
 
       if (!stream) {
@@ -338,9 +337,9 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
         }
       }, 100);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Lỗi cắt video.");
+      setError(err instanceof Error ? err.message : "Lỗi cắt video.");
       setIsRecording(false);
     }
   };
@@ -373,10 +372,10 @@ export function MediaUploadBoard({ onUploadSuccess }: { onUploadSuccess: (url: s
         type: "success",
         text: "Tải lên phương tiện thành công.",
       });
-    } catch (err: any) {
+    } catch (err) {
       setNotice({
         type: "error",
-        text: err.message || "Tải lên phương tiện thất bại.",
+        text: err instanceof Error ? err.message : "Tải lên phương tiện thất bại.",
       });
     } finally {
       setIsUploading(false);

@@ -1,15 +1,16 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState } from "react";
 import { MediaUploadBoard } from "@/components/media/media-upload-board";
 import { MediaHistory } from "@/components/media/media-history";
-import { FolderUp, History, ExternalLink, X, Music } from "lucide-react";
+import { FolderUp, History, X, Music } from "lucide-react";
 
 export function UploadPageContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video' | 'audio' } | null>(null);
 
-  const handleUploadSuccess = (url: string) => {
+  const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
 

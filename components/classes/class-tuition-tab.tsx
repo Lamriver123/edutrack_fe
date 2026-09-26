@@ -771,8 +771,8 @@ export function ClassTuitionTab({
   }
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-3 md:grid-cols-4">
+    <div className="grid min-w-0 gap-5">
+      <div className="grid min-w-0 gap-3 md:grid-cols-4">
         <TuitionMetric
           icon={<Coins size={18} />}
           label="Buổi thường"
@@ -809,7 +809,7 @@ export function ClassTuitionTab({
         regularPrice={classroom.regularPrice}
       />
 
-      <div className="grid gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+      <div className="grid min-w-0 gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
         <TextInput
           icon={<CalendarDays size={16} />}
           label="Từ ngày"
@@ -1038,7 +1038,7 @@ function PriceSettingsPanel({
 }) {
   return (
     <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-4 shadow-[var(--shadow-sm)]">
-      <div className="grid gap-4 border-b border-[var(--neutral-100)] pb-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <div className="grid min-w-0 gap-4 border-b border-[var(--neutral-100)] pb-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)] px-3 py-1.5 text-[13px] font-extrabold text-[var(--brand-700)]">
             <Coins size={14} />
@@ -1067,7 +1067,7 @@ function PriceSettingsPanel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(190px,0.7fr)]">
+      <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(190px,0.7fr)]">
         <CurrencyField
           label="Giá buổi thường"
           onChange={(value) => onChange({ ...form, regularPrice: value })}
@@ -1116,7 +1116,7 @@ function PriceDateField({
       <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         Ngày áp dụng
       </span>
-      <span className="relative min-w-0">
+      <span className="relative block min-w-0">
         <CalendarDays
           aria-hidden="true"
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--neutral-400)]"

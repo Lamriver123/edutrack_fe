@@ -1,13 +1,14 @@
+'use client';
+
 export default function OfflinePage() {
   return (
-    <html lang="vi" className="h-full">
-      <body
-        className="flex min-h-full flex-col items-center justify-center"
-        style={{
-          background: 'linear-gradient(135deg, #FFF8E1 0%, #FFE082 100%)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-        }}
-      >
+    <div
+      className="flex min-h-[calc(100vh-100px)] flex-col items-center justify-center rounded-2xl"
+      style={{
+        background: 'linear-gradient(135deg, #FFF8E1 0%, #FFE082 100%)',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
         <div
           style={{
             textAlign: 'center',
@@ -72,7 +73,6 @@ export default function OfflinePage() {
             Thử lại
           </button>
         </div>
-      </body>
-    </html>
+    </div>
   );
 }

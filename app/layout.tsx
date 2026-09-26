@@ -6,14 +6,14 @@ import "./globals.css";
 import "./pwa.css";
 
 export const metadata: Metadata = {
-  title: "Ms. Cheese – Quản lý học sinh",
+  title: "EduTrack – Quản lý học sinh",
   description:
     "Hệ thống quản lý học sinh dành cho giáo viên. Đăng ký, đăng nhập, quản lý lớp học và theo dõi học sinh.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Ms. Cheese",
+    title: "Edu-Track",
   },
   formatDetection: {
     telephone: false,
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F5A623",
+  themeColor: "#9bc6ffff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

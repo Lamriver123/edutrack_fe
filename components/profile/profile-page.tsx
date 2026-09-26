@@ -39,6 +39,7 @@ import {
   PaymentQrPanel,
   ProfileEditFields,
   ProfileReadonlyFields,
+  SystemSettingsPanel,
   TeacherProfileCard,
   type PasswordFormState,
 } from "@/components/profile/profile-sections";
@@ -61,7 +62,7 @@ type PendingQrUpload = {
 
 export function ProfilePage() {
   const user = useDashboardUser();
-  const { updateUser } = useDashboardSession();
+  const { logout, updateUser } = useDashboardSession();
   const [profileForm, setProfileForm] = useState<ProfileFormState>(() =>
     buildProfileForm(user),
   );
@@ -741,6 +742,8 @@ export function ProfilePage() {
         onToggleShowPassword={() => setShowPassword((current) => !current)}
         showPassword={showPassword}
       />
+
+      <SystemSettingsPanel onLogout={logout} />
 
       {confirmConfig ? (
         <ConfirmDialog

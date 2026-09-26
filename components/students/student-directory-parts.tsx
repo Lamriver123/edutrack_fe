@@ -224,8 +224,7 @@ export function ImportStudentsModal({
                 Mẫu danh sách học sinh
               </h4>
               <p className="mt-1 text-[14px] font-semibold leading-6 text-[var(--neutral-600)]">
-                Tải mẫu Excel, nhập dữ liệu rồi lưu lại file trước khi import
-                vào hệ thống.
+                Tải mẫu Excel, vui lòng tuân thủ theo form mẫu này!!!
               </p>
             </div>
             <SecondaryAction

@@ -10,7 +10,6 @@ import {
   CalendarDays,
   ChevronDown,
   LayoutDashboard,
-  LogOut,
   Menu,
   FilePenLine,
   Search,
@@ -113,6 +112,7 @@ const navigationItems: NavigationItem[] = [
 type DashboardUserContextValue = {
   updateUser: (user: User) => void;
   user: User;
+  logout: () => void;
 };
 
 const DashboardUserContext = createContext<DashboardUserContextValue | null>(
@@ -244,14 +244,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   if (pathname === "/settings/invoice-template") {
     return (
-      <DashboardUserContext.Provider value={{ updateUser, user }}>
+      <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout }}>
         <main className="h-dvh overflow-hidden bg-white">{children}</main>
       </DashboardUserContext.Provider>
     );
   }
 
   return (
-    <DashboardUserContext.Provider value={{ updateUser, user }}>
+    <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout }}>
       <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
         {isSidebarOpen ? (
           <button
@@ -271,7 +271,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="pt-[72px] lg:pl-[248px]">
           <Header
             activeNavigation={activeNavigation}
-            onLogout={handleLogout}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             user={user}
             userInitial={userInitial}
@@ -420,13 +419,11 @@ function SidebarGroup({
 
 function Header({
   activeNavigation,
-  onLogout,
   onOpenSidebar,
   user,
   userInitial,
 }: {
   activeNavigation: NavigationItem;
-  onLogout: () => void;
   onOpenSidebar: () => void;
   user: User;
   userInitial: string;
@@ -506,15 +503,6 @@ function Header({
               size={13}
             />
           </Link>
-
-          <button
-            aria-label="Đăng xuất"
-            className="grid size-9 place-items-center rounded-lg text-[var(--neutral-500)] transition hover:bg-red-50 hover:text-red-600"
-            onClick={onLogout}
-            type="button"
-          >
-            <LogOut size={16} />
-          </button>
         </div>
       </div>
     </header>

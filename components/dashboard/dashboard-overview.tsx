@@ -602,7 +602,7 @@ function PendingPaymentsPanel({
           <EmptyState
             icon={<CheckCircle2 size={22} />}
             text="Các hóa đơn đã phát hành đều không còn khoản phải thu."
-            title="Không có công nợ"
+            title="Không có dư nợ"
           />
         )}
       </div>

@@ -6,6 +6,7 @@ import {
   Camera,
   CheckCircle2,
   CreditCard,
+  Download,
   Eye,
   EyeOff,
   FileText,
@@ -14,11 +15,13 @@ import {
   Landmark,
   LoaderCircle,
   LockKeyhole,
+  LogOut,
   Mail,
   MapPin,
   Phone,
   QrCode,
   Save,
+  Settings,
   Trash2,
   Upload,
   UserCircle,
@@ -713,5 +716,71 @@ function PasswordInput({
       type={showPassword ? "text" : "password"}
       value={value}
     />
+  );
+}
+
+export function SystemSettingsPanel({
+  onLogout,
+}: {
+  onLogout: () => void;
+}) {
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    // Only show if not already standalone
+    const timer = setTimeout(() => {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone;
+      if (!isStandalone) {
+        setCanInstall(true);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  function handleRestorePrompt() {
+    localStorage.removeItem("pwa-install-dismissed");
+    window.location.reload();
+  }
+
+  return (
+    <section className="flex flex-col gap-4 rounded-md border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)]">
+      <div className="flex min-w-0 items-center gap-3 border-b border-[var(--border)] pb-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-[var(--neutral-100)] text-[var(--neutral-600)]">
+          <Settings size={20} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[17px] font-extrabold text-[var(--brand-950)]">
+            Hệ thống & Cài đặt
+          </h2>
+          <p className="mt-1 text-[13px] font-semibold text-[var(--neutral-500)]">
+            Quản lý ứng dụng và phiên đăng nhập
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {canInstall ? (
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--brand-200)] bg-[var(--brand-50)] px-4 text-[14px] font-bold text-[var(--brand-700)] transition hover:bg-[var(--brand-100)] sm:w-auto"
+            onClick={handleRestorePrompt}
+            type="button"
+          >
+            <Download size={16} />
+            Cài đặt ứng dụng
+          </button>
+        ) : null}
+
+        <button
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-[14px] font-bold text-red-600 transition hover:bg-red-100 sm:w-auto"
+          onClick={onLogout}
+          type="button"
+        >
+          <LogOut size={16} />
+          Đăng xuất
+        </button>
+      </div>
+    </section>
   );
 }

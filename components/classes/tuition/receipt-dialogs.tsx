@@ -170,13 +170,13 @@ export function IssueReceiptModal({
         issueMode === "multi_class" ? "Xuất hóa đơn gộp" : "Xuất hóa đơn"
       } - ${student.fullName}`}
     >
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         <ReceiptTemplatePicker
           value={selectedTemplate}
           onChange={onTemplateChange}
           disabled={isIssuing || isPreviewing}
         />
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <div className="grid min-w-0 gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <TextInput
             icon={<CalendarDays size={16} />}
             label="Lọc từ ngày"
@@ -438,7 +438,7 @@ export function IssueReceiptModal({
               )}
             </section>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid min-w-0 gap-3 md:grid-cols-3">
               <TextInput
                 label="Hạn thanh toán"
                 onChange={(event) =>
@@ -470,7 +470,7 @@ export function IssueReceiptModal({
               <p className="mt-1 text-[13px] font-semibold text-[var(--neutral-500)]">
                 Nội dung này sẽ được tách thành 3 ô trong phiếu gửi phụ huynh.
               </p>
-              <div className="mt-3 grid gap-3 lg:grid-cols-3">
+              <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-3">
                 <TextArea
                   label="Điểm mạnh"
                   onChange={(event) =>

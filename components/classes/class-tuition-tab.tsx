@@ -26,7 +26,6 @@ import {
   buildPriceForm,
   formatDateInput,
   getReceiptPreviewErrorHtml,
-  getReceiptPreviewLoadingHtml,
   getTuitionEntriesPeriod,
   initialFilters,
   initialIssueForm,
@@ -122,6 +121,7 @@ export function ClassTuitionTab({
   const [issueForm, setIssueForm] = useState<IssueFormState>(initialIssueForm);
   const [isCandidateLoading, setIsCandidateLoading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] =
     useState<InvoiceTemplate | null>(null);
   const previewTemplateRef = useRef<{ id: string; revision: string } | null>(
@@ -380,21 +380,6 @@ export function ClassTuitionTab({
     }
 
     setIsPreviewing(true);
-    const previewWindow = window.open("", "_blank");
-
-    if (!previewWindow) {
-      setNotice({
-        type: "error",
-        text: "Trình duyệt đang chặn tab xem trước. Vui lòng cho phép popup rồi thử lại.",
-      });
-      setIsPreviewing(false);
-      return;
-    }
-
-    previewWindow.document.open();
-    previewWindow.document.write(getReceiptPreviewLoadingHtml());
-    previewWindow.document.close();
-
     try {
       const response =
         issueMode === "multi_class"
@@ -404,15 +389,10 @@ export function ClassTuitionTab({
               selectedStudent.id,
               payload,
             );
-      previewWindow.document.open();
-      previewWindow.document.write(response.html);
-      previewWindow.document.close();
-      previewWindow.focus();
+      setPreviewHtml(response.html);
       previewTemplateRef.current = response.template;
     } catch (error) {
-      previewWindow.document.open();
-      previewWindow.document.write(getReceiptPreviewErrorHtml());
-      previewWindow.document.close();
+      setPreviewHtml(getReceiptPreviewErrorHtml());
       setNotice({ type: "error", text: getErrorMessage(error) });
     } finally {
       setIsPreviewing(false);
@@ -997,6 +977,44 @@ export function ClassTuitionTab({
           title="Xác nhận cập nhật giá"
         />
       ) : null}
+
+      {previewHtml !== null && (
+        <ReceiptPreviewDialog
+          html={previewHtml}
+          onClose={() => setPreviewHtml(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ReceiptPreviewDialog({
+  html,
+  onClose,
+}: {
+  html: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col bg-white">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4">
+        <h2 className="text-[16px] font-bold text-[var(--neutral-900)]">
+          Bản xem trước hóa đơn
+        </h2>
+        <button
+          className="flex h-8 items-center justify-center rounded-md bg-[var(--neutral-200)] px-3 text-[13px] font-bold text-[var(--neutral-700)] transition active:scale-95"
+          onClick={onClose}
+          type="button"
+        >
+          Đóng
+        </button>
+      </div>
+      <iframe
+        className="block h-full w-full flex-1 border-none bg-white"
+        title="Bản xem trước hóa đơn"
+        sandbox="allow-same-origin"
+        srcDoc={html}
+      />
     </div>
   );
 }
@@ -1094,18 +1112,18 @@ function PriceDateField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-[14px] font-bold text-[var(--neutral-600)]">
+    <label className="grid min-w-0 gap-2">
+      <span className="text-[14px] font-bold text-[var(--neutral-600)] truncate">
         Ngày áp dụng
       </span>
-      <span className="relative">
+      <span className="relative min-w-0">
         <CalendarDays
           aria-hidden="true"
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--neutral-400)]"
           size={16}
         />
         <input
-          className="h-12 w-full rounded-lg border border-[var(--neutral-200)] bg-white pl-11 pr-4 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
+          className="h-12 w-full min-w-0 max-w-full rounded-lg border border-[var(--neutral-200)] bg-white pl-11 pr-4 text-[15px] font-medium text-[var(--neutral-800)] outline-none transition focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
           onChange={(event) => onChange(event.target.value)}
           type="date"
           value={value}

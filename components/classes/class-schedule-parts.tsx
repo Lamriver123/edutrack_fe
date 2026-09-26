@@ -912,7 +912,7 @@ export function DateField({
         {label}
       </span>
       <input
-        className={`${formStyles.scheduleControl} min-w-0`}
+        className={`${formStyles.scheduleControl} min-w-0 w-full max-w-full`}
         lang="vi-VN"
         onChange={(event) => onChange(event.target.value)}
         type="date"
@@ -937,7 +937,7 @@ export function TimeField({
         {label}
       </span>
       <input
-        className={`${formStyles.scheduleControl} min-w-0`}
+        className={`${formStyles.scheduleControl} min-w-0 w-full max-w-full`}
         inputMode="numeric"
         lang="vi-VN"
         maxLength={5}

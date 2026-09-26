@@ -7,7 +7,7 @@ import "./pwa.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "EduTrack – Hệ thống quản lý học sinh thông minh",
+    default: "",
     template: "%s | EduTrack",
   },
   description:

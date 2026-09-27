@@ -24,17 +24,11 @@ export function LoginForm() {
   const [rememberPassword, setRememberPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRestoringSession, setIsRestoringSession] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-    let didRestoreSession = false;
-
     if (tokenStorage.getAccessToken()) {
       router.replace("/dashboard");
-      return () => {
-        isMounted = false;
-      };
+      return;
     }
 
     const saved = tokenStorage.getSavedCredentials();
@@ -48,39 +42,7 @@ export function LoginForm() {
         }, 0)
       : undefined;
 
-    async function restoreSession() {
-      try {
-        const session = await authApi.refresh();
-
-        if (!isMounted) {
-          return;
-        }
-
-        tokenStorage.setSession(session.accessToken, session.user);
-        didRestoreSession = true;
-        router.replace("/dashboard");
-      } catch (restoreError) {
-        if (
-          isMounted &&
-          restoreError instanceof ApiError &&
-          restoreError.status !== 401 &&
-          restoreError.status !== 403
-        ) {
-          setError(
-            "Chưa thể tự động khôi phục phiên. Bạn vẫn có thể đăng nhập bên dưới.",
-          );
-        }
-      } finally {
-        if (isMounted && !didRestoreSession) {
-          setIsRestoringSession(false);
-        }
-      }
-    }
-
-    void restoreSession();
-
     return () => {
-      isMounted = false;
       window.clearTimeout(savedCredentialsTimer);
     };
   }, [router]);
@@ -116,18 +78,6 @@ export function LoginForm() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  if (isRestoringSession) {
-    return (
-      <div
-        className="flex min-h-40 items-center justify-center gap-3 text-[14px] font-medium text-[var(--neutral-600)]"
-        role="status"
-      >
-        <span className="size-5 animate-spin-slow rounded-lg border-2 border-[var(--brand-200)] border-t-[var(--brand-500)]" />
-        Đang khôi phục phiên đăng nhập...
-      </div>
-    );
   }
 
   return (

@@ -214,7 +214,65 @@ test("a device without a session is sent to login", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("the login route resumes a valid refresh-cookie session", async ({
+test("the login route shows the form immediately without an access token", async ({
+  baseURL,
+  context,
+  page,
+}) => {
+  const frontendUrl = new URL(baseURL ?? "http://localhost:3000");
+  await context.addCookies([
+    {
+      name: "edutrack_refresh_token",
+      value: "test-refresh-cookie",
+      domain: frontendUrl.hostname,
+      path: "/api/auth",
+      httpOnly: true,
+      secure: frontendUrl.protocol === "https:",
+      sameSite: frontendUrl.protocol === "https:" ? "None" : "Lax",
+    },
+  ]);
+  let refreshCount = 0;
+
+  await page.route("**/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === "/api/auth/refresh") {
+      refreshCount += 1;
+      return route.fulfill({
+        json: { accessToken: "cookie-restored-token", user },
+      });
+    }
+
+    if (url.pathname === "/api/auth/me") {
+      return route.fulfill({ json: user });
+    }
+
+    if (url.pathname === "/api/dashboard/overview") {
+      return fulfillDashboard(route);
+    }
+
+    return route.fulfill({ json: { message: "OK" } });
+  });
+
+  await page.goto("/login");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByRole("heading", { name: "Đăng nhập hệ thống" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Đang khôi phục phiên" }),
+  ).toHaveCount(0);
+  expect(refreshCount).toBe(0);
+  expect(
+    await page.evaluate(() =>
+      window.localStorage.getItem("edutrack.accessToken"),
+    ),
+  ).toBeNull();
+});
+
+test("the dashboard route still restores a valid refresh-cookie session", async ({
   baseURL,
   context,
   page,
@@ -255,7 +313,7 @@ test("the login route resumes a valid refresh-cookie session", async ({
     return route.fulfill({ json: { message: "OK" } });
   });
 
-  await page.goto("/login");
+  await page.goto("/dashboard");
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByText(user.fullName).first()).toBeVisible();

@@ -430,7 +430,11 @@ function useScrollDirection() {
         direction !== scrollDirection &&
         (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)
       ) {
-        setScrollDirection(direction);
+        if (direction === "down" && scrollY > 72) {
+          setScrollDirection("down");
+        } else if (direction === "up") {
+          setScrollDirection("up");
+        }
       }
       lastScrollY = scrollY > 0 ? scrollY : 0;
     };
@@ -458,7 +462,7 @@ function Header({
 
   return (
     <header
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur transition-transform duration-300 lg:left-[248px] ${
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}
     >

@@ -1,5 +1,8 @@
 import type { AuthResponse } from "@/types/auth";
 import { tokenStorage } from "@/lib/auth/token-storage";
+import { getApiRequestUrl } from "./url";
+
+export { getApiBaseUrl, getApiRequestUrl } from "./url";
 
 export class ApiError extends Error {
   status: number;
@@ -26,12 +29,7 @@ export type ApiBlobResponse = {
   fileName: string;
 };
 
-export const getApiBaseUrl = () => {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:3001/api";
-
-  return baseUrl.replace(/\/$/, "");
-};
+let refreshPromise: Promise<AuthResponse | null> | null = null;
 
 export async function apiRequest<T>(
   path: string,
@@ -48,7 +46,7 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  let response = await fetch(`${getApiBaseUrl()}${path}`, {
+  let response = await fetch(getApiRequestUrl(path), {
     ...requestOptions,
     credentials: requestOptions.credentials ?? "include",
     headers,
@@ -64,7 +62,7 @@ export async function apiRequest<T>(
         `Bearer ${refreshedSession.accessToken}`,
       );
 
-      response = await fetch(`${getApiBaseUrl()}${path}`, {
+      response = await fetch(getApiRequestUrl(path), {
         ...requestOptions,
         credentials: requestOptions.credentials ?? "include",
         headers: retryHeaders,
@@ -96,7 +94,7 @@ export async function apiBlobRequest(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  let response = await fetch(`${getApiBaseUrl()}${path}`, {
+  let response = await fetch(getApiRequestUrl(path), {
     ...requestOptions,
     credentials: requestOptions.credentials ?? "include",
     headers,
@@ -112,7 +110,7 @@ export async function apiBlobRequest(
         `Bearer ${refreshedSession.accessToken}`,
       );
 
-      response = await fetch(`${getApiBaseUrl()}${path}`, {
+      response = await fetch(getApiRequestUrl(path), {
         ...requestOptions,
         credentials: requestOptions.credentials ?? "include",
         headers: retryHeaders,
@@ -138,14 +136,32 @@ export async function apiBlobRequest(
 }
 
 async function refreshSession() {
-  const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = performRefreshSession().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function performRefreshSession() {
+  const response = await fetch(getApiRequestUrl("/auth/refresh"), {
     method: "POST",
     credentials: "include",
   });
 
   if (!response.ok) {
-    tokenStorage.clearSession();
-    return null;
+    const payload = await readResponsePayload(response);
+
+    if (response.status === 401 || response.status === 403) {
+      tokenStorage.clearSession();
+      return null;
+    }
+
+    throwApiError(response, payload);
   }
 
   const session = (await response.json()) as AuthResponse;

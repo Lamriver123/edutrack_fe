@@ -56,7 +56,7 @@ test('storage unavailable still allows push worker activation', async () => {
 test('activation removes only obsolete EduTrack caches', async () => {
   const app = harness();
   await app.dispatch('activate');
-  assert.deepEqual(app.deleted, ['edutrack-v1']);
+  assert.deepEqual(app.deleted, ['edutrack-v1', 'edutrack-v2']);
 });
 
 test('push displays title, body, deduplication tag and corrected attendance link', async () => {

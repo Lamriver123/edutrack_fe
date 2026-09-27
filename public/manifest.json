@@ -2,7 +2,7 @@
   "name": "EduTrack – Quản lý học sinh",
   "short_name": "Edu Track",
   "description": "Hệ thống quản lý học sinh dành cho giáo viên. Quản lý lớp học, điểm danh, học phí và theo dõi học sinh.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

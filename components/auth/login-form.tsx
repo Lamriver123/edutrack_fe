@@ -24,23 +24,66 @@ export function LoginForm() {
   const [rememberPassword, setRememberPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
 
   useEffect(() => {
-    const saved = tokenStorage.getSavedCredentials();
-    if (!saved) {
-      return;
+    let isMounted = true;
+    let didRestoreSession = false;
+
+    if (tokenStorage.getAccessToken()) {
+      router.replace("/dashboard");
+      return () => {
+        isMounted = false;
+      };
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setEmail(saved.email);
-      if (saved.password) {
-        setPassword(saved.password);
-        setRememberPassword(true);
-      }
-    }, 0);
+    const saved = tokenStorage.getSavedCredentials();
+    const savedCredentialsTimer = saved
+      ? window.setTimeout(() => {
+          setEmail(saved.email);
+          if (saved.password) {
+            setPassword(saved.password);
+            setRememberPassword(true);
+          }
+        }, 0)
+      : undefined;
 
-    return () => window.clearTimeout(timeoutId);
-  }, []);
+    async function restoreSession() {
+      try {
+        const session = await authApi.refresh();
+
+        if (!isMounted) {
+          return;
+        }
+
+        tokenStorage.setSession(session.accessToken, session.user);
+        didRestoreSession = true;
+        router.replace("/dashboard");
+      } catch (restoreError) {
+        if (
+          isMounted &&
+          restoreError instanceof ApiError &&
+          restoreError.status !== 401 &&
+          restoreError.status !== 403
+        ) {
+          setError(
+            "Chưa thể tự động khôi phục phiên. Bạn vẫn có thể đăng nhập bên dưới.",
+          );
+        }
+      } finally {
+        if (isMounted && !didRestoreSession) {
+          setIsRestoringSession(false);
+        }
+      }
+    }
+
+    void restoreSession();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(savedCredentialsTimer);
+    };
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,6 +116,18 @@ export function LoginForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isRestoringSession) {
+    return (
+      <div
+        className="flex min-h-40 items-center justify-center gap-3 text-[14px] font-medium text-[var(--neutral-600)]"
+        role="status"
+      >
+        <span className="size-5 animate-spin-slow rounded-lg border-2 border-[var(--brand-200)] border-t-[var(--brand-500)]" />
+        Đang khôi phục phiên đăng nhập...
+      </div>
+    );
   }
 
   return (

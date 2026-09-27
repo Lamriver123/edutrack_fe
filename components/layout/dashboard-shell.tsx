@@ -29,6 +29,7 @@ import {
   type ReactNode,
 } from "react";
 import { authApi } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 import { tokenStorage } from "@/lib/auth/token-storage";
 import type { User } from "@/types/user";
 import { AiScheduleChat, AiScheduleChatButton } from "@/components/schedule/ai-schedule-chat";
@@ -146,6 +147,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionError, setSessionError] = useState("");
+  const [sessionAttempt, setSessionAttempt] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const scrollDirection = useScrollDirection();
@@ -173,9 +176,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
     async function loadSession() {
       const token = tokenStorage.getAccessToken();
+      const cachedUser = tokenStorage.getUser();
 
-      if (token) {
-        try {
+      setIsLoading(true);
+      setSessionError("");
+
+      try {
+        if (token) {
           const currentUser = await authApi.me(token);
           const activeToken = tokenStorage.getAccessToken() ?? token;
 
@@ -185,14 +192,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
           setUser(currentUser);
           tokenStorage.setSession(activeToken, currentUser);
-          setIsLoading(false);
           return;
-        } catch {
-          tokenStorage.clearSession();
         }
-      }
 
-      try {
         const session = await authApi.refresh();
 
         if (!isMounted) {
@@ -201,9 +203,27 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
         tokenStorage.setSession(session.accessToken, session.user);
         setUser(session.user);
-      } catch {
-        tokenStorage.clearSession();
-        router.replace("/login");
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (isUnauthorized(error)) {
+          tokenStorage.clearSession();
+          router.replace("/login");
+          return;
+        }
+
+        if (cachedUser) {
+          // Keep the local session visible during a temporary network/backend
+          // outage. A transient startup failure must not sign the teacher out.
+          setUser(cachedUser);
+          return;
+        }
+
+        setSessionError(
+          "Chưa thể kết nối để khôi phục phiên đăng nhập. Vui lòng kiểm tra mạng rồi thử lại.",
+        );
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -216,7 +236,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, sessionAttempt]);
 
   async function handleLogout() {
     try {
@@ -241,6 +261,28 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <span className="text-[15px] font-medium text-[var(--neutral-600)]">
             Đang tải không gian làm việc...
           </span>
+        </div>
+      </main>
+    );
+  }
+
+  if (!user && sessionError) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[var(--background)] px-4">
+        <div className="w-full max-w-md rounded-lg border border-amber-200 bg-white p-6 text-center shadow-[var(--shadow-lg)]">
+          <h1 className="text-lg font-extrabold text-[var(--brand-950)]">
+            Chưa thể khôi phục phiên đăng nhập
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--neutral-600)]">
+            {sessionError}
+          </p>
+          <button
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-[var(--brand-600)] px-5 text-sm font-bold text-white"
+            onClick={() => setSessionAttempt((attempt) => attempt + 1)}
+            type="button"
+          >
+            Thử kết nối lại
+          </button>
         </div>
       </main>
     );
@@ -307,6 +349,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       </main>
     </DashboardUserContext.Provider>
+  );
+}
+
+function isUnauthorized(error: unknown) {
+  return (
+    error instanceof ApiError && (error.status === 401 || error.status === 403)
   );
 }
 

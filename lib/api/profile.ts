@@ -36,8 +36,14 @@ async function refreshForBinaryRequest() {
     tokenStorage.setSession(session.accessToken, session.user);
 
     return session.accessToken;
-  } catch {
-    tokenStorage.clearSession();
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403)
+    ) {
+      tokenStorage.clearSession();
+    }
+
     return null;
   }
 }

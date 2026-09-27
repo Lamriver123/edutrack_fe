@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:invoice-designer": "playwright test tests/invoice-designer.spec.ts",
+    "test:session": "node --experimental-strip-types --test tests/session-routing.test.mjs",
+    "test:session:ui": "playwright test tests/session-persistence.spec.ts",
     "test:push": "node --test tests/push-worker.test.mjs",
     "test:push:ui": "playwright test tests/push-notifications.spec.ts"
   },

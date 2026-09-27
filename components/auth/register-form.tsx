@@ -67,6 +67,7 @@ export function RegisterForm() {
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
           required
+          variant="auth"
         />
         <FormField
           id="email"
@@ -78,6 +79,7 @@ export function RegisterForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
+          variant="auth"
         />
         <FormField
           id="password"
@@ -92,7 +94,8 @@ export function RegisterForm() {
           trailing={
             <button
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-              className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--neutral-400)] transition-all duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
+              aria-pressed={showPassword}
+              className="grid size-11 place-items-center rounded-[12px] border border-[var(--neutral-200)] bg-white text-[var(--neutral-400)] shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
               onClick={() => setShowPassword((current) => !current)}
               type="button"
             >
@@ -100,6 +103,7 @@ export function RegisterForm() {
             </button>
           }
           required
+          variant="auth"
         />
       </div>
 
@@ -110,9 +114,12 @@ export function RegisterForm() {
       ) : null}
 
       <PrimaryButton
+        aria-busy={isSubmitting}
         disabled={isSubmitting}
         icon={<ArrowRight size={17} />}
+        iconPosition="end"
         type="submit"
+        variant="auth"
       >
         {isSubmitting ? "Đang xử lý..." : "Đăng ký"}
       </PrimaryButton>

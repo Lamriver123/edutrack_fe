@@ -96,6 +96,7 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required
+        variant="auth"
       />
 
       <OtpCodeInput
@@ -103,6 +104,7 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
         idPrefix="otp"
         value={otpDigits}
         onChange={setOtpDigits}
+        variant="auth"
       />
 
       {message ? (
@@ -118,15 +120,18 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
       ) : null}
 
       <PrimaryButton
+        aria-busy={isSubmitting}
         disabled={isSubmitting || otp.length < OTP_LENGTH}
         icon={<BadgeCheck size={17} />}
         type="submit"
+        variant="auth"
       >
         {isSubmitting ? "Đang xác thực..." : "Xác thực"}
       </PrimaryButton>
 
       <button
-        className="group inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[var(--radius-sm)] border border-[var(--neutral-200)] bg-white px-4 text-[15px] font-semibold text-[var(--neutral-600)] transition-all duration-200 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50"
+        aria-busy={isResending}
+        className="group inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[14px] border border-[var(--brand-200)] bg-[var(--brand-50)]/50 px-4 text-[15px] font-semibold text-[var(--brand-700)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50"
         disabled={isResending || !email}
         onClick={handleResendOtp}
         type="button"

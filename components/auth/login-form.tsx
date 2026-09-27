@@ -152,6 +152,7 @@ export function LoginForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
+          variant="auth"
         />
         <FormField
           id="password"
@@ -166,7 +167,8 @@ export function LoginForm() {
           trailing={
             <button
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-              className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--neutral-400)] transition-all duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
+              aria-pressed={showPassword}
+              className="grid size-11 place-items-center rounded-[12px] border border-[var(--neutral-200)] bg-white text-[var(--neutral-400)] shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
               onClick={() => setShowPassword((current) => !current)}
               type="button"
             >
@@ -174,15 +176,16 @@ export function LoginForm() {
             </button>
           }
           required
+          variant="auth"
         />
       </div>
 
       <div className="-mt-2 flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer group">
+        <label className="group flex min-h-11 cursor-pointer items-center gap-2.5">
           <div className="relative flex items-center justify-center">
             <input
               type="checkbox"
-              className="peer appearance-none size-4 rounded-sm border border-[var(--neutral-300)] bg-white checked:border-[var(--brand-600)] checked:bg-[var(--brand-600)] hover:border-[var(--brand-400)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-1"
+              className="peer size-[18px] appearance-none rounded-[6px] border border-[var(--neutral-300)] bg-white transition-colors checked:border-[var(--brand-600)] checked:bg-[var(--brand-600)] hover:border-[var(--brand-400)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-1"
               checked={rememberPassword}
               onChange={(e) => setRememberPassword(e.target.checked)}
             />
@@ -218,9 +221,12 @@ export function LoginForm() {
       ) : null}
 
       <PrimaryButton
+        aria-busy={isSubmitting}
         disabled={isSubmitting}
         icon={<ArrowRight size={17} />}
+        iconPosition="end"
         type="submit"
+        variant="auth"
       >
         {isSubmitting ? "Đang kiểm tra..." : "Đăng nhập"}
       </PrimaryButton>

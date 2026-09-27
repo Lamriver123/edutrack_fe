@@ -13,6 +13,7 @@ type OtpCodeInputProps = {
   onChange: (value: string[]) => void;
   disabled?: boolean;
   autoFocus?: boolean;
+  variant?: "default" | "auth";
 };
 
 export function OtpCodeInput({
@@ -22,9 +23,11 @@ export function OtpCodeInput({
   onChange,
   disabled = false,
   autoFocus = false,
+  variant = "default",
 }: OtpCodeInputProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const length = value.length;
+  const isAuthVariant = variant === "auth";
 
   function focusOtpInput(index: number) {
     inputRefs.current[index]?.focus();
@@ -84,16 +87,31 @@ export function OtpCodeInput({
 
   return (
     <div className="grid gap-2">
-      <label className="text-[14px] font-bold text-[var(--neutral-600)]" htmlFor={`${idPrefix}-0`}>
+      <label
+        className={
+          isAuthVariant
+            ? "text-[13px] font-bold text-[var(--neutral-700)]"
+            : "text-[14px] font-bold text-[var(--neutral-600)]"
+        }
+        htmlFor={`${idPrefix}-0`}
+      >
         {label}
       </label>
-      <div className="grid grid-cols-6 gap-2.5 sm:gap-3">
+      <div
+        className={`grid grid-cols-6 ${
+          isAuthVariant ? "gap-1.5 sm:gap-2.5" : "gap-2.5 sm:gap-3"
+        }`}
+      >
         {value.map((digit, index) => (
           <input
             aria-label={`Số OTP ${index + 1}`}
             autoFocus={autoFocus && index === 0}
             autoComplete={index === 0 ? "one-time-code" : "off"}
-            className={`h-[56px] min-w-0 rounded-[var(--radius-md)] border-2 bg-white/70 text-center text-[20px] font-bold tracking-widest text-[var(--foreground)] outline-none transition-all duration-200 placeholder:text-[var(--neutral-300)] hover:border-[var(--brand-300)] hover:bg-white focus:border-[var(--brand-500)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[60px] sm:text-[22px] ${
+            className={`${
+              isAuthVariant
+                ? "h-[52px] min-w-0 rounded-[12px] border bg-[var(--neutral-50)]/80 text-center text-[20px] font-bold tracking-widest text-[var(--foreground)] outline-none transition-all duration-200 hover:border-[var(--brand-300)] hover:bg-white focus:border-[var(--brand-500)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.11)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[56px] sm:text-[22px]"
+                : "h-[56px] min-w-0 rounded-[var(--radius-md)] border-2 bg-white/70 text-center text-[20px] font-bold tracking-widest text-[var(--foreground)] outline-none transition-all duration-200 placeholder:text-[var(--neutral-300)] hover:border-[var(--brand-300)] hover:bg-white focus:border-[var(--brand-500)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[60px] sm:text-[22px]"
+            } ${
               digit
                 ? "border-[var(--brand-400)] bg-white shadow-[var(--shadow-xs)]"
                 : "border-[var(--neutral-200)]"
@@ -101,6 +119,13 @@ export function OtpCodeInput({
             disabled={disabled}
             id={`${idPrefix}-${index}`}
             inputMode="numeric"
+            enterKeyHint={
+              isAuthVariant
+                ? index === length - 1
+                  ? "done"
+                  : "next"
+                : undefined
+            }
             key={`${idPrefix}-${index}`}
             maxLength={1}
             onChange={(event) => updateOtpDigits(index, event.target.value)}

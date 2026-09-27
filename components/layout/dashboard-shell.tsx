@@ -32,6 +32,7 @@ import { authApi } from "@/lib/api/auth";
 import { tokenStorage } from "@/lib/auth/token-storage";
 import type { User } from "@/types/user";
 import { AiScheduleChat, AiScheduleChatButton } from "@/components/schedule/ai-schedule-chat";
+import { usePushNotifications } from "@/hooks/use-push";
 
 type NavigationItem = {
   label: string;
@@ -147,6 +148,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const scrollDirection = useScrollDirection();
+  const push = usePushNotifications();
 
   const updateUser = useCallback((nextUser: User) => {
     setUser(nextUser);
@@ -216,6 +218,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [router]);
 
   async function handleLogout() {
+    try {
+      await push.unsubscribe(); // xoá đăng ký nhận thông báo
+    } catch {
+      // Bỏ qua lỗi nếu có
+    }
+    
     try {
       await authApi.logout();
     } finally {

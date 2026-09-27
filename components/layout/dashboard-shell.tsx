@@ -417,6 +417,32 @@ function SidebarGroup({
   );
 }
 
+function useScrollDirection() {
+  const [scrollDirection, setScrollDirection] = useState("up");
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const updateScrollDirection = () => {
+      const scrollY = window.scrollY;
+      const direction = scrollY > lastScrollY ? "down" : "up";
+      if (
+        direction !== scrollDirection &&
+        (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)
+      ) {
+        setScrollDirection(direction);
+      }
+      lastScrollY = scrollY > 0 ? scrollY : 0;
+    };
+    window.addEventListener("scroll", updateScrollDirection);
+    return () => {
+      window.removeEventListener("scroll", updateScrollDirection);
+    };
+  }, [scrollDirection]);
+
+  return scrollDirection;
+}
+
 function Header({
   activeNavigation,
   onOpenSidebar,
@@ -428,8 +454,14 @@ function Header({
   user: User;
   userInitial: string;
 }) {
+  const scrollDirection = useScrollDirection();
+
   return (
-    <header className="fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur lg:left-[248px]">
+    <header
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur transition-transform duration-300 lg:left-[248px] ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}
+    >
       <div className="flex h-[72px] items-center justify-between gap-4 px-4 sm:px-5 lg:px-6 2xl:px-7">
         <div className="flex min-w-0 items-center gap-3">
           <button

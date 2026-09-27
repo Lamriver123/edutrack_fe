@@ -123,15 +123,15 @@ export function ForgotPasswordForm() {
 
   if (step === "done") {
     return (
-      <div className="stagger grid gap-6">
+      <div className="stagger grid gap-5 sm:gap-6">
         <div>
-          <div className="mb-4 inline-flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--success-bg)] to-[var(--success-border)] text-[var(--success-text)] shadow-[var(--shadow-sm)]">
+          <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--success-bg)] to-[var(--success-border)] text-[var(--success-text)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
             <CheckCircle2 size={20} />
           </div>
-          <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)]">
+          <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
             Mật khẩu đã được đổi
           </h2>
-          <p className="mt-2.5 text-[15px] leading-7 text-[var(--neutral-500)]">
+          <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
             Bạn có thể đăng nhập lại bằng mật khẩu mới.
           </p>
         </div>
@@ -143,7 +143,7 @@ export function ForgotPasswordForm() {
         ) : null}
 
         <Link
-          className="inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[var(--radius-sm)] bg-gradient-to-b from-[var(--brand-500)] to-[var(--brand-700)] px-6 text-[15px] font-bold text-white shadow-[var(--shadow-brand)] transition-all duration-300 hover:from-[var(--brand-400)] hover:to-[var(--brand-600)] hover:shadow-[var(--shadow-brand-lg)]"
+          className="inline-flex h-12 items-center justify-center gap-2.5 rounded-[12px] bg-[linear-gradient(135deg,#6366f1_0%,#4f46e5_55%,#4338ca_100%)] px-5 text-[15px] font-bold text-white shadow-[var(--shadow-brand)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-brand-lg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-[56px] sm:rounded-[14px] sm:px-6"
           href="/login"
         >
           <ArrowLeft size={17} />
@@ -155,15 +155,15 @@ export function ForgotPasswordForm() {
 
   if (step === "otp") {
     return (
-      <form className="stagger grid gap-6" onSubmit={handleConfirmReset}>
+      <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleConfirmReset}>
         <div>
-          <div className="mb-4 inline-flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--brand-50)] to-[var(--brand-100)] text-[var(--brand-600)] shadow-[var(--shadow-sm)]">
+          <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--brand-50)] to-[var(--brand-100)] text-[var(--brand-600)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
             <MailCheck size={20} />
           </div>
-          <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)]">
+          <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
             Nhập OTP đổi mật khẩu
           </h2>
-          <p className="mt-2.5 text-[15px] leading-7 text-[var(--neutral-500)]">
+          <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
             Kiểm tra email và nhập mã 6 số để xác nhận mật khẩu mới.
           </p>
         </div>
@@ -193,6 +193,7 @@ export function ForgotPasswordForm() {
           idPrefix="password-reset-otp"
           value={otpDigits}
           onChange={setOtpDigits}
+          variant="auth"
         />
 
         {message ? (
@@ -211,12 +212,13 @@ export function ForgotPasswordForm() {
           disabled={isSubmitting || otp.length < OTP_LENGTH}
           icon={<BadgeCheck size={17} />}
           type="submit"
+          variant="auth"
         >
           {isSubmitting ? "Đang xác nhận..." : "Đổi mật khẩu"}
         </PrimaryButton>
 
         <button
-          className="group inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[var(--radius-sm)] border border-[var(--neutral-200)] bg-white px-4 text-[15px] font-semibold text-[var(--neutral-600)] transition-all duration-200 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50"
+          className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-[12px] border border-[var(--brand-200)] bg-[var(--brand-50)]/50 px-4 text-[15px] font-semibold text-[var(--brand-700)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50 sm:h-[56px] sm:rounded-[14px]"
           disabled={isResending || !email}
           onClick={handleResendOtp}
           type="button"
@@ -236,20 +238,17 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form className="stagger grid gap-6" onSubmit={handleRequestReset}>
+    <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleRequestReset}>
       <div>
-        <div className="mb-4 inline-flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--brand-50)] to-[var(--brand-100)] text-[var(--brand-600)] shadow-[var(--shadow-sm)]">
-          <KeyRound size={20} />
-        </div>
-        <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)]">
+        <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
           Quên mật khẩu?
         </h2>
-        <p className="mt-2.5 text-[15px] leading-7 text-[var(--neutral-500)]">
+        <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
           Nhập email và mật khẩu mới, sau đó xác thực bằng OTP.
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3.5 sm:gap-4">
         <FormField
           id="forgot-email"
           label="Email"
@@ -260,6 +259,7 @@ export function ForgotPasswordForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
+          variant="auth"
         />
         <FormField
           id="new-password"
@@ -275,7 +275,8 @@ export function ForgotPasswordForm() {
           trailing={
             <button
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-              className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--neutral-400)] transition-all duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
+              aria-pressed={showPassword}
+              className="grid size-9 place-items-center rounded-full text-[var(--neutral-400)] transition-colors duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] sm:size-10"
               onClick={() => setShowPassword((current) => !current)}
               type="button"
             >
@@ -283,6 +284,7 @@ export function ForgotPasswordForm() {
             </button>
           }
           required
+          variant="auth"
         />
         <FormField
           id="confirm-new-password"
@@ -296,6 +298,7 @@ export function ForgotPasswordForm() {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           required
+          variant="auth"
         />
       </div>
 
@@ -309,11 +312,12 @@ export function ForgotPasswordForm() {
         disabled={isSubmitting}
         icon={<ArrowRight size={17} />}
         type="submit"
+        variant="auth"
       >
         {isSubmitting ? "Đang gửi OTP..." : "Tiếp tục"}
       </PrimaryButton>
 
-      <p className="mt-2 text-center text-[14px] text-[var(--neutral-500)]">
+      <p className="rounded-[var(--radius-sm)] border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 py-3.5 text-center text-[14px] text-[var(--neutral-500)]">
         Đã nhớ mật khẩu?{" "}
         <Link
           className="font-semibold text-[var(--brand-600)] transition-colors hover:text-[var(--brand-500)]"

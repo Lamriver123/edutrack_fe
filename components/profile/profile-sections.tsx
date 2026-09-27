@@ -66,6 +66,7 @@ export function TeacherProfileCard({
   isEditing,
   isSaving,
   onAvatarFileChange,
+  onAvatarPreview,
   onResetAvatar,
   userInitial,
 }: {
@@ -74,23 +75,33 @@ export function TeacherProfileCard({
   isEditing: boolean;
   isSaving: boolean;
   onAvatarFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onAvatarPreview: () => void;
   onResetAvatar: () => void;
   userInitial: string;
 }) {
+  const avatarFrameClass =
+    "grid size-32 place-items-center overflow-hidden rounded-full bg-[var(--brand-600)] text-[34px] font-extrabold text-white shadow-[0_12px_30px_rgba(30,41,59,0.16)] sm:size-36";
+
   return (
     <div className="grid content-start justify-items-center py-1 sm:py-2">
       <div className="relative">
-        <div className="grid size-32 place-items-center overflow-hidden rounded-full bg-[var(--brand-600)] text-[34px] font-extrabold text-white shadow-[0_12px_30px_rgba(30,41,59,0.16)] sm:size-36">
-          {avatarPreviewUrl ? (
+        {avatarPreviewUrl ? (
+          <button
+            aria-label="Xem ảnh đại diện"
+            className={`${avatarFrameClass} cursor-zoom-in transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2`}
+            onClick={onAvatarPreview}
+            title="Xem ảnh đại diện"
+            type="button"
+          >
             <img
               alt="Ảnh đại diện giáo viên"
               className="size-full object-cover"
               src={avatarPreviewUrl}
             />
-          ) : (
-            userInitial
-          )}
-        </div>
+          </button>
+        ) : (
+          <div className={avatarFrameClass}>{userInitial}</div>
+        )}
 
         {isEditing ? (
           <>
@@ -380,6 +391,7 @@ export function PaymentQrPanel({
   isUploadingQr,
   onQrCropChange,
   onQrFileChange,
+  onQrPreview,
   onRemoveQr,
   onResetQr,
   onSubmit,
@@ -395,6 +407,7 @@ export function PaymentQrPanel({
   isUploadingQr: boolean;
   onQrCropChange: (crop: QrCropState) => void;
   onQrFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onQrPreview: () => void;
   onRemoveQr: () => void;
   onResetQr: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -438,11 +451,19 @@ export function PaymentQrPanel({
                 Đang tải QR...
               </div>
             ) : qrPreviewUrl ? (
-              <img
-                alt="Ảnh QR thanh toán"
-                className={`size-full ${qrFile ? "object-fill p-0" : "object-contain p-3"}`}
-                src={qrPreviewUrl}
-              />
+              <button
+                aria-label="Xem ảnh QR thanh toán"
+                className="size-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-inset"
+                onClick={onQrPreview}
+                title="Xem ảnh QR thanh toán"
+                type="button"
+              >
+                <img
+                  alt="Ảnh QR thanh toán"
+                  className={`size-full ${qrFile ? "object-fill p-0" : "object-contain p-3"}`}
+                  src={qrPreviewUrl}
+                />
+              </button>
             ) : (
               <div className="grid place-items-center gap-2 px-5 text-center text-[14px] font-bold text-[var(--neutral-500)]">
                 <QrCode className="text-[var(--brand-500)]" size={38} />

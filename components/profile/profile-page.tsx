@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import {
   LoaderCircle,
   Pencil,
@@ -61,6 +63,12 @@ type PendingQrUpload = {
   warningDescription?: string;
 };
 
+type PreviewImage = {
+  alt: string;
+  title: string;
+  url: string;
+};
+
 export function ProfilePage() {
   const user = useDashboardUser();
   const { logout, updateUser } = useDashboardSession();
@@ -96,6 +104,7 @@ export function ProfilePage() {
     useState<PendingQrUpload | null>(null);
   const [banks, setBanks] = useState<PaymentBank[]>([]);
   const [isBanksLoading, setIsBanksLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<PreviewImage | null>(null);
 
   const userInitial = user.fullName?.charAt(0)?.toUpperCase() ?? "G";
   const savedAvatarUrl = isProfileEditing
@@ -692,6 +701,13 @@ export function ProfilePage() {
               isEditing={isProfileEditing}
               isSaving={isSavingProfile}
               onAvatarFileChange={handleAvatarFileChange}
+              onAvatarPreview={() =>
+                setPreviewImage({
+                  alt: "Ảnh đại diện giáo viên",
+                  title: "Ảnh đại diện",
+                  url: avatarPreviewUrl,
+                })
+              }
               onResetAvatar={resetAvatarSelection}
               userInitial={userInitial}
             />
@@ -720,6 +736,13 @@ export function ProfilePage() {
           isUploadingQr={isUploadingQr}
           onQrFileChange={handleQrFileChange}
           onQrCropChange={setQrCrop}
+          onQrPreview={() =>
+            setPreviewImage({
+              alt: "Ảnh QR thanh toán",
+              title: "QR thanh toán",
+              url: qrPreviewUrl,
+            })
+          }
           onRemoveQr={() => setConfirmAction("removePaymentQr")}
           onResetQr={resetQrSelection}
           onSubmit={handleQrSubmit}
@@ -758,7 +781,59 @@ export function ProfilePage() {
           tone={confirmConfig.tone}
         />
       ) : null}
+
+      {previewImage ? (
+        <ImagePreviewDialog
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+          title={previewImage.title}
+          url={previewImage.url}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function ImagePreviewDialog({
+  alt,
+  onClose,
+  title,
+  url,
+}: {
+  alt: string;
+  onClose: () => void;
+  title: string;
+  url: string;
+}) {
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-[var(--neutral-950)]/60 p-4 backdrop-blur-[2px]"
+      role="dialog"
+    >
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-md border border-white/70 bg-white shadow-[0_24px_72px_rgba(15,23,42,0.28)]">
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
+          <h3 className="truncate text-[17px] font-extrabold text-[var(--brand-950)] sm:text-[19px]">
+            {title}
+          </h3>
+          <button
+            aria-label="Đóng xem ảnh"
+            className="grid size-10 shrink-0 place-items-center rounded-md border border-[var(--neutral-200)] bg-white text-[var(--neutral-500)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-200)]"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="grid min-h-0 place-items-center bg-[var(--neutral-50)] p-3 sm:p-5">
+          <img
+            alt={alt}
+            className="max-h-[calc(100dvh-9rem)] max-w-full rounded-md object-contain shadow-[var(--shadow-card)]"
+            src={url}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

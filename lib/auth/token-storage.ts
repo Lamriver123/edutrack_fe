@@ -1,11 +1,18 @@
 import type { User } from "@/types/user";
 
-const ACCESS_TOKEN_KEY = "edutrack.accessToken";
-const USER_KEY = "edutrack.user";
+export const AUTH_ACCESS_TOKEN_STORAGE_KEY = "edutrack.accessToken";
+export const AUTH_USER_STORAGE_KEY = "edutrack.user";
 const PENDING_EMAIL_KEY = "edutrack.pendingEmail";
 const SAVED_CREDS_KEY = "edutrack.savedCreds";
+export const AUTH_SESSION_EXPIRED_EVENT = "edutrack:auth-session-expired";
+export const AUTH_SESSION_CHANGED_EVENT = "edutrack:auth-session-changed";
 
 const isBrowser = () => typeof window !== "undefined";
+
+function removeSession() {
+  window.localStorage.removeItem(AUTH_ACCESS_TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+}
 
 export const tokenStorage = {
   getAccessToken() {
@@ -13,7 +20,7 @@ export const tokenStorage = {
       return null;
     }
 
-    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+    return window.localStorage.getItem(AUTH_ACCESS_TOKEN_STORAGE_KEY);
   },
 
   getUser() {
@@ -21,7 +28,7 @@ export const tokenStorage = {
       return null;
     }
 
-    const rawUser = window.localStorage.getItem(USER_KEY);
+    const rawUser = window.localStorage.getItem(AUTH_USER_STORAGE_KEY);
 
     if (!rawUser) {
       return null;
@@ -30,7 +37,7 @@ export const tokenStorage = {
     try {
       return JSON.parse(rawUser) as User;
     } catch {
-      window.localStorage.removeItem(USER_KEY);
+      window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
       return null;
     }
   },
@@ -40,8 +47,8 @@ export const tokenStorage = {
       return;
     }
 
-    window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+    window.localStorage.setItem(AUTH_ACCESS_TOKEN_STORAGE_KEY, accessToken);
+    window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
     window.localStorage.removeItem(PENDING_EMAIL_KEY);
   },
 
@@ -50,8 +57,37 @@ export const tokenStorage = {
       return;
     }
 
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-    window.localStorage.removeItem(USER_KEY);
+    removeSession();
+  },
+
+  expireSession(expectedAccessToken?: string | null) {
+    if (!isBrowser()) {
+      return false;
+    }
+
+    const currentAccessToken = window.localStorage.getItem(
+      AUTH_ACCESS_TOKEN_STORAGE_KEY,
+    );
+
+    if (
+      expectedAccessToken !== undefined &&
+      currentAccessToken !== expectedAccessToken
+    ) {
+      return false;
+    }
+
+    removeSession();
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+
+    return true;
+  },
+
+  notifySessionChanged() {
+    if (!isBrowser()) {
+      return;
+    }
+
+    window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
   },
 
   setPendingEmail(email: string) {

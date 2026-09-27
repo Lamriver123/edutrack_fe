@@ -1,4 +1,8 @@
 import type { AuthResponse } from "@/types/auth";
+import {
+  getAccessTokenSubject,
+  shouldRefreshAccessToken,
+} from "@/lib/auth/access-token";
 import { tokenStorage } from "@/lib/auth/token-storage";
 import { getApiRequestUrl } from "./url";
 
@@ -30,45 +34,13 @@ export type ApiBlobResponse = {
 };
 
 let refreshPromise: Promise<AuthResponse | null> | null = null;
+const AUTH_REFRESH_LOCK_NAME = "edutrack-auth-refresh";
 
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ) {
-  const { skipAuthRefresh, token, ...requestOptions } = options;
-  const headers = new Headers(requestOptions.headers);
-
-  if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  let response = await fetch(getApiRequestUrl(path), {
-    ...requestOptions,
-    credentials: requestOptions.credentials ?? "include",
-    headers,
-  });
-
-  if (response.status === 401 && token && !skipAuthRefresh) {
-    const refreshedSession = await refreshSession();
-
-    if (refreshedSession) {
-      const retryHeaders = new Headers(headers);
-      retryHeaders.set(
-        "Authorization",
-        `Bearer ${refreshedSession.accessToken}`,
-      );
-
-      response = await fetch(getApiRequestUrl(path), {
-        ...requestOptions,
-        credentials: requestOptions.credentials ?? "include",
-        headers: retryHeaders,
-      });
-    }
-  }
+  const response = await executeRequest(path, options);
 
   const payload = await readResponsePayload(response);
 
@@ -83,40 +55,7 @@ export async function apiBlobRequest(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<ApiBlobResponse> {
-  const { skipAuthRefresh, token, ...requestOptions } = options;
-  const headers = new Headers(requestOptions.headers);
-
-  if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  let response = await fetch(getApiRequestUrl(path), {
-    ...requestOptions,
-    credentials: requestOptions.credentials ?? "include",
-    headers,
-  });
-
-  if (response.status === 401 && token && !skipAuthRefresh) {
-    const refreshedSession = await refreshSession();
-
-    if (refreshedSession) {
-      const retryHeaders = new Headers(headers);
-      retryHeaders.set(
-        "Authorization",
-        `Bearer ${refreshedSession.accessToken}`,
-      );
-
-      response = await fetch(getApiRequestUrl(path), {
-        ...requestOptions,
-        credentials: requestOptions.credentials ?? "include",
-        headers: retryHeaders,
-      });
-    }
-  }
+  const response = await executeRequest(path, options);
 
   if (!response.ok) {
     throwApiError(response, await readResponsePayload(response));
@@ -135,19 +74,155 @@ export async function apiBlobRequest(
   };
 }
 
-async function refreshSession() {
+async function executeRequest(path: string, options: ApiRequestOptions) {
+  const requiresAuth = Object.prototype.hasOwnProperty.call(options, "token");
+  const { skipAuthRefresh, token, ...requestOptions } = options;
+  const baseHeaders = new Headers(requestOptions.headers);
+
+  if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
+    baseHeaders.set("Content-Type", "application/json");
+  }
+
+  let activeToken = token ?? null;
+  const expectedUserId =
+    getAccessTokenSubject(activeToken) ?? tokenStorage.getUser()?.id ?? null;
+  let refreshAttempted = false;
+
+  if (
+    requiresAuth &&
+    !skipAuthRefresh &&
+    shouldRefreshAccessToken(activeToken)
+  ) {
+    refreshAttempted = true;
+    const refreshedSession = await refreshSession(activeToken);
+
+    if (!refreshedSession) {
+      throw createSessionExpiredError();
+    }
+
+    activeToken = getRefreshedAccessToken(refreshedSession, expectedUserId);
+  }
+
+  const send = (accessToken: string | null) => {
+    const headers = new Headers(baseHeaders);
+
+    if (requiresAuth) {
+      if (accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+      } else {
+        headers.delete("Authorization");
+      }
+    }
+
+    return fetch(getApiRequestUrl(path), {
+      ...requestOptions,
+      credentials: requestOptions.credentials ?? "include",
+      headers,
+    });
+  };
+
+  let response = await send(activeToken);
+
+  if (
+    response.status === 401 &&
+    requiresAuth &&
+    !skipAuthRefresh &&
+    !refreshAttempted
+  ) {
+    refreshAttempted = true;
+    const refreshedSession = await refreshSession(activeToken);
+
+    if (!refreshedSession) {
+      throw createSessionExpiredError();
+    }
+
+    activeToken = getRefreshedAccessToken(refreshedSession, expectedUserId);
+    response = await send(activeToken);
+  }
+
+  if (
+    response.status === 401 &&
+    requiresAuth &&
+    !skipAuthRefresh &&
+    refreshAttempted
+  ) {
+    tokenStorage.expireSession(activeToken);
+  }
+
+  return response;
+}
+
+async function refreshSession(observedAccessToken: string | null) {
   if (refreshPromise) {
     return refreshPromise;
   }
 
-  refreshPromise = performRefreshSession().finally(() => {
-    refreshPromise = null;
-  });
+  refreshPromise = coordinateRefresh(observedAccessToken).finally(
+    () => {
+      refreshPromise = null;
+    },
+  );
 
   return refreshPromise;
 }
 
-async function performRefreshSession() {
+async function coordinateRefresh(observedAccessToken: string | null) {
+  const runRefresh = () => refreshOrReuseStoredSession(observedAccessToken);
+
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request(AUTH_REFRESH_LOCK_NAME, runRefresh);
+  }
+
+  return runRefresh();
+}
+
+async function refreshOrReuseStoredSession(observedAccessToken: string | null) {
+  const replacement = getStoredReplacementSession(observedAccessToken);
+
+  if (replacement) {
+    return replacement;
+  }
+
+  const session = await performRefreshSession(observedAccessToken);
+
+  return session ?? getStoredReplacementSession(observedAccessToken);
+}
+
+function getStoredReplacementSession(observedAccessToken: string | null) {
+  const accessToken = tokenStorage.getAccessToken();
+  const user = tokenStorage.getUser();
+
+  if (
+    accessToken &&
+    accessToken !== observedAccessToken &&
+    user &&
+    !shouldRefreshAccessToken(accessToken)
+  ) {
+    return { accessToken, user } satisfies AuthResponse;
+  }
+
+  return null;
+}
+
+function getRefreshedAccessToken(
+  session: AuthResponse,
+  expectedUserId: string | null,
+) {
+  const tokenUserId = getAccessTokenSubject(session.accessToken);
+  const sessionUserId = session.user.id;
+
+  if (
+    (tokenUserId && tokenUserId !== sessionUserId) ||
+    (expectedUserId && expectedUserId !== (tokenUserId ?? sessionUserId))
+  ) {
+    tokenStorage.notifySessionChanged();
+    throw createSessionChangedError();
+  }
+
+  return session.accessToken;
+}
+
+async function performRefreshSession(observedAccessToken: string | null) {
   const response = await fetch(getApiRequestUrl("/auth/refresh"), {
     method: "POST",
     credentials: "include",
@@ -157,7 +232,7 @@ async function performRefreshSession() {
     const payload = await readResponsePayload(response);
 
     if (response.status === 401 || response.status === 403) {
-      tokenStorage.clearSession();
+      tokenStorage.expireSession(observedAccessToken);
       return null;
     }
 
@@ -168,6 +243,41 @@ async function performRefreshSession() {
   tokenStorage.setSession(session.accessToken, session.user);
 
   return session;
+}
+
+export async function refreshAuthSession() {
+  const session = await refreshSession(tokenStorage.getAccessToken());
+
+  if (!session) {
+    throw createSessionExpiredError();
+  }
+
+  return session;
+}
+
+function createSessionExpiredError() {
+  return new ApiError(
+    "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    401,
+    {
+      code: "AUTH_SESSION_EXPIRED",
+      message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    },
+    "AUTH_SESSION_EXPIRED",
+  );
+}
+
+function createSessionChangedError() {
+  return new ApiError(
+    "Tài khoản đăng nhập đã thay đổi. Trang sẽ được tải lại để bảo vệ dữ liệu.",
+    409,
+    {
+      code: "AUTH_SESSION_CHANGED",
+      message:
+        "Tài khoản đăng nhập đã thay đổi. Trang sẽ được tải lại để bảo vệ dữ liệu.",
+    },
+    "AUTH_SESSION_CHANGED",
+  );
 }
 
 async function readResponsePayload(response: Response) {

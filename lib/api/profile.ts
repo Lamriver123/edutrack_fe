@@ -1,4 +1,3 @@
-import type { AuthResponse } from "@/types/auth";
 import type {
   ChangePasswordPayload,
   PaymentBank,
@@ -7,7 +6,12 @@ import type {
   User,
 } from "@/types/user";
 import { tokenStorage } from "@/lib/auth/token-storage";
-import { ApiError, apiRequest, getApiBaseUrl } from "./client";
+import {
+  ApiError,
+  apiRequest,
+  getApiBaseUrl,
+  refreshAuthSession,
+} from "./client";
 
 function getToken() {
   return tokenStorage.getAccessToken();
@@ -29,21 +33,10 @@ async function pushRequest<T>(path: string, options: Parameters<typeof apiReques
 
 async function refreshForBinaryRequest() {
   try {
-    const session = await apiRequest<AuthResponse>("/auth/refresh", {
-      method: "POST",
-      skipAuthRefresh: true,
-    });
-    tokenStorage.setSession(session.accessToken, session.user);
+    const session = await refreshAuthSession();
 
     return session.accessToken;
-  } catch (error) {
-    if (
-      error instanceof ApiError &&
-      (error.status === 401 || error.status === 403)
-    ) {
-      tokenStorage.clearSession();
-    }
-
+  } catch {
     return null;
   }
 }
@@ -170,7 +163,7 @@ export const profileApi = {
     try {
       return await fetchPaymentQrBlob(token);
     } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 401 || !token) {
+      if (!(error instanceof ApiError) || error.status !== 401) {
         throw error;
       }
     }

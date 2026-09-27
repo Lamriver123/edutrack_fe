@@ -14,7 +14,7 @@ import type {
   VerifyOtpPayload,
 } from "@/types/auth";
 import type { User } from "@/types/user";
-import { apiRequest } from "./client";
+import { apiRequest, refreshAuthSession } from "./client";
 
 export const authApi = {
   register(payload: RegisterPayload) {
@@ -71,10 +71,7 @@ export const authApi = {
   },
 
   refresh() {
-    return apiRequest<AuthResponse>("/auth/refresh", {
-      method: "POST",
-      skipAuthRefresh: true,
-    });
+    return refreshAuthSession();
   },
 
   logout() {

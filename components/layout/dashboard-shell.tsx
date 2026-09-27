@@ -30,7 +30,14 @@ import {
 } from "react";
 import { authApi } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { tokenStorage } from "@/lib/auth/token-storage";
+import { getAccessTokenSubject } from "@/lib/auth/access-token";
+import {
+  AUTH_ACCESS_TOKEN_STORAGE_KEY,
+  AUTH_SESSION_CHANGED_EVENT,
+  AUTH_SESSION_EXPIRED_EVENT,
+  AUTH_USER_STORAGE_KEY,
+  tokenStorage,
+} from "@/lib/auth/token-storage";
 import type { User } from "@/types/user";
 import { AiScheduleChat, AiScheduleChatButton } from "@/components/schedule/ai-schedule-chat";
 import { usePushNotifications } from "@/hooks/use-push";
@@ -170,6 +177,80 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       navigationItems[0],
     [pathname],
   );
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      router.replace("/login");
+    };
+    const handleSessionChanged = () => {
+      window.location.replace("/dashboard");
+    };
+
+    window.addEventListener(
+      AUTH_SESSION_EXPIRED_EVENT,
+      handleSessionExpired,
+    );
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, handleSessionChanged);
+
+    return () => {
+      window.removeEventListener(
+        AUTH_SESSION_EXPIRED_EVENT,
+        handleSessionExpired,
+      );
+      window.removeEventListener(
+        AUTH_SESSION_CHANGED_EVENT,
+        handleSessionChanged,
+      );
+    };
+  }, [router]);
+
+  useEffect(() => {
+    const currentUserId = user?.id;
+
+    if (!currentUserId) {
+      return;
+    }
+
+    const handleSessionStorageChange = (event: StorageEvent) => {
+      if (event.storageArea !== window.localStorage) {
+        return;
+      }
+
+      if (event.key === AUTH_ACCESS_TOKEN_STORAGE_KEY) {
+        if (!event.newValue) {
+          setUser(null);
+          router.replace("/login");
+          return;
+        }
+
+        const nextUserId = getAccessTokenSubject(event.newValue);
+
+        if (nextUserId && nextUserId !== currentUserId) {
+          window.location.replace("/dashboard");
+        }
+
+        return;
+      }
+
+      if (event.key === AUTH_USER_STORAGE_KEY) {
+        const nextUser = tokenStorage.getUser();
+
+        if (!nextUser) {
+          setUser(null);
+          router.replace("/login");
+        } else if (nextUser.id !== currentUserId) {
+          window.location.replace("/dashboard");
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleSessionStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleSessionStorageChange);
+    };
+  }, [router, user?.id]);
 
   useEffect(() => {
     let isMounted = true;

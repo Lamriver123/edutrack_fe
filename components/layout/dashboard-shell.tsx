@@ -146,6 +146,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const scrollDirection = useScrollDirection();
 
   const updateUser = useCallback((nextUser: User) => {
     setUser(nextUser);
@@ -274,6 +275,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             onOpenSidebar={() => setIsSidebarOpen(true)}
             user={user}
             userInitial={userInitial}
+            scrollDirection={scrollDirection}
           />
 
           <section className="mx-auto grid w-full max-w-[1560px] gap-4 px-3 py-4 sm:px-5 lg:px-6 lg:py-5 2xl:px-7">
@@ -281,13 +283,19 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </section>
         </div>
 
-        {!isAiChatOpen ? (
-          <AiScheduleChatButton onClick={() => setIsAiChatOpen(true)} />
-        ) : null}
+        <div className={`fixed inset-0 pointer-events-none z-50 transition-all duration-300 ${scrollDirection === 'down' ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
+          {!isAiChatOpen ? (
+            <div className="pointer-events-auto">
+              <AiScheduleChatButton onClick={() => setIsAiChatOpen(true)} />
+            </div>
+          ) : null}
 
-        {isAiChatOpen ? (
-          <AiScheduleChat onClose={() => setIsAiChatOpen(false)} />
-        ) : null}
+          {isAiChatOpen ? (
+            <div className="pointer-events-auto">
+              <AiScheduleChat onClose={() => setIsAiChatOpen(false)} />
+            </div>
+          ) : null}
+        </div>
       </main>
     </DashboardUserContext.Provider>
   );
@@ -452,14 +460,14 @@ function Header({
   onOpenSidebar,
   user,
   userInitial,
+  scrollDirection,
 }: {
   activeNavigation: NavigationItem;
   onOpenSidebar: () => void;
   user: User;
   userInitial: string;
+  scrollDirection: string;
 }) {
-  const scrollDirection = useScrollDirection();
-
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${

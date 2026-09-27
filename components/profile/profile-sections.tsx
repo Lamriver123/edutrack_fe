@@ -3,6 +3,7 @@
 "use client";
 
 import {
+  Bell,
   Camera,
   CheckCircle2,
   CreditCard,
@@ -716,6 +717,56 @@ function PasswordInput({
       type={showPassword ? "text" : "password"}
       value={value}
     />
+  );
+}
+
+import { usePushNotifications } from "@/hooks/use-push";
+
+export function PushNotificationPanel() {
+  const { isSupported, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotifications();
+
+  if (!isSupported) {
+    return null;
+  }
+
+  return (
+    <section className="flex flex-col gap-4 rounded-md border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)]">
+      <div className="flex min-w-0 items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-[var(--brand-50)] text-[var(--brand-600)]">
+            <Bell size={20} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-extrabold text-[var(--brand-950)]">
+              Thông báo
+            </h2>
+            <p className="mt-1 text-[13px] font-semibold text-[var(--neutral-500)]">
+              Nhận thông báo lịch dạy và điểm danh
+            </p>
+          </div>
+        </div>
+        
+        <button
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 ${isSubscribed ? 'bg-[var(--brand-500)]' : 'bg-gray-200'}`}
+          disabled={isLoading}
+          onClick={isSubscribed ? unsubscribe : subscribe}
+          type="button"
+          role="switch"
+          aria-checked={isSubscribed}
+        >
+          <span className="sr-only">Bật thông báo</span>
+          <span
+            className={`pointer-events-none block size-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${isSubscribed ? 'translate-x-5' : 'translate-x-0'}`}
+          />
+        </button>
+      </div>
+      
+      <p className="text-[13px] font-medium text-[var(--neutral-600)] leading-relaxed">
+        {isSubscribed 
+          ? "Bạn sẽ nhận được thông báo trước khi lớp học bắt đầu 30 phút và nhắc nhở điểm danh."
+          : "Bạn đang tắt thông báo. Hãy bật để không bỏ lỡ các nhắc nhở quan trọng về lớp học."}
+      </p>
+    </section>
   );
 }
 

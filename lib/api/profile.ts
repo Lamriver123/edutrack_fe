@@ -170,4 +170,20 @@ export const profileApi = {
       token: getToken(),
     });
   },
+
+  subscribeToPush(subscription: unknown) {
+    return apiRequest<{ message: string }>("/users/me/push-subscription", {
+      method: "POST",
+      token: getToken(),
+      body: JSON.stringify(subscription),
+    });
+  },
+
+  unsubscribeFromPush(endpoint: string) {
+    return apiRequest<{ message: string }>("/users/me/push-subscription", {
+      method: "DELETE",
+      token: getToken(),
+      body: JSON.stringify({ endpoint }),
+    });
+  },
 };

@@ -724,7 +724,7 @@ import { useDashboardSession } from "@/components/layout/dashboard-shell";
 
 export function PushNotificationPanel() {
   const { push } = useDashboardSession();
-  const { isSupported, isSubscribed, isLoading, permission, statusMessage, subscribe, unsubscribe, sendTest, checkSubscription } = push;
+  const { isSupported, isSubscribed, isLoading, permission, statusMessage, subscriptionCount, subscribe, unsubscribe, sendTest, checkSubscription } = push;
 
   return (
     <section className="flex flex-col gap-4 rounded-md border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)]">
@@ -761,6 +761,9 @@ export function PushNotificationPanel() {
       <p role="status" className="text-[13px] font-medium text-[var(--neutral-600)] leading-relaxed">
         {isLoading ? "Đang kiểm tra thông báo…" : statusMessage}
       </p>
+      <div className="rounded-md border border-[var(--border)] bg-[var(--neutral-50)] px-3 py-2 text-[13px] font-semibold text-[var(--neutral-600)]">
+        Có <span className="font-extrabold text-[var(--brand-700)]">{subscriptionCount}</span> thiết bị đang nhận thông báo từ tài khoản này.
+      </div>
       {isSupported && (
         <div className="flex flex-wrap gap-3">
           <button type="button" disabled={isLoading || !isSubscribed} onClick={() => void sendTest()} className="rounded-md bg-[var(--brand-50)] px-3 py-2 text-sm font-bold text-[var(--brand-700)] disabled:opacity-50">Gửi thông báo thử</button>

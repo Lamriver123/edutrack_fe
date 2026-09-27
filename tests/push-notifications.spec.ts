@@ -6,7 +6,7 @@ const oldPublicKey = createECDH("prime256v1").generateKeys().toString("base64url
 const endpoint = "https://fcm.googleapis.com/fcm/send/test-device";
 const user = { id: "teacher", fullName: "Push Test Teacher", email: "push@example.test", role: "teacher", isEmailVerified: true, hasPaymentQr: false };
 
-async function setup(page: Page, options: { subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean } = {}) {
+async function setup(page: Page, options: { subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean; serverCount?: number } = {}) {
   const requests: { method: string; path: string; body: Record<string, unknown> | null }[] = [];
   await page.addInitScript(({ options, publicKey, oldPublicKey, endpoint }) => {
     const debug = { subscribeCalls: 0, unsubscribeCalls: 0, permissionCalls: 0 };
@@ -43,6 +43,7 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
     else Object.defineProperty(window, "PushManager", { configurable: true, value: function PushManager() {} });
   }, { options, publicKey, oldPublicKey, endpoint });
 
+  let serverSubscriptionCount = options.serverCount ?? (options.subscribed === false ? 0 : 1);
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -51,8 +52,15 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
     if (path === "/api/auth/refresh") return route.fulfill({ json: { accessToken: "push-test-token", user } });
     if (path === "/api/auth/me" || path === "/api/users/me") return route.fulfill({ json: user });
     if (path === "/api/users/banks") return route.fulfill({ json: [] });
-    if (path === "/api/users/me/push-subscription/status") return route.fulfill({ json: { configured: options.configured !== false, publicKey, subscriptionCount: 0, configurationError: options.configured === false ? "Máy chủ chưa cấu hình VAPID." : undefined } });
-    if (path === "/api/users/me/push-subscription" && request.method() === "POST") return route.fulfill({ status: options.saveFails ? 503 : 201, json: { message: options.saveFails ? "Không lưu được thiết bị." : "Đã đăng ký" } });
+    if (path === "/api/users/me/push-subscription/status") return route.fulfill({ json: { configured: options.configured !== false, publicKey, subscriptionCount: serverSubscriptionCount, configurationError: options.configured === false ? "Máy chủ chưa cấu hình VAPID." : undefined } });
+    if (path === "/api/users/me/push-subscription" && request.method() === "POST") {
+      if (!options.saveFails) serverSubscriptionCount = Math.max(1, serverSubscriptionCount);
+      return route.fulfill({ status: options.saveFails ? 503 : 201, json: { message: options.saveFails ? "Không lưu được thiết bị." : "Đã đăng ký" } });
+    }
+    if (path === "/api/users/me/push-subscription" && request.method() === "DELETE") {
+      serverSubscriptionCount = Math.max(0, serverSubscriptionCount - 1);
+      return route.fulfill({ json: { success: true } });
+    }
     if (path === "/api/users/me/push-subscription/test") return route.fulfill({ json: { attempted: 1, sent: options.testFails ? 0 : 1, failed: options.testFails ? 1 : 0, removed: options.testFails ? 1 : 0, configured: true, message: options.testFails ? "Thiết bị đã hết hạn đăng ký." : "Accepted" } });
     return route.fulfill({ json: { message: "OK" } });
   });
@@ -64,10 +72,21 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
 test("reconciles a browser subscription with the current account and tests this device", async ({ page }) => {
   const requests = await setup(page);
   await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
+  await expect(page.getByText("Có 1 thiết bị đang nhận thông báo từ tài khoản này.")).toBeVisible();
   expect(requests.some((request) => request.path === "/api/users/me/push-subscription" && request.method === "POST")).toBe(true);
   await page.getByRole("button", { name: "Gửi thông báo thử" }).click();
   await expect(page.locator("p[role=status]").filter({ hasText: "Dịch vụ đẩy đã nhận" })).toBeVisible();
   expect(requests.find((request) => request.path.endsWith("/push-subscription/test"))?.body).toEqual({ endpoint });
+});
+
+test("asks for notification permission on the first app open and enables the device", async ({ page }) => {
+  const requests = await setup(page, { permission: "default", subscribed: false });
+  await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
+  await expect(page.getByText("Có 1 thiết bị đang nhận thông báo từ tài khoản này.")).toBeVisible();
+  const debug = await page.evaluate(() => (window as unknown as { pushDebug: { permissionCalls: number; subscribeCalls: number } }).pushDebug);
+  expect(debug.permissionCalls).toBe(1);
+  expect(debug.subscribeCalls).toBe(1);
+  expect(requests.some((request) => request.path === "/api/users/me/push-subscription" && request.method === "POST")).toBe(true);
 });
 
 test("failed provider delivery never reports success and disables expired subscription", async ({ page }) => {

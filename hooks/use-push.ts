@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { profileApi } from "@/lib/api/profile";
-import { toast } from "sonner";
+import { useNotice } from "@/components/ui/notice-provider";
 
 export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { setNotice } = useNotice();
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -51,7 +52,7 @@ export function usePushNotifications() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast.error("Bạn đã từ chối cấp quyền thông báo.");
+        setNotice({ type: "error", text: "Bạn đã từ chối cấp quyền thông báo." });
         return false;
       }
 
@@ -70,11 +71,11 @@ export function usePushNotifications() {
       await profileApi.subscribeToPush(subscription.toJSON());
       
       setIsSubscribed(true);
-      toast.success("Đã bật thông báo thành công!");
+      setNotice({ type: "success", text: "Đã bật thông báo thành công!" });
       return true;
     } catch (error) {
       console.error("Error subscribing to push:", error);
-      toast.error("Không thể bật thông báo. Vui lòng thử lại sau.");
+      setNotice({ type: "error", text: "Không thể bật thông báo. Vui lòng thử lại sau." });
       return false;
     } finally {
       setIsLoading(false);
@@ -94,11 +95,11 @@ export function usePushNotifications() {
       }
       
       setIsSubscribed(false);
-      toast.success("Đã tắt thông báo.");
+      setNotice({ type: "success", text: "Đã tắt thông báo." });
       return true;
     } catch (error) {
       console.error("Error unsubscribing from push:", error);
-      toast.error("Không thể tắt thông báo. Vui lòng thử lại sau.");
+      setNotice({ type: "error", text: "Không thể tắt thông báo. Vui lòng thử lại sau." });
       return false;
     } finally {
       setIsLoading(false);

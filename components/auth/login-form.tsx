@@ -181,7 +181,7 @@ export function LoginForm() {
         {isSubmitting ? "Đang kiểm tra..." : "Đăng nhập"}
       </PrimaryButton>
 
-      <p className="rounded-[var(--radius-sm)] border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 py-3.5 text-center text-[14px] text-[var(--neutral-500)]">
+      <p className="mt-2 text-center text-[14px] text-[var(--neutral-500)]">
         Chưa có tài khoản?{" "}
         <Link
           className="font-semibold text-[var(--brand-600)] transition-colors hover:text-[var(--brand-500)]"

@@ -482,15 +482,6 @@ function Sidebar({
             </p>
           </div>
         </Link>
-
-        <button
-          aria-label="Đóng menu"
-          className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] text-[var(--neutral-500)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] lg:hidden"
-          onClick={onClose}
-          type="button"
-        >
-          <X size={18} />
-        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-5">

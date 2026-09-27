@@ -10,25 +10,26 @@ export function usePushNotifications() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setIsSubscribed(!!subscription);
+      } catch (error) {
+        console.error("Error checking push subscription:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if ("serviceWorker" in navigator && "PushManager" in window) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSupported(true);
-      checkSubscription();
+      void checkSubscription();
     } else {
       setIsLoading(false);
     }
   }, []);
-
-  const checkSubscription = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error("Error checking push subscription:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

@@ -131,17 +131,17 @@ export function LoginForm() {
   }
 
   return (
-    <form className="stagger grid gap-6" onSubmit={handleSubmit}>
+    <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
       <div>
-        <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)]">
+        <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
           Đăng nhập hệ thống
         </h2>
-        <p className="mt-2.5 text-[15px] leading-7 text-[var(--neutral-500)]">
+        <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
           Chào mừng giáo viên quay lại EduTrack.
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3.5 sm:gap-4">
         <FormField
           id="email"
           label="Email"
@@ -168,7 +168,7 @@ export function LoginForm() {
             <button
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               aria-pressed={showPassword}
-              className="grid size-11 place-items-center rounded-[12px] border border-[var(--neutral-200)] bg-white text-[var(--neutral-400)] shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
+              className="grid size-9 place-items-center rounded-full text-[var(--neutral-400)] transition-colors duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] sm:size-10"
               onClick={() => setShowPassword((current) => !current)}
               type="button"
             >

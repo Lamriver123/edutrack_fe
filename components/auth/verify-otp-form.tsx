@@ -73,15 +73,15 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
   }
 
   return (
-    <form className="stagger grid gap-6" onSubmit={handleSubmit}>
+    <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
       <div>
-        <div className="mb-4 inline-flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--accent-100)] to-[var(--accent-200)] text-[var(--accent-500)] shadow-[var(--shadow-sm)]">
+        <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--accent-100)] to-[var(--accent-200)] text-[var(--accent-500)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
           <MailCheck size={20} />
         </div>
-        <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)]">
+        <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
           Xác thực email
         </h2>
-        <p className="mt-2.5 text-[15px] leading-7 text-[var(--neutral-500)]">
+        <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
           Mã OTP đã được gửi đến email giáo viên.
         </p>
       </div>
@@ -131,7 +131,7 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
 
       <button
         aria-busy={isResending}
-        className="group inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[14px] border border-[var(--brand-200)] bg-[var(--brand-50)]/50 px-4 text-[15px] font-semibold text-[var(--brand-700)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50"
+        className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-[12px] border border-[var(--brand-200)] bg-[var(--brand-50)]/50 px-4 text-[15px] font-semibold text-[var(--brand-700)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50 sm:h-[56px] sm:rounded-[14px]"
         disabled={isResending || !email}
         onClick={handleResendOtp}
         type="button"

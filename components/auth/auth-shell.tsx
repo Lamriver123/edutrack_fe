@@ -142,29 +142,29 @@ export function AuthShell({
         </section>
 
         {/* ─── Form panel ────────────────────────────────────── */}
-        <section className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4 py-8 sm:px-8 lg:bg-white/50 lg:px-12 xl:px-16">
+        <section className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4 py-6 sm:px-8 sm:py-8 lg:bg-white/50 lg:px-12 xl:px-16">
           <div className="animate-slide-up w-full max-w-[500px]">
-            <div className="rounded-[var(--radius-lg)] border border-[var(--neutral-200)]/80 bg-white p-7 shadow-[var(--shadow-xl)] sm:p-9">
+            <div className="rounded-[14px] border border-[var(--neutral-200)]/80 bg-white p-5 shadow-[var(--shadow-xl)] sm:rounded-[var(--radius-lg)] sm:p-9">
               {/* Form header — mobile only */}
-              <div className="mb-8 flex items-center justify-between gap-4 border-b border-[var(--neutral-100)] pb-6 lg:hidden">
-                <div className="flex items-center gap-3">
+              <div className="mb-6 flex items-center justify-between gap-3 border-b border-[var(--neutral-100)] pb-5 lg:hidden">
+                <div className="flex min-w-0 items-center gap-3">
                   <Image
                     alt="EduTrack logo"
-                    className="size-10 rounded-[var(--radius-sm)] object-contain"
+                    className="size-9 rounded-[var(--radius-sm)] object-contain sm:size-10"
                     height={48}
                     src="/logo.png"
                     width={48}
                   />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[15px] font-bold tracking-tight text-[var(--brand-600)]">
                       EduTrack
                     </p>
-                    <p className="text-[13px] text-[var(--neutral-500)]">
+                    <p className="text-[12px] text-[var(--neutral-500)] sm:text-[13px]">
                       Không gian giáo viên
                     </p>
                   </div>
                 </div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-100)] px-3 py-1.5 text-[13px] font-semibold text-[var(--accent-600)] ring-1 ring-[var(--accent-200)]">
+                <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--accent-100)] px-2.5 py-1.5 text-[12px] font-semibold text-[var(--accent-600)] ring-1 ring-[var(--accent-200)] sm:px-3 sm:text-[13px]">
                   <BookOpenCheck size={13} />
                   Lớp học
                 </div>

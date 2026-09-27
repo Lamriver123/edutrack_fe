@@ -244,7 +244,7 @@ export function ForgotPasswordForm() {
           Quên mật khẩu?
         </h2>
         <p className="mt-2 text-[14px] leading-6 text-[var(--neutral-500)] sm:mt-2.5 sm:text-[15px] sm:leading-7">
-          Nhập email và mật khẩu mới, sau đó xác thực bằng OTP.
+          Nhập email và mật khẩu mới.
         </p>
       </div>
 

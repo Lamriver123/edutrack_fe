@@ -114,6 +114,7 @@ type DashboardUserContextValue = {
   updateUser: (user: User) => void;
   user: User;
   logout: () => void;
+  push: ReturnType<typeof usePushNotifications>;
 };
 
 const DashboardUserContext = createContext<DashboardUserContextValue | null>(
@@ -148,7 +149,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const scrollDirection = useScrollDirection();
-  const push = usePushNotifications();
+  const push = usePushNotifications(user?.id);
 
   const updateUser = useCallback((nextUser: User) => {
     setUser(nextUser);
@@ -219,7 +220,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   async function handleLogout() {
     try {
-      await push.unsubscribe(); // xoá đăng ký nhận thông báo
+      await push.unsubscribe({ silent: true });
     } catch {
       // Bỏ qua lỗi nếu có
     }
@@ -253,14 +254,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   if (pathname === "/settings/invoice-template") {
     return (
-      <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout }}>
+      <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout, push }}>
         <main className="h-dvh overflow-hidden bg-white">{children}</main>
       </DashboardUserContext.Provider>
     );
   }
 
   return (
-    <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout }}>
+    <DashboardUserContext.Provider value={{ updateUser, user, logout: handleLogout, push }}>
       <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
         {isSidebarOpen ? (
           <button

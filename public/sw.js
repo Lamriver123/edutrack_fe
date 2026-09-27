@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'edutrack-v1';
+const CACHE_NAME = 'edutrack-v2';
 const OFFLINE_URL = '/offline';
 
 // Assets to pre-cache on install
@@ -15,12 +15,17 @@ const PRECACHE_ASSETS = [
 // Install event - pre-cache essential assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    })
+    (async () => {
+      // Offline assets are optional: one failed page fetch must not disable Web Push.
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await Promise.allSettled(PRECACHE_ASSETS.map((asset) => cache.add(asset)));
+      } catch {
+        // Push also works when the browser cannot allocate offline storage.
+      }
+      await self.skipWaiting();
+    })()
   );
-  // Activate immediately
-  self.skipWaiting();
 });
 
 // Activate event - clean old caches
@@ -29,13 +34,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name.startsWith('edutrack-') && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-    })
+    }).finally(() => self.clients.claim())
   );
-  // Take control of all clients immediately
-  self.clients.claim();
 });
 
 // Fetch event - Network first strategy with offline fallback
@@ -123,25 +126,39 @@ self.addEventListener('message', (event) => {
 });
 
 // Push notification event
+function notificationUrl(value) {
+  try {
+    const url = new URL(typeof value === 'string' ? value : '/dashboard', self.location.origin);
+    if (url.origin !== self.location.origin) return `${self.location.origin}/dashboard`;
+    // Accept reminders already queued by older backend versions.
+    url.pathname = url.pathname.replace(/^\/dashboard\/classes(?=\/|$)/, '/classes');
+    return url.href;
+  } catch {
+    return `${self.location.origin}/dashboard`;
+  }
+}
+
 self.addEventListener('push', (event) => {
   let data = {};
   if (event.data) {
     try {
-      data = event.data.json();
+      const parsed = event.data.json();
+      data = parsed && typeof parsed === 'object' ? parsed : {};
     } catch {
       data = { body: event.data.text() };
     }
   }
 
-  const title = data.title || 'EduTrack';
+  const title = typeof data.title === 'string' && data.title ? data.title : 'EduTrack';
   const options = {
-    body: data.body || 'Bạn có thông báo mới',
+    body: typeof data.body === 'string' && data.body ? data.body : 'Bạn có thông báo mới',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
-    vibrate: [200, 100, 200, 100, 200], // Rung 3 nhịp để gây chú ý
-    requireInteraction: true, // Không tự động ẩn, bắt buộc người dùng tương tác
+    vibrate: [200, 100, 200, 100, 200],
+    requireInteraction: true, // Browser/OS may ignore these presentation preferences.
+    ...(typeof data.tag === 'string' ? { tag: data.tag } : {}),
     data: {
-      url: data.url || '/',
+      url: notificationUrl(data.url),
     },
   };
 
@@ -151,29 +168,23 @@ self.addEventListener('push', (event) => {
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data.url || '/';
+  const targetUrl = notificationUrl(event.notification.data?.url);
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there is already a window/tab open with the target URL
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url.includes(targetUrl) && 'focus' in client) {
-          return client.focus();
-        }
+    (async () => {
+      const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const exactClient = windowClients.find((client) => client.url === targetUrl);
+      if (exactClient) {
+        try { return await exactClient.focus(); } catch { /* Window closed during click. */ }
       }
-      // If not, check if any window is open and navigate it
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if ('focus' in client && 'navigate' in client) {
-          client.focus();
-          return client.navigate(targetUrl);
-        }
+      for (const client of windowClients) {
+        if (new URL(client.url).origin !== self.location.origin) continue;
+        try {
+          const navigated = await client.navigate(targetUrl);
+          if (navigated) return await navigated.focus();
+        } catch { /* Try another client, or open a fresh window. */ }
       }
-      // Otherwise open a new window
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
+      return self.clients.openWindow(targetUrl);
+    })()
   );
 });

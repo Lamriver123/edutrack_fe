@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:invoice-designer": "playwright test tests/invoice-designer.spec.ts"
+    "test:invoice-designer": "playwright test tests/invoice-designer.spec.ts",
+    "test:push": "node --test tests/push-worker.test.mjs",
+    "test:push:ui": "playwright test tests/push-notifications.spec.ts"
   },
   "dependencies": {
     "date-fns": "^4.4.0",

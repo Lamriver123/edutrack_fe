@@ -720,14 +720,11 @@ function PasswordInput({
   );
 }
 
-import { usePushNotifications } from "@/hooks/use-push";
+import { useDashboardSession } from "@/components/layout/dashboard-shell";
 
 export function PushNotificationPanel() {
-  const { isSupported, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotifications();
-
-  if (!isSupported) {
-    return null;
-  }
+  const { push } = useDashboardSession();
+  const { isSupported, isSubscribed, isLoading, permission, statusMessage, subscribe, unsubscribe, sendTest, checkSubscription } = push;
 
   return (
     <section className="flex flex-col gap-4 rounded-md border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)]">
@@ -748,8 +745,8 @@ export function PushNotificationPanel() {
         
         <button
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 ${isSubscribed ? 'bg-[var(--brand-500)]' : 'bg-gray-200'}`}
-          disabled={isLoading}
-          onClick={isSubscribed ? unsubscribe : subscribe}
+          disabled={isLoading || !isSupported || permission === "denied"}
+          onClick={() => void (isSubscribed ? unsubscribe() : subscribe())}
           type="button"
           role="switch"
           aria-checked={isSubscribed}
@@ -761,11 +758,15 @@ export function PushNotificationPanel() {
         </button>
       </div>
       
-      <p className="text-[13px] font-medium text-[var(--neutral-600)] leading-relaxed">
-        {isSubscribed 
-          ? "Bạn sẽ nhận được thông báo trước khi lớp học bắt đầu 30 phút và nhắc nhở điểm danh."
-          : "Bạn đang tắt thông báo. Hãy bật để không bỏ lỡ các nhắc nhở quan trọng về lớp học."}
+      <p role="status" className="text-[13px] font-medium text-[var(--neutral-600)] leading-relaxed">
+        {isLoading ? "Đang kiểm tra thông báo…" : statusMessage}
       </p>
+      {isSupported && (
+        <div className="flex flex-wrap gap-3">
+          <button type="button" disabled={isLoading || !isSubscribed} onClick={() => void sendTest()} className="rounded-md bg-[var(--brand-50)] px-3 py-2 text-sm font-bold text-[var(--brand-700)] disabled:opacity-50">Gửi thông báo thử</button>
+          <button type="button" disabled={isLoading} onClick={() => void checkSubscription()} className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-semibold disabled:opacity-50">Kiểm tra lại</button>
+        </div>
+      )}
     </section>
   );
 }

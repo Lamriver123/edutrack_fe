@@ -13,6 +13,20 @@ function getToken() {
   return tokenStorage.getAccessToken();
 }
 
+async function pushRequest<T>(path: string, options: Parameters<typeof apiRequest>[1] = {}) {
+  // AbortController also works on iOS versions that lack AbortSignal.timeout().
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    return await apiRequest<T>(path, { ...options, token: getToken(), signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("Máy chủ thông báo phản hồi quá lâu. Hãy đợi một chút rồi kiểm tra lại.");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function refreshForBinaryRequest() {
   try {
     const session = await apiRequest<AuthResponse>("/auth/refresh", {
@@ -172,7 +186,7 @@ export const profileApi = {
   },
 
   subscribeToPush(subscription: unknown) {
-    return apiRequest<{ message: string }>("/users/me/push-subscription", {
+    return pushRequest<{ success: boolean }>("/users/me/push-subscription", {
       method: "POST",
       token: getToken(),
       body: JSON.stringify(subscription),
@@ -180,8 +194,20 @@ export const profileApi = {
   },
 
   unsubscribeFromPush(endpoint: string) {
-    return apiRequest<{ message: string }>("/users/me/push-subscription", {
+    return pushRequest<{ success: boolean }>("/users/me/push-subscription", {
       method: "DELETE",
+      token: getToken(),
+      body: JSON.stringify({ endpoint }),
+    });
+  },
+
+  getPushStatus() {
+    return pushRequest<{ configured: boolean; publicKey: string | null; subscriptionCount: number; configurationError?: string }>("/users/me/push-subscription/status");
+  },
+
+  testPush(endpoint: string) {
+    return pushRequest<{ attempted: number; sent: number; failed: number; removed: number; configured: boolean; message: string }>("/users/me/push-subscription/test", {
+      method: "POST",
       token: getToken(),
       body: JSON.stringify({ endpoint }),
     });

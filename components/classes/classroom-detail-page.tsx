@@ -369,7 +369,8 @@ export function ClassroomDetailPage({ classId }: { classId: string }) {
         <ClassroomDetailTabs
           classroom={classDetail}
           isLoading={isLoadingDetail}
-          initialActiveTab={receiptStudentId ? "tuition" : undefined}
+          key={`${classId}:${searchParams.get("tab") === "attendance" ? "attendance" : "default"}`}
+          initialActiveTab={receiptStudentId ? "tuition" : searchParams.get("tab") === "attendance" ? "attendance" : undefined}
           initialIssueMode={receiptMode}
           initialIssueStudent={initialIssueStudent}
           onAddStudent={() => setIsStudentModalOpen(true)}

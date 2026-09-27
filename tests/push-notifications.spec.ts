@@ -64,8 +64,8 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
     if (path === "/api/users/me/push-subscription/test") return route.fulfill({ json: { attempted: 1, sent: options.testFails ? 0 : 1, failed: options.testFails ? 1 : 0, removed: options.testFails ? 1 : 0, configured: true, message: options.testFails ? "Thiết bị đã hết hạn đăng ký." : "Accepted" } });
     return route.fulfill({ json: { message: "OK" } });
   });
-  await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Thông báo", exact: true })).toBeVisible();
+  await page.goto("/notifications");
+  await expect(page.getByRole("heading", { level: 2, name: "Thông báo", exact: true })).toBeVisible();
   return requests;
 }
 
@@ -131,6 +131,7 @@ test("denied permission gives actionable guidance without requesting repeatedly"
 test("unsupported browser still shows guidance and can log out", async ({ page }) => {
   const requests = await setup(page, { unsupported: true });
   await expect(page.getByRole("status").filter({ hasText: "Trình duyệt này chưa hỗ trợ" })).toBeVisible();
+  await page.goto("/profile");
   await page.getByRole("button", { name: "Đăng xuất", exact: true }).last().click();
   await expect(page).toHaveURL(/\/login$/);
   expect(requests.some((request) => request.path === "/api/auth/logout")).toBe(true);

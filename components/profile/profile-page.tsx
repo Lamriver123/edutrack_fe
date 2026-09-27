@@ -41,7 +41,6 @@ import {
   PaymentQrPanel,
   ProfileEditFields,
   ProfileReadonlyFields,
-  PushNotificationPanel,
   SystemSettingsPanel,
   TeacherProfileCard,
   type PasswordFormState,
@@ -767,7 +766,6 @@ export function ProfilePage() {
         showPassword={showPassword}
       />
 
-      <PushNotificationPanel />
       <SystemSettingsPanel onLogout={logout} />
 
       {confirmConfig ? (

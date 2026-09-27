@@ -3,7 +3,6 @@
 "use client";
 
 import {
-  Bell,
   Camera,
   CheckCircle2,
   CreditCard,
@@ -738,60 +737,6 @@ function PasswordInput({
       type={showPassword ? "text" : "password"}
       value={value}
     />
-  );
-}
-
-import { useDashboardSession } from "@/components/layout/dashboard-shell";
-
-export function PushNotificationPanel() {
-  const { push } = useDashboardSession();
-  const { isSupported, isSubscribed, isLoading, permission, statusMessage, subscriptionCount, subscribe, unsubscribe, sendTest, checkSubscription } = push;
-
-  return (
-    <section className="flex flex-col gap-4 rounded-md border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)]">
-      <div className="flex min-w-0 items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-[var(--brand-50)] text-[var(--brand-600)]">
-            <Bell size={20} />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-[17px] font-extrabold text-[var(--brand-950)]">
-              Thông báo
-            </h2>
-            <p className="mt-1 text-[13px] font-semibold text-[var(--neutral-500)]">
-              Nhận thông báo lịch dạy và điểm danh
-            </p>
-          </div>
-        </div>
-        
-        <button
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 ${isSubscribed ? 'bg-[var(--brand-500)]' : 'bg-gray-200'}`}
-          disabled={isLoading || !isSupported || permission === "denied"}
-          onClick={() => void (isSubscribed ? unsubscribe() : subscribe())}
-          type="button"
-          role="switch"
-          aria-checked={isSubscribed}
-        >
-          <span className="sr-only">Bật thông báo</span>
-          <span
-            className={`pointer-events-none block size-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${isSubscribed ? 'translate-x-5' : 'translate-x-0'}`}
-          />
-        </button>
-      </div>
-      
-      <p role="status" className="text-[13px] font-medium text-[var(--neutral-600)] leading-relaxed">
-        {isLoading ? "Đang kiểm tra thông báo…" : statusMessage}
-      </p>
-      <div className="rounded-md border border-[var(--border)] bg-[var(--neutral-50)] px-3 py-2 text-[13px] font-semibold text-[var(--neutral-600)]">
-        Có <span className="font-extrabold text-[var(--brand-700)]">{subscriptionCount}</span> thiết bị đang nhận thông báo từ tài khoản này.
-      </div>
-      {isSupported && (
-        <div className="flex flex-wrap gap-3">
-          <button type="button" disabled={isLoading || !isSubscribed} onClick={() => void sendTest()} className="rounded-md bg-[var(--brand-50)] px-3 py-2 text-sm font-bold text-[var(--brand-700)] disabled:opacity-50">Gửi thông báo thử</button>
-          <button type="button" disabled={isLoading} onClick={() => void checkSubscription()} className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-semibold disabled:opacity-50">Kiểm tra lại</button>
-        </div>
-      )}
-    </section>
   );
 }
 

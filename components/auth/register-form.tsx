@@ -33,7 +33,10 @@ export function RegisterForm() {
 
     try {
       const result = await authApi.register({ fullName, email, password });
-      tokenStorage.setPendingEmail(result.email);
+      tokenStorage.setPendingEmail(result.email, {
+        otpExpiresAt: result.otpExpiresAt,
+        otpResendAvailableAt: result.otpResendAvailableAt,
+      });
       router.push(`/verify-otp?email=${encodeURIComponent(result.email)}`);
     } catch (err) {
       setError(

@@ -65,8 +65,21 @@ export function LoginForm() {
       router.replace("/dashboard");
     } catch (err) {
       if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED") {
-        tokenStorage.setPendingEmail(email);
-        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+        const details =
+          err.details && typeof err.details === "object"
+            ? (err.details as {
+                email?: string;
+                otpExpiresAt?: string;
+                otpResendAvailableAt?: string;
+              })
+            : {};
+        const pendingEmail = details.email ?? email;
+
+        tokenStorage.setPendingEmail(pendingEmail, {
+          otpExpiresAt: details.otpExpiresAt,
+          otpResendAvailableAt: details.otpResendAvailableAt,
+        });
+        router.push(`/verify-otp?email=${encodeURIComponent(pendingEmail)}`);
         return;
       }
 

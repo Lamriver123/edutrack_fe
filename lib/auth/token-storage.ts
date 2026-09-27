@@ -3,9 +3,16 @@ import type { User } from "@/types/user";
 export const AUTH_ACCESS_TOKEN_STORAGE_KEY = "edutrack.accessToken";
 export const AUTH_USER_STORAGE_KEY = "edutrack.user";
 const PENDING_EMAIL_KEY = "edutrack.pendingEmail";
+const PENDING_OTP_KEY = "edutrack.pendingOtp";
 const SAVED_CREDS_KEY = "edutrack.savedCreds";
 export const AUTH_SESSION_EXPIRED_EVENT = "edutrack:auth-session-expired";
 export const AUTH_SESSION_CHANGED_EVENT = "edutrack:auth-session-changed";
+
+export type PendingOtpState = {
+  email: string;
+  otpExpiresAt?: string;
+  otpResendAvailableAt?: string;
+};
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -50,6 +57,7 @@ export const tokenStorage = {
     window.localStorage.setItem(AUTH_ACCESS_TOKEN_STORAGE_KEY, accessToken);
     window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
     window.localStorage.removeItem(PENDING_EMAIL_KEY);
+    window.localStorage.removeItem(PENDING_OTP_KEY);
   },
 
   clearSession() {
@@ -90,12 +98,21 @@ export const tokenStorage = {
     window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
   },
 
-  setPendingEmail(email: string) {
+  setPendingEmail(email: string, otpState?: Omit<PendingOtpState, "email">) {
     if (!isBrowser()) {
       return;
     }
 
     window.localStorage.setItem(PENDING_EMAIL_KEY, email);
+
+    if (otpState?.otpExpiresAt || otpState?.otpResendAvailableAt) {
+      window.localStorage.setItem(
+        PENDING_OTP_KEY,
+        JSON.stringify({ email, ...otpState }),
+      );
+    } else {
+      window.localStorage.removeItem(PENDING_OTP_KEY);
+    }
   },
 
   getPendingEmail() {
@@ -104,6 +121,30 @@ export const tokenStorage = {
     }
 
     return window.localStorage.getItem(PENDING_EMAIL_KEY) ?? "";
+  },
+
+  getPendingOtp(email?: string) {
+    if (!isBrowser()) {
+      return null;
+    }
+
+    const raw = window.localStorage.getItem(PENDING_OTP_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const state = JSON.parse(raw) as PendingOtpState;
+      if (email && state.email !== email) {
+        return null;
+      }
+
+      return state;
+    } catch {
+      window.localStorage.removeItem(PENDING_OTP_KEY);
+      return null;
+    }
   },
 
   setSavedCredentials(email: string, password?: string) {

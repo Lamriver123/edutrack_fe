@@ -16,7 +16,6 @@ import {
   UserCircle,
   Users,
   UploadCloud,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -628,15 +627,6 @@ function Header({
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-3">
-          <label className="hidden h-9 w-[240px] items-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 text-[13px] text-[var(--neutral-500)] transition focus-within:border-[var(--brand-300)] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] md:flex xl:w-[320px]">
-            <Search size={14} />
-            <input
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
-              placeholder="Tìm kiếm học sinh, lớp học..."
-              type="search"
-            />
-          </label>
-
           <span className="hidden h-9 items-center gap-2 rounded-md border border-[var(--neutral-200)] bg-white px-3 text-[12px] font-semibold text-[var(--neutral-600)] xl:flex">
             <CalendarDays size={13} />
             {formatHeaderDate()}

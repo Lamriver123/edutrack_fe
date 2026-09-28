@@ -4,17 +4,6 @@ import { PushNotificationPanel } from "@/components/notifications/push-notificat
 export default function NotificationsPage() {
   return (
     <section className="grid gap-5">
-      <div className="min-w-0">
-        <p className="text-[14px] font-bold text-[var(--brand-600)]">
-          Thông báo
-        </p>
-        <h2 className="mt-1 text-[26px] font-extrabold leading-tight text-[var(--brand-950)]">
-          Thông báo
-        </h2>
-        <p className="mt-2 max-w-2xl text-[15px] leading-7 text-[var(--neutral-500)]">
-          Quản lý thông báo trên thiết bị và theo dõi các nội dung cần chú ý.
-        </p>
-      </div>
 
       <PushNotificationPanel />
 

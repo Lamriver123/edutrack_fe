@@ -150,9 +150,6 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
   return (
     <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
       <div>
-        <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--accent-100)] to-[var(--accent-200)] text-[var(--accent-500)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
-          <MailCheck size={20} />
-        </div>
         <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
           Xác thực email
         </h2>
@@ -210,7 +207,7 @@ export function VerifyOtpForm({ initialEmail = "" }: VerifyOtpFormProps) {
                 : !isClockReady
                   ? "Gửi lại OTP"
                   : resendRemainingSeconds > 0
-                    ? `Gửi lại OTP sau ${formatCountdown(resendRemainingSeconds)}`
+                    ? `Gửi lại OTP`
                     : "Gửi lại OTP"}
             </span>
           </button>

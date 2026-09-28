@@ -3,12 +3,15 @@
 import {
   BookOpenCheck,
   CalendarDays,
+  Check,
   Coins,
   ImageIcon,
   LoaderCircle,
   Palette,
   Plus,
+  RefreshCw,
   Save,
+  Sparkles,
   Upload,
 } from "lucide-react";
 import { useState } from "react";
@@ -28,6 +31,7 @@ import {
   formatCurrencyInput,
   getClassColorLabel,
   getClassColorTheme,
+  getSuggestedClassColors,
   normalizeClassColorHex,
 } from "./classroom-utils";
 
@@ -413,10 +417,16 @@ function ClassColorPicker({
   usedColorUsages: ClassColorUsage[];
   value: string;
 }) {
+  const [suggestionVariation, setSuggestionVariation] = useState(0);
   const selectedColorHex = normalizeClassColorHex(value);
   const selectedColor = getClassColorTheme(selectedColorHex);
   const selectedUsedBy = usedColorUsages.filter(
     (usage) => normalizeClassColorHex(usage.colorHex) === selectedColorHex,
+  );
+  const suggestedColors = getSuggestedClassColors(
+    usedColorUsages.map((usage) => usage.colorHex),
+    3,
+    suggestionVariation,
   );
   const selectedUsageText = selectedUsedBy.length
     ? `Đang dùng: ${selectedUsedBy
@@ -430,7 +440,7 @@ function ClassColorPicker({
       <div className="flex flex-wrap items-center gap-2">
         <span className="flex items-center gap-2 text-[14px] font-bold text-[var(--neutral-600)]">
           <Palette size={16} />
-          Bảng phối màu lịch
+          Màu nhận diện lớp
         </span>
         <span
           className="rounded-full px-2.5 py-1 text-[12px] font-extrabold"
@@ -442,6 +452,79 @@ function ClassColorPicker({
           {getClassColorLabel(selectedColorHex)}
         </span>
       </div>
+
+      <div className="grid gap-3 rounded-lg border border-[var(--brand-100)] bg-[var(--brand-50)]/55 p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2.5">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white text-[var(--brand-600)] shadow-[var(--shadow-sm)]">
+              <Sparkles size={15} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-extrabold text-[var(--brand-900)]">
+                3 màu gợi ý linh hoạt
+              </p>
+              <p className="mt-0.5 text-[12px] font-semibold leading-5 text-[var(--neutral-500)]">
+                Tạo theo màu các lớp hiện có, giữ tông sáng và dễ phân biệt.
+              </p>
+            </div>
+          </div>
+          <button
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border border-[var(--brand-200)] bg-white px-2.5 text-[11px] font-extrabold text-[var(--brand-700)] transition hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)]"
+            onClick={() =>
+              setSuggestionVariation((current) => current + 1)
+            }
+            type="button"
+          >
+            <RefreshCw size={12} />
+            Đổi gợi ý
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {suggestedColors.map((color) => {
+            const colorHex = normalizeClassColorHex(color.accent);
+            const colorTheme = getClassColorTheme(colorHex);
+            const isActive = selectedColorHex === colorHex;
+
+            return (
+              <button
+                aria-label={`Chọn màu gợi ý ${color.label}`}
+                aria-pressed={isActive}
+                className={`relative grid min-h-14 min-w-0 place-items-center gap-1 rounded-md border px-1.5 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-400)] ${
+                  isActive
+                    ? "shadow-[0_0_0_3px_rgba(99,102,241,0.16)]"
+                    : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)]"
+                }`}
+                key={color.accent}
+                onClick={() => onChange(colorHex, color.colorIndex)}
+                style={{
+                  background: colorTheme.background,
+                  borderColor: isActive ? colorTheme.accent : colorTheme.border,
+                  color: colorTheme.text,
+                }}
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className="grid size-5 place-items-center rounded-full shadow-[0_0_0_2px_rgba(255,255,255,0.85)]"
+                  style={{ background: colorTheme.accent }}
+                >
+                  {isActive ? (
+                    <Check className="text-white" size={13} strokeWidth={3} />
+                  ) : null}
+                </span>
+                <span className="w-full truncate text-[11px] font-extrabold sm:text-[12px]">
+                  {color.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <span className="text-[12px] font-bold text-[var(--neutral-500)]">
+        Hoặc chọn từ bảng màu
+      </span>
 
       <div className="flex flex-wrap items-center gap-2">
         {CLASS_COLOR_OPTIONS.map((color, colorIndex) => {

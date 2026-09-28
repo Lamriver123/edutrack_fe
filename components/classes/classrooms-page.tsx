@@ -38,6 +38,7 @@ import {
   getClassColorHex,
   getClassColorLabel as getClassColorName,
   getClassColorTheme,
+  getSuggestedClassColors,
   getVietnamTodayInputDate,
   parseCurrencyInput,
 } from "./classroom-utils";
@@ -119,12 +120,16 @@ export function ClassroomsPage() {
       }
     }
 
-    const colorIndex = getFirstAvailableColorIndex(sources);
+    const suggestedColor = getSuggestedClassColors(
+      sources.map((classroom) => getClassColorHex(classroom)),
+    )[0];
+    const colorIndex = suggestedColor?.colorIndex ?? 0;
 
     resetClassImageSelection();
     setClassForm({
       ...initialClassForm,
-      colorHex: CLASS_COLOR_OPTIONS[colorIndex].accent,
+      colorHex:
+        suggestedColor?.accent ?? CLASS_COLOR_OPTIONS[colorIndex].accent,
       colorIndex,
       priceEffectiveFrom: getVietnamTodayInputDate(),
     });
@@ -281,20 +286,6 @@ function buildClassColorUsages(
       colorIndex: classroom.colorIndex ?? 0,
       colorHex: getClassColorHex(classroom),
     }));
-}
-
-function getFirstAvailableColorIndex(classrooms: Classroom[]) {
-  const usedColorIndexes = new Set(
-    classrooms.map((classroom) => classroom.colorIndex ?? 0),
-  );
-
-  for (let colorIndex = 0; colorIndex <= 7; colorIndex += 1) {
-    if (!usedColorIndexes.has(colorIndex)) {
-      return colorIndex;
-    }
-  }
-
-  return 0;
 }
 
 function ClassroomToolbar({

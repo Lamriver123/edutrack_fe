@@ -102,6 +102,9 @@ export function StudentDirectory() {
   const { setNotice } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [mobileSelectOpenKey, setMobileSelectOpenKey] = useState<string | null>(
+    null,
+  );
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
@@ -204,6 +207,7 @@ export function StudentDirectory() {
     setSortBy("fullName");
     setSortOrder("asc");
     setIsMobileFiltersOpen(false);
+    setMobileSelectOpenKey(null);
   }
 
   async function handleDownloadTemplate() {
@@ -658,7 +662,10 @@ export function StudentDirectory() {
                   ? "border-[var(--brand-200)] bg-[var(--brand-50)] text-[var(--brand-700)]"
                   : "border-[var(--neutral-200)] bg-white text-[var(--neutral-600)]"
               }`}
-              onClick={() => setIsMobileFiltersOpen((current) => !current)}
+              onClick={() => {
+                setIsMobileFiltersOpen((current) => !current);
+                setMobileSelectOpenKey(null);
+              }}
               title="Bộ lọc"
               type="button"
             >
@@ -682,7 +689,7 @@ export function StudentDirectory() {
           </div>
 
           {isMobileFiltersOpen ? (
-            <div className={`grid grid-cols-2 gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2 ${styles.mobileFilterPanel}`}>
+            <div className={`relative z-[60] grid grid-cols-2 gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2 ${styles.mobileFilterPanel}`}>
               <label className="col-span-2 flex h-10 items-center gap-2 rounded-md border border-[var(--neutral-200)] bg-white px-3 text-[var(--neutral-400)]">
                 <Filter size={15} />
                 <input
@@ -695,21 +702,33 @@ export function StudentDirectory() {
               </label>
               <CompactMobileSelect
                 ariaLabel="Lọc trạng thái học sinh"
+                isOpen={mobileSelectOpenKey === "status"}
                 onChange={(value) =>
                   setStatusFilter(value as "all" | StudentStatus)
+                }
+                onOpenChange={(isOpen) =>
+                  setMobileSelectOpenKey(isOpen ? "status" : null)
                 }
                 options={studentStatusOptions}
                 value={statusFilter}
               />
               <CompactMobileSelect
                 ariaLabel="Sắp xếp học sinh"
+                isOpen={mobileSelectOpenKey === "sort-by"}
                 onChange={(value) => setSortBy(value as StudentSortField)}
+                onOpenChange={(isOpen) =>
+                  setMobileSelectOpenKey(isOpen ? "sort-by" : null)
+                }
                 options={studentSortOptions}
                 value={sortBy}
               />
               <CompactMobileSelect
                 ariaLabel="Thứ tự sắp xếp"
+                isOpen={mobileSelectOpenKey === "sort-order"}
                 onChange={(value) => setSortOrder(value as StudentSortOrder)}
+                onOpenChange={(isOpen) =>
+                  setMobileSelectOpenKey(isOpen ? "sort-order" : null)
+                }
                 options={studentSortOrderOptions}
                 value={sortOrder}
               />
@@ -1079,16 +1098,19 @@ export function StudentDirectory() {
 
 function CompactMobileSelect({
   ariaLabel,
+  isOpen,
   onChange,
+  onOpenChange,
   options,
   value,
 }: {
   ariaLabel: string;
+  isOpen: boolean;
   onChange: (value: string) => void;
+  onOpenChange: (isOpen: boolean) => void;
   options: Array<{ label: string; value: string }>;
   value: string;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value);
 
   return (
@@ -1101,7 +1123,7 @@ function CompactMobileSelect({
           return;
         }
 
-        setIsOpen(false);
+        onOpenChange(false);
       }}
     >
       <button
@@ -1112,7 +1134,7 @@ function CompactMobileSelect({
             ? "border-[var(--brand-400)] text-[var(--brand-800)] shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
             : "border-[var(--neutral-200)] text-[var(--neutral-700)]"
         }`}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => onOpenChange(!isOpen)}
         type="button"
       >
         <span className="min-w-0 truncate">
@@ -1127,7 +1149,7 @@ function CompactMobileSelect({
       </button>
 
       {isOpen ? (
-        <div className={`absolute left-0 right-0 top-[calc(100%+6px)] z-30 grid rounded-lg border border-[var(--neutral-200)] bg-white p-1 shadow-[0_16px_36px_rgba(15,23,42,0.16)] ${styles.mobileSelectMenu}`}>
+        <div className={`absolute left-0 right-0 top-[calc(100%+6px)] z-[70] grid rounded-lg border border-[var(--neutral-200)] bg-white p-1 shadow-[0_16px_36px_rgba(15,23,42,0.16)] ${styles.mobileSelectMenu}`}>
           {options.map((option) => {
             const isSelected = option.value === value;
 
@@ -1142,7 +1164,7 @@ function CompactMobileSelect({
                 key={option.value}
                 onClick={() => {
                   onChange(option.value);
-                  setIsOpen(false);
+                  onOpenChange(false);
                 }}
                 role="option"
                 type="button"

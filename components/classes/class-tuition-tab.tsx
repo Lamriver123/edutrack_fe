@@ -996,13 +996,13 @@ function ReceiptPreviewDialog({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-white">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-white pt-[var(--app-safe-area-top)]">
+      <div className="flex min-h-14 shrink-0 items-center justify-between border-b border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4">
         <h2 className="text-[16px] font-bold text-[var(--neutral-900)]">
           Bản xem trước hóa đơn
         </h2>
         <button
-          className="flex h-8 items-center justify-center rounded-md bg-[var(--neutral-200)] px-3 text-[13px] font-bold text-[var(--neutral-700)] transition active:scale-95"
+          className="flex h-10 items-center justify-center rounded-md bg-[var(--neutral-200)] px-3 text-[13px] font-bold text-[var(--neutral-700)] transition active:scale-95"
           onClick={onClose}
           type="button"
         >

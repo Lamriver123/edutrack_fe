@@ -1320,7 +1320,7 @@
 
 @media (max-width: 760px) {
   .toast {
-    top: 12px;
+    top: calc(var(--app-safe-area-top) + 12px);
     right: 10px;
     width: calc(100vw - 20px);
     min-height: 68px;

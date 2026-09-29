@@ -70,6 +70,52 @@
   z-index: 30;
 }
 
+/* Matrix table used by the attendance tab. Keep sticky cells on the same
+   color as their complete row so horizontal scrolling stays readable. */
+.attendanceHeader {
+  border-bottom: 1px solid var(--brand-200);
+  background: var(--brand-50);
+  color: var(--brand-800);
+}
+
+.attendanceHeader .sttCol,
+.attendanceHeader .stickyCol {
+  background: var(--brand-100);
+  color: var(--brand-800);
+  box-shadow: 4px 0 14px rgba(67, 56, 202, 0.08);
+}
+
+.attendanceHeader th {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.attendanceRow {
+  background: #ffffff;
+}
+
+.attendanceRow:nth-child(even) {
+  background: #f8fafc;
+}
+
+.attendanceRow .sttCol,
+.attendanceRow .stickyCol {
+  background: #ffffff;
+  transition: background-color 160ms ease;
+}
+
+.attendanceRow:nth-child(even) .sttCol,
+.attendanceRow:nth-child(even) .stickyCol {
+  background: #f8fafc;
+}
+
+.attendanceRow:hover,
+.attendanceRow:hover .sttCol,
+.attendanceRow:hover .stickyCol {
+  background: var(--brand-50);
+}
+
 .sheetHeader th {
   padding: 0.75rem;
   text-align: center;

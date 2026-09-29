@@ -50,10 +50,10 @@ export function AttendanceTable({
   return (
     <div className="overflow-x-auto overscroll-x-contain" ref={scrollContainerRef}>
       <table className="min-w-[980px] w-full border-collapse text-left">
-        <thead>
-          <tr className="border-b border-[var(--border)] bg-[var(--neutral-50)] text-[12px] font-bold text-[var(--neutral-500)]">
-            <th className={`py-3 sm:py-4 px-1 sm:px-2 w-8 sm:w-14 min-w-[32px] sm:min-w-[56px] text-center ${styles.sttCol}`} scope="col">STT</th>
-            <th className={`py-3 sm:py-4 px-2 sm:px-4 w-[120px] sm:w-[280px] min-w-[120px] sm:min-w-[280px] ${styles.stickyCol}`} scope="col">Học sinh & Thống kê</th>
+        <thead className={styles.attendanceHeader}>
+          <tr>
+            <th className={`w-10 min-w-10 px-2 py-3 text-center sm:w-14 sm:min-w-[56px] sm:px-2 sm:py-4 ${styles.sttCol}`} scope="col">STT</th>
+            <th className={`w-[156px] min-w-[156px] px-4 py-3 sm:w-[280px] sm:min-w-[280px] sm:py-4 ${styles.stickyCol}`} scope="col">Học sinh & Thống kê</th>
             {sessions.map((s, idx) => {
               const displayDate = getDisplayDate(s.date);
               const today = isToday(s.date);
@@ -67,7 +67,7 @@ export function AttendanceTable({
 
               if (today) {
                 return (
-                  <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--brand-100)] bg-[var(--brand-50)] px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
+                  <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--brand-200)] bg-[var(--brand-100)] px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
                     <div className="inline-flex items-center justify-center gap-1.5 font-extrabold text-[var(--brand-800)]">
                       {displayDate}
                       <span className="size-1.5 rounded-full bg-[var(--brand-600)]"></span>
@@ -82,7 +82,7 @@ export function AttendanceTable({
                 );
               }
               return (
-                <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--border)] bg-white px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
+                <th id={idAttr} key={s.id} className="min-w-[96px] border-l border-[var(--brand-100)] bg-[var(--brand-50)] px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col">
                   <div className="flex items-center justify-center gap-1.5 font-bold text-[var(--neutral-800)]">
                     {displayDate}
                     {isSaved && !isEditing && !isFullyBilled && (
@@ -96,7 +96,7 @@ export function AttendanceTable({
               );
             })}
             {paddingColumns.map((id) => (
-              <th key={id} className="min-w-[96px] border-l border-[var(--border)] bg-white px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col"></th>
+              <th key={id} className="min-w-[96px] border-l border-[var(--brand-100)] bg-[var(--brand-50)] px-2 py-4 text-center sm:min-w-[108px] sm:px-3" scope="col"></th>
             ))}
             <th className="w-full" aria-hidden="true"></th>
           </tr>
@@ -105,15 +105,14 @@ export function AttendanceTable({
         <tbody className="divide-y divide-[var(--neutral-100)] text-[14px] font-medium">
           {activeStudents.map((student, i) => {
             const stats = overviewStats[student.id] || { present: 0, absent: 0, excused: 0 };
-            const rowBg = i % 2 === 1 ? "bg-[var(--neutral-50)]/50" : "";
 
             return (
-              <tr key={student.id} className={`group transition hover:bg-[var(--brand-50)]/45 ${rowBg}`}>
-                <td className={`px-1 py-3 text-center text-[12px] font-bold text-[var(--neutral-400)] sm:px-2 sm:py-4 sm:text-[13px] ${styles.sttCol}`}>
+              <tr key={student.id} className={`${styles.attendanceRow} group transition`}>
+                <td className={`px-2 py-3 text-center text-[12px] font-bold text-[var(--neutral-400)] sm:px-2 sm:py-4 sm:text-[13px] ${styles.sttCol}`}>
                   {String(i + 1).padStart(2, "0")}
                 </td>
-                <td className={`py-2 sm:py-4 px-2 sm:px-4 ${styles.stickyCol}`}>
-                  <div className="flex items-center gap-0 sm:gap-3">
+                <td className={`px-4 py-3 sm:px-4 sm:py-4 ${styles.stickyCol}`}>
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getStudentAvatar(student)}
@@ -121,7 +120,7 @@ export function AttendanceTable({
                       className="hidden size-10 shrink-0 rounded-md border border-[var(--border)] object-cover sm:block"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 leading-tight sm:leading-normal">
+                      <div className="flex flex-col gap-0 leading-tight sm:flex-row sm:items-center sm:gap-2 sm:leading-normal">
                         <span className="line-clamp-2 text-[13px] font-bold text-[var(--neutral-900)] transition group-hover:text-[var(--brand-700)] sm:line-clamp-1 sm:text-[15px]">{student.fullName}</span>
                       </div>
                       <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold sm:gap-2 sm:text-[12px]">

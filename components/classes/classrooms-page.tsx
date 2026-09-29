@@ -430,12 +430,6 @@ function ClassroomGridItem({ classroom }: { classroom: Classroom }) {
         <span>{scheduleText}</span>
       </div>
 
-      <div className={styles.classCardFooter}>
-        <span className={styles.classViewLabel}>Xem chi tiết lớp</span>
-        <span className={styles.classArrow}>
-          <ArrowRight size={17} />
-        </span>
-      </div>
     </Link>
   );
 }

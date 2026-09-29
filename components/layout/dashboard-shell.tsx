@@ -434,6 +434,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           isMoreOpen={isMobileMoreOpen}
           onCloseMore={() => setIsMobileMoreOpen(false)}
           onToggleMore={() => setIsMobileMoreOpen((current) => !current)}
+          scrollDirection={scrollDirection}
         />
       </main>
     </DashboardUserContext.Provider>
@@ -445,11 +446,13 @@ function MobileBottomNavigation({
   isMoreOpen,
   onCloseMore,
   onToggleMore,
+  scrollDirection,
 }: {
   activeHref: string;
   isMoreOpen: boolean;
   onCloseMore: () => void;
   onToggleMore: () => void;
+  scrollDirection: string;
 }) {
   const primaryItems = navigationItems.filter((item) =>
     ["/dashboard", "/classes", "/students", "/schedule"].includes(
@@ -473,34 +476,24 @@ function MobileBottomNavigation({
       ) : null}
 
       {isMoreOpen ? (
-        <aside className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] left-3 right-3 z-[60] rounded-2xl border border-[var(--neutral-200)] bg-white p-3 shadow-[0_20px_48px_rgba(15,23,42,0.2)] sm:hidden">
-          <p className="px-2 pb-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--neutral-400)]">
-            Thêm
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {moreItems.map(({ description, href, icon: Icon, label }) => {
+        <aside className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-3 z-[60] w-[min(232px,calc(100vw-24px))] rounded-2xl border border-[var(--neutral-200)] bg-white p-1.5 shadow-[0_20px_48px_rgba(15,23,42,0.2)] sm:hidden">
+          <div className="grid gap-1">
+            {moreItems.map(({ href, icon: Icon, label }) => {
               const isActive = activeHref === href;
 
               return (
                 <Link
-                  className={`grid min-h-[88px] content-between rounded-xl border p-3 transition ${
+                  className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 transition ${
                     isActive
-                      ? "border-[var(--brand-200)] bg-[var(--brand-50)] text-[var(--brand-700)]"
-                      : "border-[var(--neutral-100)] bg-[var(--neutral-50)] text-[var(--neutral-700)]"
+                      ? "bg-[var(--brand-50)] text-[var(--brand-700)]"
+                      : "text-[var(--neutral-700)] hover:bg-[var(--neutral-50)]"
                   }`}
                   href={href}
                   key={href}
                   onClick={onCloseMore}
                 >
-                  <Icon size={19} />
-                  <span>
-                    <span className="block text-[13px] font-extrabold">
-                      {label}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] font-semibold leading-4 text-[var(--neutral-500)]">
-                      {description}
-                    </span>
-                  </span>
+                  <Icon size={18} />
+                  <span className="text-[13px] font-extrabold">{label}</span>
                 </Link>
               );
             })}
@@ -510,7 +503,11 @@ function MobileBottomNavigation({
 
       <nav
         aria-label="Điều hướng nhanh"
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[var(--neutral-200)] bg-white/95 px-1 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.07)] backdrop-blur sm:hidden"
+        className={`fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[var(--neutral-200)] bg-white/95 px-1 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.07)] backdrop-blur transition-all duration-300 sm:hidden ${
+          isMoreOpen || scrollDirection !== "down"
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-full opacity-0"
+        }`}
       >
         {primaryItems.map(({ href, icon: Icon, label }) => {
           const isActive = activeHref === href;

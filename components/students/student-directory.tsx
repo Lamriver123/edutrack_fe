@@ -99,6 +99,7 @@ export function StudentDirectory() {
     useState<StudentFormState>(initialStudentForm);
   const { setNotice } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
@@ -200,6 +201,7 @@ export function StudentDirectory() {
     setStatusFilter("active");
     setSortBy("fullName");
     setSortOrder("asc");
+    setIsMobileFiltersOpen(false);
   }
 
   async function handleDownloadTemplate() {
@@ -547,7 +549,7 @@ export function StudentDirectory() {
     sortOrder !== "asc";
 
   return (
-    <section className="grid gap-5">
+    <section className="grid gap-3 sm:gap-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {selectedVisibleStudents.length ? (
           <BulkStudentActionMenu
@@ -559,7 +561,7 @@ export function StudentDirectory() {
           <span aria-hidden="true" />
         )}
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+        <div className="hidden gap-3 sm:flex sm:items-center sm:justify-end lg:flex-row">
           <SecondaryAction
             className="w-full sm:w-auto"
             disabled={isDownloadingTemplate}
@@ -592,10 +594,128 @@ export function StudentDirectory() {
             Tạo học sinh
           </PrimaryAction>
         </div>
+
+        <div className="flex items-center justify-end gap-2 sm:hidden">
+          <button
+            aria-label="Tải mẫu import"
+            className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)] disabled:opacity-50"
+            disabled={isDownloadingTemplate}
+            onClick={() => void handleDownloadTemplate()}
+            title="Tải mẫu"
+            type="button"
+          >
+            {isDownloadingTemplate ? (
+              <LoaderCircle className="animate-spin" size={18} />
+            ) : (
+              <Download size={18} />
+            )}
+          </button>
+          <button
+            aria-label="Import danh sách học sinh"
+            className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+            onClick={handleOpenImportModal}
+            title="Import danh sách"
+            type="button"
+          >
+            <FileSpreadsheet size={18} />
+          </button>
+          <button
+            aria-label="Tạo học sinh"
+            className="grid size-11 place-items-center rounded-lg bg-[var(--brand-600)] text-white shadow-[var(--shadow-brand)] transition hover:bg-[var(--brand-700)]"
+            onClick={() => setIsCreateModalOpen(true)}
+            title="Tạo học sinh"
+            type="button"
+          >
+            <Plus size={19} />
+          </button>
+        </div>
       </div>
 
-      <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-5 shadow-[var(--shadow-card)]">
-        <div className="mb-4 grid gap-3 xl:grid-cols-[minmax(260px,1fr)_minmax(150px,0.55fr)_minmax(150px,0.55fr)_minmax(170px,0.6fr)_minmax(140px,0.5fr)_auto] xl:items-end">
+      <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-3 shadow-[var(--shadow-card)] sm:p-5">
+        <div className="grid gap-2 sm:hidden">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px_44px] gap-2">
+            <label className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-3 text-[var(--neutral-400)] shadow-[var(--shadow-xs)] focus-within:border-[var(--brand-400)] focus-within:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]">
+              <Search size={17} />
+              <input
+                aria-label="Tìm học sinh"
+                className="min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Tìm học sinh..."
+                type="search"
+                value={search}
+              />
+            </label>
+            <button
+              aria-expanded={isMobileFiltersOpen}
+              aria-label="Mở bộ lọc học sinh"
+              className={`grid size-11 place-items-center rounded-lg border transition ${
+                isMobileFiltersOpen
+                  ? "border-[var(--brand-200)] bg-[var(--brand-50)] text-[var(--brand-700)]"
+                  : "border-[var(--neutral-200)] bg-white text-[var(--neutral-600)]"
+              }`}
+              onClick={() => setIsMobileFiltersOpen((current) => !current)}
+              title="Bộ lọc"
+              type="button"
+            >
+              <Filter size={18} />
+            </button>
+            {hasActiveFilters ? (
+              <button
+                aria-label="Xóa bộ lọc"
+                className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+                onClick={resetFilters}
+                title="Xóa lọc"
+                type="button"
+              >
+                <RotateCcw size={17} />
+              </button>
+            ) : (
+              <span className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-100)] bg-[var(--neutral-50)] text-[12px] font-extrabold text-[var(--neutral-600)]">
+                {students.length}
+              </span>
+            )}
+          </div>
+
+          {isMobileFiltersOpen ? (
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2">
+              <label className="col-span-2 flex h-10 items-center gap-2 rounded-md border border-[var(--neutral-200)] bg-white px-3 text-[var(--neutral-400)]">
+                <Filter size={15} />
+                <input
+                  aria-label="Lọc theo lớp mấy"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
+                  onChange={(event) => setGradeFilter(event.target.value)}
+                  placeholder="Lọc theo lớp mấy"
+                  value={gradeFilter}
+                />
+              </label>
+              <CompactMobileSelect
+                ariaLabel="Lọc trạng thái học sinh"
+                onChange={(value) =>
+                  setStatusFilter(value as "all" | StudentStatus)
+                }
+                options={studentStatusOptions}
+                value={statusFilter}
+              />
+              <CompactMobileSelect
+                ariaLabel="Sắp xếp học sinh"
+                onChange={(value) => setSortBy(value as StudentSortField)}
+                options={studentSortOptions}
+                value={sortBy}
+              />
+              <CompactMobileSelect
+                ariaLabel="Thứ tự sắp xếp"
+                onChange={(value) => setSortOrder(value as StudentSortOrder)}
+                options={studentSortOrderOptions}
+                value={sortOrder}
+              />
+              <span className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--neutral-200)] bg-white px-2 text-[12px] font-extrabold text-[var(--neutral-600)]">
+                {students.length} học sinh
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mb-4 hidden gap-3 sm:grid xl:grid-cols-[minmax(260px,1fr)_minmax(150px,0.55fr)_minmax(150px,0.55fr)_minmax(170px,0.6fr)_minmax(140px,0.5fr)_auto] xl:items-end">
           <TextInput
             icon={<Search size={16} />}
             label="Tìm học sinh"
@@ -944,5 +1064,32 @@ export function StudentDirectory() {
         />
       ) : null}
     </section>
+  );
+}
+
+function CompactMobileSelect({
+  ariaLabel,
+  onChange,
+  options,
+  value,
+}: {
+  ariaLabel: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  value: string;
+}) {
+  return (
+    <select
+      aria-label={ariaLabel}
+      className="h-10 min-w-0 rounded-md border border-[var(--neutral-200)] bg-white px-2 text-[12px] font-bold text-[var(--neutral-700)] outline-none transition focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
+      onChange={(event) => onChange(event.target.value)}
+      value={value}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   );
 }

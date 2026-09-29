@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import {
+  Check,
+  ChevronDown,
   Download,
   FileSpreadsheet,
   Filter,
@@ -632,8 +634,8 @@ export function StudentDirectory() {
       </div>
 
       <section className="rounded-lg border border-[var(--neutral-200)] bg-white p-3 shadow-[var(--shadow-card)] sm:p-5">
-        <div className="grid gap-2 sm:hidden">
-          <div className="grid grid-cols-[minmax(0,1fr)_44px_44px] gap-2">
+        <div className="mb-3 grid gap-3 sm:hidden">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px_44px] gap-3">
             <label className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-3 text-[var(--neutral-400)] shadow-[var(--shadow-xs)] focus-within:border-[var(--brand-400)] focus-within:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]">
               <Search size={17} />
               <input
@@ -1078,18 +1080,72 @@ function CompactMobileSelect({
   options: Array<{ label: string; value: string }>;
   value: string;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
+
   return (
-    <select
-      aria-label={ariaLabel}
-      className="h-10 min-w-0 rounded-md border border-[var(--neutral-200)] bg-white px-2 text-[12px] font-bold text-[var(--neutral-700)] outline-none transition focus:border-[var(--brand-400)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
-      onChange={(event) => onChange(event.target.value)}
-      value={value}
+    <div
+      className="relative min-w-0"
+      onBlur={(event) => {
+        const nextFocus = event.relatedTarget;
+
+        if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus)) {
+          return;
+        }
+
+        setIsOpen(false);
+      }}
     >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+      <button
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border bg-white px-3 text-left text-[12px] font-bold outline-none transition ${
+          isOpen
+            ? "border-[var(--brand-400)] text-[var(--brand-800)] shadow-[0_0_0_3px_rgba(99,102,241,0.12)]"
+            : "border-[var(--neutral-200)] text-[var(--neutral-700)]"
+        }`}
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        <span className="min-w-0 truncate">
+          {selectedOption?.label ?? "Chọn"}
+        </span>
+        <ChevronDown
+          className={`shrink-0 text-[var(--neutral-400)] transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          size={15}
+        />
+      </button>
+
+      {isOpen ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 grid rounded-lg border border-[var(--neutral-200)] bg-white p-1 shadow-[0_16px_36px_rgba(15,23,42,0.16)]">
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={`flex min-h-9 items-center justify-between gap-2 rounded-md px-2.5 text-left text-[12px] font-bold transition ${
+                  isSelected
+                    ? "bg-[var(--brand-600)] text-white"
+                    : "text-[var(--neutral-700)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-800)]"
+                }`}
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                <span className="truncate">{option.label}</span>
+                {isSelected ? <Check size={14} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }

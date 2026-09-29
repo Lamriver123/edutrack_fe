@@ -91,6 +91,7 @@
 }
 
 html {
+  background: #ffffff;
   max-width: 100%;
   overflow-x: hidden;
   scroll-behavior: smooth;
@@ -106,6 +107,15 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   text-size-adjust: 100%;
+}
+
+/* Allow installed PWAs to paint behind the system status bar. Components that
+   sit at a screen edge use env(safe-area-inset-*) for their interactive UI. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    min-height: 100dvh;
+  }
 }
 
 main,

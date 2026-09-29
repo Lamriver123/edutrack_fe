@@ -52,8 +52,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Edu-Track",
+    statusBarStyle: "black-translucent",
+    title: "EduTrack",
   },
   formatDetection: {
     telephone: false,
@@ -68,6 +68,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

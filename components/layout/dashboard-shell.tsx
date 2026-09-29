@@ -401,7 +401,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           onClose={() => setIsSidebarOpen(false)}
         />
 
-        <div className="pb-[calc(78px+env(safe-area-inset-bottom))] pt-[72px] sm:pb-0 lg:pl-[248px]">
+        <div className="pb-[calc(78px+env(safe-area-inset-bottom))] pt-[calc(72px+env(safe-area-inset-top))] sm:pb-0 lg:pl-[248px]">
           <Header
             activeNavigation={activeNavigation}
             onOpenSidebar={() => setIsSidebarOpen(true)}
@@ -572,34 +572,36 @@ function Sidebar({
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="flex h-[72px] items-center justify-between border-b border-[var(--neutral-100)] px-4">
-        <Link
-          className="flex min-w-0 items-center gap-2.5"
-          href="/dashboard"
-          onClick={onClose}
-        >
-          <div className="grid size-10 place-items-center rounded-lg border border-amber-100 bg-white shadow-[var(--shadow-sm)]">
-            <Image
-              alt="EduTrack logo"
-              className="size-9 rounded-md object-contain"
-              height={36}
-              priority
-              src="/logo.png"
-              width={36}
-            />
-          </div>
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 truncate text-[16px] font-extrabold text-[var(--brand-950)]">
-              EduTrack
-              <span className="rounded bg-[var(--brand-50)] px-1.5 py-0.5 text-[8px] font-extrabold text-[var(--brand-600)]">
-                PRO
-              </span>
-            </p>
-            <p className="truncate text-[12px] font-medium text-[var(--neutral-500)]">
-              Quản lý lớp học thông minh
-            </p>
-          </div>
-        </Link>
+      <div className="border-b border-[var(--neutral-100)] pt-[env(safe-area-inset-top)]">
+        <div className="flex h-[72px] items-center justify-between px-4">
+          <Link
+            className="flex min-w-0 items-center gap-2.5"
+            href="/dashboard"
+            onClick={onClose}
+          >
+            <div className="grid size-10 place-items-center rounded-lg border border-amber-100 bg-white shadow-[var(--shadow-sm)]">
+              <Image
+                alt="EduTrack logo"
+                className="size-9 rounded-md object-contain"
+                height={36}
+                priority
+                src="/logo.png"
+                width={36}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 truncate text-[16px] font-extrabold text-[var(--brand-950)]">
+                EduTrack
+                <span className="rounded bg-[var(--brand-50)] px-1.5 py-0.5 text-[8px] font-extrabold text-[var(--brand-600)]">
+                  PRO
+                </span>
+              </p>
+              <p className="truncate text-[12px] font-medium text-[var(--neutral-500)]">
+                Quản lý lớp học thông minh
+              </p>
+            </div>
+          </Link>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-5">
@@ -717,7 +719,7 @@ function Header({
 }) {
   return (
     <header
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}
     >

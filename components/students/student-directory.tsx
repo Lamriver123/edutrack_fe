@@ -597,38 +597,41 @@ export function StudentDirectory() {
           </PrimaryAction>
         </div>
 
-        <div className="flex items-center justify-end gap-2 sm:hidden">
+        <div className="grid w-full grid-cols-3 gap-2 sm:hidden">
           <button
             aria-label="Tải mẫu import"
-            className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)] disabled:opacity-50"
+            className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--neutral-200)] bg-white px-2 text-[12px] font-extrabold text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)] disabled:opacity-50"
             disabled={isDownloadingTemplate}
             onClick={() => void handleDownloadTemplate()}
             title="Tải mẫu"
             type="button"
           >
             {isDownloadingTemplate ? (
-              <LoaderCircle className="animate-spin" size={18} />
+              <LoaderCircle className="shrink-0 animate-spin" size={15} />
             ) : (
-              <Download size={18} />
+              <Download className="shrink-0" size={15} />
             )}
+            <span className="truncate">Tải mẫu</span>
           </button>
           <button
             aria-label="Import danh sách học sinh"
-            className="grid size-11 place-items-center rounded-lg border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+            className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--neutral-200)] bg-white px-2 text-[12px] font-extrabold text-[var(--neutral-600)] shadow-[var(--shadow-xs)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
             onClick={handleOpenImportModal}
             title="Import danh sách"
             type="button"
           >
-            <FileSpreadsheet size={18} />
+            <FileSpreadsheet className="shrink-0" size={15} />
+            <span className="truncate">Import</span>
           </button>
           <button
             aria-label="Tạo học sinh"
-            className="grid size-11 place-items-center rounded-lg bg-[var(--brand-600)] text-white shadow-[var(--shadow-brand)] transition hover:bg-[var(--brand-700)]"
+            className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--brand-600)] px-2 text-[12px] font-extrabold text-white shadow-[var(--shadow-brand)] transition hover:bg-[var(--brand-700)]"
             onClick={() => setIsCreateModalOpen(true)}
             title="Tạo học sinh"
             type="button"
           >
-            <Plus size={19} />
+            <Plus className="shrink-0" size={16} />
+            <span className="truncate">Tạo mới</span>
           </button>
         </div>
       </div>
@@ -755,18 +758,23 @@ export function StudentDirectory() {
           />
           <div className="grid gap-2">
             <span className="text-[14px] font-bold text-transparent">Tổng</span>
-            <div className="grid gap-2 sm:grid-cols-[auto_auto] xl:grid-cols-1">
-              <span className="inline-flex h-12 items-center justify-center rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 text-[14px] font-bold text-[var(--neutral-600)]">
+            <div className="relative">
+              <span
+                className={`inline-flex h-12 w-full items-center justify-center rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 text-[14px] font-bold text-[var(--neutral-600)] ${
+                  hasActiveFilters ? "pr-12" : ""
+                }`}
+              >
                 {students.length} học sinh
               </span>
               {hasActiveFilters ? (
                 <button
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--neutral-200)] bg-white px-4 text-[14px] font-bold text-[var(--neutral-600)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+                  aria-label="Xóa bộ lọc"
+                  className="absolute right-1 top-1 grid size-10 place-items-center rounded-md border border-[var(--neutral-200)] bg-white text-[var(--neutral-600)] transition hover:border-[var(--brand-200)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
                   onClick={resetFilters}
+                  title="Xóa lọc"
                   type="button"
                 >
                   <RotateCcw size={15} />
-                  Xóa lọc
                 </button>
               ) : null}
             </div>

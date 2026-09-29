@@ -12,7 +12,7 @@ import {
   LayoutDashboard,
   Menu,
   FilePenLine,
-  Search,
+  MoreHorizontal,
   UserCircle,
   Users,
   UploadCloud,
@@ -156,6 +156,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [sessionError, setSessionError] = useState("");
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const scrollDirection = useScrollDirection();
   const push = usePushNotifications(user?.id);
@@ -400,7 +401,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           onClose={() => setIsSidebarOpen(false)}
         />
 
-        <div className="pt-[72px] lg:pl-[248px]">
+        <div className="pb-[calc(78px+env(safe-area-inset-bottom))] pt-[72px] sm:pb-0 lg:pl-[248px]">
           <Header
             activeNavigation={activeNavigation}
             onOpenSidebar={() => setIsSidebarOpen(true)}
@@ -414,7 +415,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </section>
         </div>
 
-        <div className={`fixed inset-0 pointer-events-none z-50 transition-all duration-300 ${scrollDirection === 'down' ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
+        <div className={`fixed inset-0 pointer-events-none z-50 transition-all duration-300 ${!isAiChatOpen && scrollDirection === 'down' ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
           {!isAiChatOpen ? (
             <div className="pointer-events-auto">
               <AiScheduleChatButton onClick={() => setIsAiChatOpen(true)} />
@@ -427,8 +428,129 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           ) : null}
         </div>
+
+        <MobileBottomNavigation
+          activeHref={activeNavigation.href}
+          isMoreOpen={isMobileMoreOpen}
+          onCloseMore={() => setIsMobileMoreOpen(false)}
+          onToggleMore={() => setIsMobileMoreOpen((current) => !current)}
+        />
       </main>
     </DashboardUserContext.Provider>
+  );
+}
+
+function MobileBottomNavigation({
+  activeHref,
+  isMoreOpen,
+  onCloseMore,
+  onToggleMore,
+}: {
+  activeHref: string;
+  isMoreOpen: boolean;
+  onCloseMore: () => void;
+  onToggleMore: () => void;
+}) {
+  const primaryItems = navigationItems.filter((item) =>
+    ["/dashboard", "/classes", "/students", "/schedule"].includes(
+      item.href,
+    ),
+  );
+  const moreItems = navigationItems.filter((item) =>
+    ["/profile", "/notifications"].includes(item.href),
+  );
+  const isMoreActive = moreItems.some((item) => item.href === activeHref);
+
+  return (
+    <>
+      {isMoreOpen ? (
+        <button
+          aria-label="Đóng thêm menu"
+          className="fixed inset-0 z-40 bg-[var(--neutral-900)]/20 sm:hidden"
+          onClick={onCloseMore}
+          type="button"
+        />
+      ) : null}
+
+      {isMoreOpen ? (
+        <aside className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] left-3 right-3 z-[60] rounded-2xl border border-[var(--neutral-200)] bg-white p-3 shadow-[0_20px_48px_rgba(15,23,42,0.2)] sm:hidden">
+          <p className="px-2 pb-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--neutral-400)]">
+            Thêm
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {moreItems.map(({ description, href, icon: Icon, label }) => {
+              const isActive = activeHref === href;
+
+              return (
+                <Link
+                  className={`grid min-h-[88px] content-between rounded-xl border p-3 transition ${
+                    isActive
+                      ? "border-[var(--brand-200)] bg-[var(--brand-50)] text-[var(--brand-700)]"
+                      : "border-[var(--neutral-100)] bg-[var(--neutral-50)] text-[var(--neutral-700)]"
+                  }`}
+                  href={href}
+                  key={href}
+                  onClick={onCloseMore}
+                >
+                  <Icon size={19} />
+                  <span>
+                    <span className="block text-[13px] font-extrabold">
+                      {label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] font-semibold leading-4 text-[var(--neutral-500)]">
+                      {description}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </aside>
+      ) : null}
+
+      <nav
+        aria-label="Điều hướng nhanh"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[var(--neutral-200)] bg-white/95 px-1 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.07)] backdrop-blur sm:hidden"
+      >
+        {primaryItems.map(({ href, icon: Icon, label }) => {
+          const isActive = activeHref === href;
+
+          return (
+            <Link
+              aria-current={isActive ? "page" : undefined}
+              className={`grid min-h-[58px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
+                isActive
+                  ? "bg-[var(--brand-50)] text-[var(--brand-700)]"
+                  : "text-[var(--neutral-500)]"
+              }`}
+              href={href}
+              key={href}
+              onClick={onCloseMore}
+            >
+              <Icon size={19} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="truncate text-[10px] font-extrabold leading-none">
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+
+        <button
+          aria-expanded={isMoreOpen}
+          aria-label="Mở thêm menu"
+          className={`grid min-h-[58px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
+            isMoreActive || isMoreOpen
+              ? "bg-[var(--brand-50)] text-[var(--brand-700)]"
+              : "text-[var(--neutral-500)]"
+          }`}
+          onClick={onToggleMore}
+          type="button"
+        >
+          <MoreHorizontal size={21} strokeWidth={isMoreActive || isMoreOpen ? 2.5 : 2} />
+          <span className="text-[10px] font-extrabold leading-none">More</span>
+        </button>
+      </nav>
+    </>
   );
 }
 
@@ -634,7 +756,7 @@ function Header({
 
           <Link
             aria-label="Thông báo"
-            className="relative grid size-9 place-items-center rounded-lg text-[var(--neutral-500)] transition hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)]"
+            className="relative hidden size-9 place-items-center rounded-lg text-[var(--neutral-500)] transition hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] sm:grid"
             href="/notifications"
           >
             <Bell size={16} />

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import { schoolApi } from "@/lib/api/school";
 import type {
   ClassScheduleSlot,
@@ -360,25 +360,65 @@ function ClassroomGrid({
 function ClassroomGridItem({ classroom }: { classroom: Classroom }) {
   const hasSchedule = Boolean(classroom.latestFixedSchedule?.schedules.length);
   const scheduleText = getLatestScheduleText(classroom.latestFixedSchedule);
+  const colorHex = getClassColorHex(classroom);
+  const colorTheme = getClassColorTheme(colorHex);
+  const cardTheme = {
+    "--class-card-accent": colorTheme.accent,
+    "--class-card-border": colorTheme.border,
+    "--class-card-soft": colorTheme.background,
+    "--class-card-text": colorTheme.text,
+  } as CSSProperties;
 
   return (
     <Link
       className={styles.classGridItem}
       href={`/classes/${classroom.id}`}
+      style={cardTheme}
     >
       <div className={styles.classImageFrame}>
         <img
           alt={`Ảnh lớp ${classroom.name}`}
           src={classroom.imageUrl || DEFAULT_CLASS_IMAGE_URL}
         />
-        <span className={getStatusClassName(classroom.status)}>
-          {getStatusLabel(classroom.status)}
-        </span>
+        <span className={styles.classImageShade} aria-hidden="true" />
+        <div className={styles.classImageTopRow}>
+          <span className={getStatusClassName(classroom.status)}>
+            {getStatusLabel(classroom.status)}
+          </span>
+          <span className={styles.classImageMark} aria-hidden="true">
+            <BookOpenCheck size={17} />
+          </span>
+        </div>
+        <div className={styles.classImageCaption}>
+          <span>Màu lịch</span>
+          <strong>{getClassColorName(colorHex)}</strong>
+        </div>
       </div>
 
       <div className={styles.classCardBody}>
+        <span className={styles.classCardEyebrow}>
+          <span aria-hidden="true" />
+          Lớp học
+        </span>
         <h3>{classroom.name}</h3>
         <p>{classroom.description || "Chưa có mô tả cho lớp học này."}</p>
+      </div>
+
+      <div className={styles.classCardInsights}>
+        <span>
+          <Users size={15} />
+          <span>
+            <strong>{classroom.studentCount}</strong>
+            <small>Học sinh</small>
+          </span>
+        </span>
+        <span>
+          <CalendarDays size={15} />
+          <span>
+            <strong>{hasSchedule ? "Có lịch" : "Chưa có"}</strong>
+            <small>Lịch cố định</small>
+          </span>
+        </span>
       </div>
 
       <div
@@ -391,16 +431,7 @@ function ClassroomGridItem({ classroom }: { classroom: Classroom }) {
       </div>
 
       <div className={styles.classCardFooter}>
-        <span className={styles.classFooterMeta}>
-          <span className={styles.classStudentCount}>
-            <Users size={15} />
-            {classroom.studentCount} học sinh
-          </span>
-          <span className={styles.classColorChip}>
-            <span style={getClassColorStyle(getClassColorHex(classroom))} />
-            {getClassColorName(getClassColorHex(classroom))}
-          </span>
-        </span>
+        <span className={styles.classViewLabel}>Xem chi tiết lớp</span>
         <span className={styles.classArrow}>
           <ArrowRight size={17} />
         </span>
@@ -452,14 +483,6 @@ function getStatusClassName(status: ClassStatus) {
   }
 
   return `${styles.classStatusBadge} ${styles.classStatusActive}`;
-}
-
-function getClassColorStyle(colorHex: string) {
-  const colorTheme = getClassColorTheme(colorHex);
-
-  return {
-    background: colorTheme.accent,
-  };
 }
 
 function getLatestScheduleText(schedule: LatestFixedSchedule | null) {

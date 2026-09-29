@@ -558,3 +558,53 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media (max-width: 639px) {
+  .chatWindow {
+    right: 12px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    width: min(460px, calc(100vw - 32px));
+    height: min(650px, calc(100dvh - 106px));
+    max-height: calc(100dvh - 106px);
+    border-radius: 14px;
+  }
+
+  .header {
+    padding: 13px 14px;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+
+  .headerIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .headerTitle {
+    font-size: 14px;
+  }
+
+  .headerSubtitle {
+    font-size: 11px;
+  }
+
+  .iconBtn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .messagesArea {
+    padding: 13px 14px;
+  }
+
+  .inputArea {
+    padding: 11px 14px;
+  }
+
+  .fab {
+    right: 16px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    width: 54px;
+    height: 54px;
+  }
+}

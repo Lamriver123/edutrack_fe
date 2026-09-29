@@ -401,7 +401,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           onClose={() => setIsSidebarOpen(false)}
         />
 
-        <div className="pb-[calc(78px+env(safe-area-inset-bottom))] pt-[calc(72px+env(safe-area-inset-top))] sm:pb-0 lg:pl-[248px]">
+        <div className="pb-[calc(68px+var(--app-safe-area-bottom))] pt-[calc(72px+var(--app-safe-area-top))] sm:pb-0 lg:pl-[248px]">
           <Header
             activeNavigation={activeNavigation}
             onOpenSidebar={() => setIsSidebarOpen(true)}
@@ -476,7 +476,7 @@ function MobileBottomNavigation({
       ) : null}
 
       {isMoreOpen ? (
-        <aside className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-3 z-[60] w-[min(232px,calc(100vw-24px))] rounded-2xl border border-[var(--neutral-200)] bg-white p-1.5 shadow-[0_20px_48px_rgba(15,23,42,0.2)] sm:hidden">
+        <aside className="fixed bottom-[calc(64px+var(--app-safe-area-bottom))] right-3 z-[60] w-[min(232px,calc(100vw-24px))] rounded-2xl border border-[var(--neutral-200)] bg-white p-1.5 shadow-[0_20px_48px_rgba(15,23,42,0.2)] sm:hidden">
           <div className="grid gap-1">
             {moreItems.map(({ href, icon: Icon, label }) => {
               const isActive = activeHref === href;
@@ -503,7 +503,7 @@ function MobileBottomNavigation({
 
       <nav
         aria-label="Điều hướng nhanh"
-        className={`fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[var(--neutral-200)] bg-white/95 px-1 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.07)] backdrop-blur transition-all duration-300 sm:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[var(--neutral-200)] bg-white/95 px-1 pb-[max(4px,var(--app-safe-area-bottom))] pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.07)] backdrop-blur transition-all duration-300 sm:hidden ${
           isMoreOpen || scrollDirection !== "down"
             ? "translate-y-0 opacity-100"
             : "pointer-events-none translate-y-full opacity-0"
@@ -515,16 +515,20 @@ function MobileBottomNavigation({
           return (
             <Link
               aria-current={isActive ? "page" : undefined}
-              className={`grid min-h-[58px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
+              className={`grid min-h-[54px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
                 isActive
-                  ? "bg-[var(--brand-50)] text-[var(--brand-700)]"
+                  ? "text-[var(--brand-700)]"
                   : "text-[var(--neutral-500)]"
               }`}
               href={href}
               key={href}
               onClick={onCloseMore}
             >
-              <Icon size={19} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon
+                fill={isActive ? "currentColor" : "none"}
+                size={19}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
               <span className="truncate text-[10px] font-extrabold leading-none">
                 {label}
               </span>
@@ -535,15 +539,18 @@ function MobileBottomNavigation({
         <button
           aria-expanded={isMoreOpen}
           aria-label="Mở thêm menu"
-          className={`grid min-h-[58px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
+          className={`grid min-h-[54px] place-items-center gap-1 rounded-xl px-1 py-1 text-center transition ${
             isMoreActive || isMoreOpen
-              ? "bg-[var(--brand-50)] text-[var(--brand-700)]"
+              ? "text-[var(--brand-700)]"
               : "text-[var(--neutral-500)]"
           }`}
           onClick={onToggleMore}
           type="button"
         >
-          <MoreHorizontal size={21} strokeWidth={isMoreActive || isMoreOpen ? 2.5 : 2} />
+          <MoreHorizontal
+            size={21}
+            strokeWidth={isMoreActive || isMoreOpen ? 2.5 : 2}
+          />
           <span className="text-[10px] font-extrabold leading-none">Thêm</span>
         </button>
       </nav>
@@ -572,7 +579,7 @@ function Sidebar({
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="border-b border-[var(--neutral-100)] pt-[env(safe-area-inset-top)]">
+      <div className="border-b border-[var(--neutral-100)] pt-[var(--app-safe-area-top)]">
         <div className="flex h-[72px] items-center justify-between px-4">
           <Link
             className="flex min-w-0 items-center gap-2.5"
@@ -719,7 +726,7 @@ function Header({
 }) {
   return (
     <header
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--neutral-100)] bg-white/95 pt-[var(--app-safe-area-top)] backdrop-blur shadow-sm transition-transform duration-300 lg:left-[248px] ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}
     >

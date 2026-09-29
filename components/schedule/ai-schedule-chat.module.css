@@ -562,7 +562,7 @@
 @media (max-width: 639px) {
   .chatWindow {
     right: 12px;
-    bottom: calc(80px + env(safe-area-inset-bottom));
+    bottom: calc(70px + var(--app-safe-area-bottom));
     width: min(460px, calc(100vw - 32px));
     height: min(650px, calc(100dvh - 106px));
     max-height: calc(100dvh - 106px);
@@ -603,7 +603,7 @@
 
   .fab {
     right: 16px;
-    bottom: calc(84px + env(safe-area-inset-bottom));
+    bottom: calc(72px + var(--app-safe-area-bottom));
     width: 54px;
     height: 54px;
   }

@@ -1154,6 +1154,8 @@
   box-shadow:
     0 18px 44px rgba(15, 23, 42, 0.14),
     0 2px 8px rgba(15, 23, 42, 0.06);
+  transform-origin: top center;
+  animation: selectMenuSlideDown 180ms var(--ease-out-expo) both;
 }
 
 .filterSelectMenu {
@@ -1172,6 +1174,42 @@
   box-shadow:
     0 18px 44px rgba(15, 23, 42, 0.14),
     0 2px 8px rgba(15, 23, 42, 0.06);
+  transform-origin: top center;
+  animation: selectMenuSlideDown 180ms var(--ease-out-expo) both;
+}
+
+.mobileFilterPanel {
+  transform-origin: top center;
+  animation: filterPanelSlideDown 200ms var(--ease-out-expo) both;
+}
+
+.mobileSelectMenu {
+  transform-origin: top center;
+  animation: selectMenuSlideDown 160ms var(--ease-out-expo) both;
+}
+
+@keyframes selectMenuSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes filterPanelSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
 }
 
 .scheduleSelectOption {

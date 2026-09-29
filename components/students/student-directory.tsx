@@ -682,7 +682,7 @@ export function StudentDirectory() {
           </div>
 
           {isMobileFiltersOpen ? (
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2">
+            <div className={`grid grid-cols-2 gap-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-2 ${styles.mobileFilterPanel}`}>
               <label className="col-span-2 flex h-10 items-center gap-2 rounded-md border border-[var(--neutral-200)] bg-white px-3 text-[var(--neutral-400)]">
                 <Filter size={15} />
                 <input
@@ -1127,7 +1127,7 @@ function CompactMobileSelect({
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 grid rounded-lg border border-[var(--neutral-200)] bg-white p-1 shadow-[0_16px_36px_rgba(15,23,42,0.16)]">
+        <div className={`absolute left-0 right-0 top-[calc(100%+6px)] z-30 grid rounded-lg border border-[var(--neutral-200)] bg-white p-1 shadow-[0_16px_36px_rgba(15,23,42,0.16)] ${styles.mobileSelectMenu}`}>
           {options.map((option) => {
             const isSelected = option.value === value;
 

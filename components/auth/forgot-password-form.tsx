@@ -125,9 +125,6 @@ export function ForgotPasswordForm() {
     return (
       <div className="stagger grid gap-5 sm:gap-6">
         <div>
-          <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--success-bg)] to-[var(--success-border)] text-[var(--success-text)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
-            <CheckCircle2 size={20} />
-          </div>
           <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
             Mật khẩu đã được đổi
           </h2>
@@ -157,9 +154,6 @@ export function ForgotPasswordForm() {
     return (
       <form className="stagger grid gap-5 sm:gap-6" onSubmit={handleConfirmReset}>
         <div>
-          <div className="mb-3 inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-b from-[var(--brand-50)] to-[var(--brand-100)] text-[var(--brand-600)] shadow-[var(--shadow-sm)] sm:mb-4 sm:size-12">
-            <MailCheck size={20} />
-          </div>
           <h2 className="text-[24px] font-extrabold leading-tight tracking-tight text-[var(--brand-950)] sm:text-[26px]">
             Nhập OTP đổi mật khẩu
           </h2>
@@ -297,6 +291,17 @@ export function ForgotPasswordForm() {
           placeholder="Nhập lại mật khẩu mới"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
+          trailing={
+            <button
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              aria-pressed={showPassword}
+              className="grid size-9 place-items-center rounded-full text-[var(--neutral-400)] transition-colors duration-200 hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-300)] sm:size-10"
+              onClick={() => setShowPassword((current) => !current)}
+              type="button"
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          }
           required
           variant="auth"
         />

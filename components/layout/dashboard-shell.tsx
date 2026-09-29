@@ -544,7 +544,7 @@ function MobileBottomNavigation({
           type="button"
         >
           <MoreHorizontal size={21} strokeWidth={isMoreActive || isMoreOpen ? 2.5 : 2} />
-          <span className="text-[10px] font-extrabold leading-none">More</span>
+          <span className="text-[10px] font-extrabold leading-none">Thêm</span>
         </button>
       </nav>
     </>

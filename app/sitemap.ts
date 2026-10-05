@@ -4,6 +4,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://edutrack-fe.vercel.app';
   
   return [
+    ...['about', 'privacy', 'terms'].map((page) => ({
+      url: `${baseUrl}/${page}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
     {
       url: `${baseUrl}`,
       lastModified: new Date(),

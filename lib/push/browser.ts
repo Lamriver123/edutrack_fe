@@ -1,3 +1,16 @@
+import type { PushDeviceType } from "@/types/user";
+
+// A display hint for the backend, especially iPads using a Mac user-agent.
+// Feature detection below still decides whether Web Push is supported.
+export function getPushDeviceType(): PushDeviceType {
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) ||
+      (/Android/i.test(ua) && !/Mobile/i.test(ua))) return "tablet";
+  if (/Mobi|iPhone|iPod/i.test(ua)) return "mobile";
+  if (/Windows NT|Macintosh|X11|CrOS|Linux/i.test(ua)) return "desktop";
+  return "unknown";
+}
+
 export function supportsPush() {
   return typeof window !== "undefined" && window.isSecureContext &&
     "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { profileApi } from "@/lib/api/profile";
+import type { PushDevice } from "@/types/user";
 import { useNotice } from "@/components/ui/notice-provider";
 import { decodePublicKey, pushSupportMessage, readyPushRegistration, subscriptionMatchesKey, supportsPush } from "@/lib/push/browser";
 
@@ -15,12 +16,15 @@ export function usePushNotifications(userId?: string) {
   const [statusMessage, setStatusMessage] = useState("Đang kiểm tra thông báo…");
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [subscriptionCount, setSubscriptionCount] = useState(0);
+  const [devices, setDevices] = useState<PushDevice[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
   const { setNotice } = useNotice();
   const loggingOut = useRef(false);
 
   const refreshSubscriptionCount = useCallback(async () => {
     const status = await profileApi.getPushStatus();
     setSubscriptionCount(status.subscriptionCount);
+    setDevices(status.devices ?? []);
     return status;
   }, []);
 
@@ -33,11 +37,15 @@ export function usePushNotifications(userId?: string) {
     const supported = supportsPush();
     setIsSupported(supported);
     try {
+      // Account devices are visible even when this browser cannot receive push.
+      const config = await refreshSubscriptionCount();
       if (!supported) {
+        setIsSubscribed(false);
+        setCurrentDeviceId(null);
         setStatusMessage(pushSupportMessage());
         return;
       }
-      const config = await refreshSubscriptionCount();
+      setCurrentDeviceId(null);
       if (!config.configured || !config.publicKey) throw new Error(config.configurationError || "Máy chủ chưa cấu hình thông báo.");
       setPermission(Notification.permission);
       if (Notification.permission !== "granted") {
@@ -61,9 +69,10 @@ export function usePushNotifications(userId?: string) {
       }
       if (loggingOut.current) return;
       // A browser subscription alone does not prove this account is registered in the database.
-      await profileApi.subscribeToPush(subscription.toJSON());
+      const saved = await profileApi.subscribeToPush(subscription.toJSON());
       await refreshSubscriptionCount();
       if (loggingOut.current) return;
+      setCurrentDeviceId(saved.deviceId ?? null);
       setIsSubscribed(true);
       setStatusMessage("Thiết bị đã được đăng ký với máy chủ. Bạn có thể gửi thông báo thử để kiểm tra.");
     } catch (error) {
@@ -85,6 +94,7 @@ export function usePushNotifications(userId?: string) {
     const previousSubscribed = isSubscribed;
     const previousCount = subscriptionCount;
     setIsSupported(true);
+    const previousDeviceId = currentDeviceId;
     setIsSubscribed(true);
     setSubscriptionCount((count) => previousSubscribed ? count : count + 1);
     setStatusMessage("Đang bật thông báo trên thiết bị này…");
@@ -108,7 +118,8 @@ export function usePushNotifications(userId?: string) {
       const created = !subscription;
       subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
       try {
-        await profileApi.subscribeToPush(subscription.toJSON());
+        const saved = await profileApi.subscribeToPush(subscription.toJSON());
+        setCurrentDeviceId(saved.deviceId ?? null);
       } catch (error) {
         if (created) await subscription.unsubscribe().catch(() => false);
         throw error;
@@ -122,12 +133,13 @@ export function usePushNotifications(userId?: string) {
       setIsSubscribed(previousSubscribed);
       setSubscriptionCount(previousCount);
       setStatusMessage(errorMessage(error));
+      setCurrentDeviceId(previousDeviceId);
       if (!auto) setNotice({ type: "error", text: errorMessage(error) });
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isSubscribed, refreshSubscriptionCount, setNotice, subscriptionCount]);
+  }, [currentDeviceId, isSubscribed, refreshSubscriptionCount, setNotice, subscriptionCount]);
 
   useEffect(() => {
     if (!userId || loggingOut.current || !supportsPush()) return;
@@ -151,6 +163,7 @@ export function usePushNotifications(userId?: string) {
     if (!supportsPush()) return true;
     const previousSubscribed = isSubscribed;
     const previousCount = subscriptionCount;
+    const previousDeviceId = currentDeviceId;
     setIsSubscribed(false);
     setSubscriptionCount((count) => previousSubscribed ? Math.max(0, count - 1) : count);
     setStatusMessage("Đang tắt thông báo trên thiết bị này…");
@@ -163,11 +176,13 @@ export function usePushNotifications(userId?: string) {
         // Stop local delivery even if the backend is unavailable during logout.
         await subscription.unsubscribe();
         unsubscribedLocally = true;
+        setCurrentDeviceId(null);
         setIsSubscribed(false);
         await profileApi.unsubscribeFromPush(subscription.endpoint);
       }
       await refreshSubscriptionCount();
       setIsSubscribed(false);
+      setCurrentDeviceId(null);
       setStatusMessage("Thông báo đã tắt trên thiết bị này.");
       if (!silent) setNotice({ type: "success", text: "Đã tắt thông báo." });
       return true;
@@ -175,6 +190,7 @@ export function usePushNotifications(userId?: string) {
       if (!unsubscribedLocally) {
         setIsSubscribed(previousSubscribed);
         setSubscriptionCount(previousCount);
+        setCurrentDeviceId(previousDeviceId);
       }
       setStatusMessage(errorMessage(error));
       if (!silent) setNotice({ type: "error", text: errorMessage(error) });
@@ -191,7 +207,10 @@ export function usePushNotifications(userId?: string) {
       const subscription = await registration.pushManager.getSubscription();
       if (!subscription) throw new Error("Hãy bật thông báo trước khi gửi thử.");
       const result = await profileApi.testPush(subscription.endpoint);
-      if (result.removed > 0) setIsSubscribed(false);
+      if (result.removed > 0) {
+        setIsSubscribed(false);
+        setCurrentDeviceId(null);
+      }
       if (result.removed > 0) await refreshSubscriptionCount();
       if (result.sent < 1) throw new Error(result.message || "Máy chủ chưa gửi được thông báo thử. Hãy kiểm tra lại đăng ký.");
       const message = "Dịch vụ đẩy đã nhận thông báo thử. Nếu thiết bị chưa hiển thị, hãy kiểm tra quyền thông báo và chế độ Không làm phiền.";
@@ -205,5 +224,5 @@ export function usePushNotifications(userId?: string) {
     }
   };
 
-  return { isSupported, isSubscribed, isLoading, permission, statusMessage, subscriptionCount, subscribe, unsubscribe, sendTest, checkSubscription };
+  return { isSupported, isSubscribed, isLoading, permission, statusMessage, subscriptionCount, devices, currentDeviceId, subscribe, unsubscribe, sendTest, checkSubscription };
 }

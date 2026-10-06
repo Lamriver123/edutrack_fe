@@ -6,6 +6,8 @@ import type {
   User,
 } from "@/types/user";
 import { tokenStorage } from "@/lib/auth/token-storage";
+import { getPushDeviceType } from "@/lib/push/browser";
+import type { PushStatus } from "@/types/user";
 import {
   ApiError,
   apiRequest,
@@ -185,9 +187,10 @@ export const profileApi = {
   },
 
   subscribeToPush(subscription: unknown) {
-    return pushRequest<{ success: boolean }>("/users/me/push-subscription", {
+    return pushRequest<{ success: boolean; deviceId?: string }>("/users/me/push-subscription", {
       method: "POST",
       token: getToken(),
+      headers: { "X-Push-Device-Type": getPushDeviceType() },
       body: JSON.stringify(subscription),
     });
   },
@@ -201,7 +204,7 @@ export const profileApi = {
   },
 
   getPushStatus() {
-    return pushRequest<{ configured: boolean; publicKey: string | null; subscriptionCount: number; configurationError?: string }>("/users/me/push-subscription/status");
+    return pushRequest<PushStatus>("/users/me/push-subscription/status");
   },
 
   testPush(endpoint: string) {

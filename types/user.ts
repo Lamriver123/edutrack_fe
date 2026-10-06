@@ -1,5 +1,25 @@
 export type UserRole = "teacher";
 
+export type PushDeviceType = "desktop" | "mobile" | "tablet" | "unknown";
+
+export type PushDevice = {
+  id: string;
+  type: PushDeviceType;
+  name: string;
+  browser: string | null;
+  os: string | null;
+  registeredAt: string | null;
+  lastSeenAt: string | null;
+};
+
+export type PushStatus = {
+  configured: boolean;
+  publicKey: string | null;
+  subscriptionCount: number;
+  devices?: PushDevice[];
+  configurationError?: string;
+};
+
 export type PaymentBank = {
   id: number;
   name: string;

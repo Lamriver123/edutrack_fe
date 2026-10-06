@@ -214,6 +214,9 @@ for (const width of [1440, 390]) {
     await page
       .getByRole("button", { name: "Thời khóa biểu", exact: true })
       .click();
+    await expect(
+      page.getByText(lesson.topic, { exact: true }).filter({ visible: true }).first(),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Thu hồi", exact: true }).click();
     await page
       .getByRole("dialog")
@@ -223,6 +226,15 @@ for (const width of [1440, 390]) {
       page.getByText("Tuần này chưa có lịch tạm thời."),
     ).toBeVisible();
     expect(isRevoked()).toBe(true);
+    await expect(page.getByText(lesson.topic, { exact: true })).toHaveCount(0);
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Thời khóa biểu", exact: true })
+      .click();
+    await expect(page.getByText("Tuần này chưa có lịch tạm thời.")).toBeVisible();
+    await expect(page.getByText(lesson.topic, { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Điểm danh", exact: true }).click();
+    await expect(page.locator('td[title="Bấm để đổi trạng thái"]')).toHaveCount(0);
   });
 }
 

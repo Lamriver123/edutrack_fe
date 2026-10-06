@@ -1,3 +1,9 @@
+# EduTrack frontend
+
+Đọc [PROJECT_GUIDE.md](PROJECT_GUIDE.md) để mở tài liệu chi tiết BE + FE, tìm component/API/types và kiểm thử cần dùng khi sửa chức năng.
+
+Phần dưới là README khởi tạo Next.js; luồng nghiệp vụ và cấu hình EduTrack nằm trong hướng dẫn dự án.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

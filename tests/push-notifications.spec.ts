@@ -1,12 +1,23 @@
 import { createECDH } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import type { PushDevice } from "../types/user";
 
 const publicKey = createECDH("prime256v1").generateKeys().toString("base64url");
 const oldPublicKey = createECDH("prime256v1").generateKeys().toString("base64url");
 const endpoint = "https://fcm.googleapis.com/fcm/send/test-device";
 const user = { id: "teacher", fullName: "Push Test Teacher", email: "push@example.test", role: "teacher", isEmailVerified: true, hasPaymentQr: false };
+const currentDevice: PushDevice = {
+  id: "current-device", name: "Máy tính Windows", type: "desktop", browser: "Google Chrome", os: "Windows",
+  registeredAt: "2026-10-01T08:00:00.000Z", lastSeenAt: "2026-10-06T08:00:00.000Z",
+};
+const deviceFixtures: PushDevice[] = [
+  { id: "iphone", name: "iPhone", type: "mobile", browser: "Safari", os: "iOS", registeredAt: null, lastSeenAt: "2026-10-06T07:30:00.000Z" },
+  currentDevice,
+  { id: "ipad", name: "iPad", type: "tablet", browser: "Safari", os: "iPadOS", registeredAt: null, lastSeenAt: "2026-10-05T02:10:00.000Z" },
+  { id: "legacy", name: "Thiết bị chưa xác định", type: "unknown", browser: null, os: null, registeredAt: null, lastSeenAt: null },
+];
 
-async function setup(page: Page, options: { subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean; serverCount?: number } = {}) {
+async function setup(page: Page, options: { subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean; devices?: PushDevice[] } = {}) {
   const requests: { method: string; path: string; body: Record<string, unknown> | null }[] = [];
   await page.addInitScript(({ options, publicKey, oldPublicKey, endpoint }) => {
     const debug = { subscribeCalls: 0, unsubscribeCalls: 0, permissionCalls: 0 };
@@ -43,7 +54,7 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
     else Object.defineProperty(window, "PushManager", { configurable: true, value: function PushManager() {} });
   }, { options, publicKey, oldPublicKey, endpoint });
 
-  let serverSubscriptionCount = options.serverCount ?? (options.subscribed === false ? 0 : 1);
+  let serverDevices = options.devices ?? (options.subscribed === false ? [] : [currentDevice]);
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -52,27 +63,30 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
     if (path === "/api/auth/refresh") return route.fulfill({ json: { accessToken: "push-test-token", user } });
     if (path === "/api/auth/me" || path === "/api/users/me") return route.fulfill({ json: user });
     if (path === "/api/users/banks") return route.fulfill({ json: [] });
-    if (path === "/api/users/me/push-subscription/status") return route.fulfill({ json: { configured: options.configured !== false, publicKey, subscriptionCount: serverSubscriptionCount, configurationError: options.configured === false ? "Máy chủ chưa cấu hình VAPID." : undefined } });
+    if (path === "/api/users/me/push-subscription/status") return route.fulfill({ json: { configured: options.configured !== false, publicKey, subscriptionCount: serverDevices.length, devices: serverDevices, configurationError: options.configured === false ? "Máy chủ chưa cấu hình VAPID." : undefined } });
     if (path === "/api/users/me/push-subscription" && request.method() === "POST") {
-      if (!options.saveFails) serverSubscriptionCount = Math.max(1, serverSubscriptionCount);
-      return route.fulfill({ status: options.saveFails ? 503 : 201, json: { message: options.saveFails ? "Không lưu được thiết bị." : "Đã đăng ký" } });
+      if (!options.saveFails) serverDevices = [...serverDevices.filter((device) => device.id !== currentDevice.id), currentDevice];
+      return route.fulfill({ status: options.saveFails ? 503 : 201, json: { success: !options.saveFails, deviceId: currentDevice.id, message: options.saveFails ? "Không lưu được thiết bị." : "Đã đăng ký" } });
     }
     if (path === "/api/users/me/push-subscription" && request.method() === "DELETE") {
-      serverSubscriptionCount = Math.max(0, serverSubscriptionCount - 1);
+      serverDevices = serverDevices.filter((device) => device.id !== currentDevice.id);
       return route.fulfill({ json: { success: true } });
     }
-    if (path === "/api/users/me/push-subscription/test") return route.fulfill({ json: { attempted: 1, sent: options.testFails ? 0 : 1, failed: options.testFails ? 1 : 0, removed: options.testFails ? 1 : 0, configured: true, message: options.testFails ? "Thiết bị đã hết hạn đăng ký." : "Accepted" } });
+    if (path === "/api/users/me/push-subscription/test") {
+      if (options.testFails) serverDevices = serverDevices.filter((device) => device.id !== currentDevice.id);
+      return route.fulfill({ json: { attempted: 1, sent: options.testFails ? 0 : 1, failed: options.testFails ? 1 : 0, removed: options.testFails ? 1 : 0, configured: true, message: options.testFails ? "Thiết bị đã hết hạn đăng ký." : "Accepted" } });
+    }
     return route.fulfill({ json: { message: "OK" } });
   });
   await page.goto("/notifications");
-  await expect(page.getByRole("heading", { level: 2, name: "Thông báo", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Thông báo trên thiết bị", exact: true })).toBeVisible();
   return requests;
 }
 
 test("reconciles a browser subscription with the current account and tests this device", async ({ page }) => {
   const requests = await setup(page);
   await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
-  await expect(page.getByText("Có 1 thiết bị đang nhận thông báo từ tài khoản này.")).toBeVisible();
+  await expect(page.getByText("1 thiết bị", { exact: true })).toBeVisible();
   expect(requests.some((request) => request.path === "/api/users/me/push-subscription" && request.method === "POST")).toBe(true);
   await page.getByRole("button", { name: "Gửi thông báo thử" }).click();
   await expect(page.locator("p[role=status]").filter({ hasText: "Dịch vụ đẩy đã nhận" })).toBeVisible();
@@ -82,7 +96,7 @@ test("reconciles a browser subscription with the current account and tests this 
 test("asks for notification permission on the first app open and enables the device", async ({ page }) => {
   const requests = await setup(page, { permission: "default", subscribed: false });
   await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
-  await expect(page.getByText("Có 1 thiết bị đang nhận thông báo từ tài khoản này.")).toBeVisible();
+  await expect(page.getByText("1 thiết bị", { exact: true })).toBeVisible();
   const debug = await page.evaluate(() => (window as unknown as { pushDebug: { permissionCalls: number; subscribeCalls: number } }).pushDebug);
   expect(debug.permissionCalls).toBe(1);
   expect(debug.subscribeCalls).toBe(1);
@@ -152,4 +166,55 @@ test("attendance notification deep link selects the attendance tab", async ({ pa
   await page.goto(`/classes/${classId}?tab=attendance`);
   await expect(page.getByRole("heading", { name: "Bảng điểm danh" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Điểm danh", exact: true })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("shows device cards with this browser first and safe legacy fallback", async ({ page }, testInfo) => {
+  await setup(page, { devices: deviceFixtures });
+  await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
+  const list = page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" });
+  await expect(list.getByRole("listitem")).toHaveCount(4);
+  await expect(list.getByRole("listitem").first()).toHaveAccessibleName("Máy tính Windows · Thiết bị này");
+  await expect(list.getByText("Thiết bị này", { exact: true })).toHaveCount(1);
+  await expect(list.getByText("Google Chrome · Windows")).toBeVisible();
+  await expect(list.getByText("Safari · iOS", { exact: true })).toBeVisible();
+  await expect(page.getByText("4 thiết bị", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tên thiết bị cũ sẽ được cập nhật", { exact: false })).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain(endpoint);
+  await page.screenshot({ path: testInfo.outputPath("push-devices-desktop.png"), fullPage: true });
+});
+
+test("device cards fit a phone and remain visible when this device is not subscribed", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page, { subscribed: false, devices: deviceFixtures });
+  await expect(page.getByRole("button", { name: "Kiểm tra lại" })).toBeEnabled();
+  const list = page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" });
+  await expect(list.getByRole("listitem")).toHaveCount(4);
+  await expect(list.getByText("Thiết bị này", { exact: true })).toHaveCount(0);
+  const cards = await list.getByRole("listitem").all();
+  const [first, second] = await Promise.all([cards[0].boundingBox(), cards[1].boundingBox()]);
+  expect(first?.x).toBe(second?.x);
+  expect(second!.y).toBeGreaterThan(first!.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("push-devices-mobile.png"), fullPage: true });
+});
+
+test("enabling and disabling this device updates the cards and empty state", async ({ page }) => {
+  await setup(page, { subscribed: false });
+  await expect(page.getByText("Chưa có thiết bị đăng ký", { exact: true })).toBeVisible();
+  const toggle = page.getByRole("switch", { name: "Bật thông báo" });
+  await toggle.click();
+  await expect(page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" }).getByRole("listitem")).toHaveCount(1);
+  await expect(toggle).toBeEnabled();
+  await toggle.click();
+  await expect(page.getByText("0 thiết bị", { exact: true })).toBeVisible();
+  await expect(page.getByText("Chưa có thiết bị đăng ký", { exact: true })).toBeVisible();
+});
+
+test("unsupported browsers can still inspect and refresh account devices", async ({ page }) => {
+  const requests = await setup(page, { unsupported: true, devices: deviceFixtures });
+  await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeDisabled();
+  await expect(page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" }).getByRole("listitem")).toHaveCount(4);
+  const before = requests.filter((request) => request.path.endsWith("/push-subscription/status")).length;
+  await page.getByRole("button", { name: "Kiểm tra lại" }).click();
+  await expect.poll(() => requests.filter((request) => request.path.endsWith("/push-subscription/status")).length).toBeGreaterThan(before);
 });

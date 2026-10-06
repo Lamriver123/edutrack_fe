@@ -1,3 +1,50 @@
+.resumeChoices {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.resumeChoices legend {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--neutral-800);
+}
+
+.resumeChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 12px;
+}
+
+.resumeChoice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.resumeChoice[data-selected="true"] {
+  border-color: var(--brand-500);
+  background: var(--brand-50);
+}
+
+.resumeChoice input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--brand-600);
+}
+
+.resumeChoice strong, .resumeChoice small {
+  display: block;
+}
+
+.resumeChoice strong { font-size: 14px; color: var(--neutral-800); }
+.resumeChoice small { margin-top: 5px; font-size: 12px; line-height: 1.6; color: var(--neutral-500); }
+
 .scheduleWorkspace {
   display: grid;
   gap: 18px;

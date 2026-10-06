@@ -17,7 +17,7 @@ const deviceFixtures: PushDevice[] = [
   { id: "legacy", name: "Thiết bị chưa xác định", type: "unknown", browser: null, os: null, registeredAt: null, lastSeenAt: null },
 ];
 
-async function setup(page: Page, options: { subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean; devices?: PushDevice[] } = {}) {
+async function setup(page: Page, options: { expanded?: boolean; subscribed?: boolean; permission?: "granted" | "denied" | "default"; unsupported?: boolean; configured?: boolean; saveFails?: boolean; testFails?: boolean; rotated?: boolean; registrationFails?: boolean; devices?: PushDevice[] } = {}) {
   const requests: { method: string; path: string; body: Record<string, unknown> | null }[] = [];
   await page.addInitScript(({ options, publicKey, oldPublicKey, endpoint }) => {
     const debug = { subscribeCalls: 0, unsubscribeCalls: 0, permissionCalls: 0 };
@@ -80,6 +80,7 @@ async function setup(page: Page, options: { subscribed?: boolean; permission?: "
   });
   await page.goto("/notifications");
   await expect(page.getByRole("heading", { level: 2, name: "Thông báo trên thiết bị", exact: true })).toBeVisible();
+  if (options.expanded !== false) await page.getByRole("button", { name: "Mở rộng thông báo trên thiết bị" }).click();
   return requests;
 }
 
@@ -169,8 +170,17 @@ test("attendance notification deep link selects the attendance tab", async ({ pa
 });
 
 test("shows device cards with this browser first and safe legacy fallback", async ({ page }, testInfo) => {
-  await setup(page, { devices: deviceFixtures });
+  await setup(page, { devices: deviceFixtures, expanded: false });
   await expect(page.getByRole("switch", { name: "Bật thông báo" })).toBeChecked();
+  const expand = page.getByRole("button", { name: /^(Mở rộng|Thu gọn) thông báo trên thiết bị$/ });
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("heading", { name: "Thiết bị nhận thông báo" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Gửi thông báo thử" })).toBeHidden();
+  await page.screenshot({ path: testInfo.outputPath("push-collapsed-desktop.png"), fullPage: true });
+  await expand.focus();
+  await page.keyboard.press("Enter");
+  await expect(expand).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("heading", { name: "Thiết bị nhận thông báo" })).toBeVisible();
   const list = page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" });
   await expect(list.getByRole("listitem")).toHaveCount(4);
   await expect(list.getByRole("listitem").first()).toHaveAccessibleName("Máy tính Windows · Thiết bị này");
@@ -181,11 +191,28 @@ test("shows device cards with this browser first and safe legacy fallback", asyn
   await expect(page.getByText("Tên thiết bị cũ sẽ được cập nhật", { exact: false })).toBeVisible();
   expect(await page.locator("body").innerText()).not.toContain(endpoint);
   await page.screenshot({ path: testInfo.outputPath("push-devices-desktop.png"), fullPage: true });
+  const collapse = page.getByRole("button", { name: /^(Mở rộng|Thu gọn) thông báo trên thiết bị$/ });
+  await collapse.focus();
+  await page.keyboard.press("Space");
+  await expect(collapse).toHaveAttribute("aria-expanded", "false");
+  await expect(list).toBeHidden();
+  await expect(collapse).toBeFocused();
+  const detailsId = await collapse.getAttribute("aria-controls");
+  expect(await page.evaluate((id) => document.getElementById(id!)?.inert, detailsId)).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Mở rộng thông báo trên thiết bị" })).toHaveAttribute("aria-expanded", "false");
 });
 
 test("device cards fit a phone and remain visible when this device is not subscribed", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await setup(page, { subscribed: false, devices: deviceFixtures });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await setup(page, { subscribed: false, devices: deviceFixtures, expanded: false });
+  const expand = page.getByRole("button", { name: /^(Mở rộng|Thu gọn) thông báo trên thiết bị$/ });
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "Kiểm tra lại" })).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("push-collapsed-mobile.png"), fullPage: true });
+  await expand.click();
   await expect(page.getByRole("button", { name: "Kiểm tra lại" })).toBeEnabled();
   const list = page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" });
   await expect(list.getByRole("listitem")).toHaveCount(4);
@@ -196,16 +223,26 @@ test("device cards fit a phone and remain visible when this device is not subscr
   expect(second!.y).toBeGreaterThan(first!.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("push-devices-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: "Thu gọn thông báo trên thiết bị" }).click();
+  await expect(list).toBeHidden();
 });
 
 test("enabling and disabling this device updates the cards and empty state", async ({ page }) => {
-  await setup(page, { subscribed: false });
-  await expect(page.getByText("Chưa có thiết bị đăng ký", { exact: true })).toBeVisible();
+  await setup(page, { subscribed: false, expanded: false });
+  const expand = page.getByRole("button", { name: /^(Mở rộng|Thu gọn) thông báo trên thiết bị$/ });
   const toggle = page.getByRole("switch", { name: "Bật thông báo" });
-  await toggle.click();
-  await expect(page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" }).getByRole("listitem")).toHaveCount(1);
   await expect(toggle).toBeEnabled();
   await toggle.click();
+  await expect(toggle).toBeChecked();
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expand.click();
+  await expect(page.getByRole("list", { name: "Thiết bị đã đăng ký thông báo" }).getByRole("listitem")).toHaveCount(1);
+  await expect(toggle).toBeEnabled();
+  await page.getByRole("button", { name: "Thu gọn thông báo trên thiết bị" }).click();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expand.click();
   await expect(page.getByText("0 thiết bị", { exact: true })).toBeVisible();
   await expect(page.getByText("Chưa có thiết bị đăng ký", { exact: true })).toBeVisible();
 });

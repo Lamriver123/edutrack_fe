@@ -126,6 +126,8 @@ export function ClassScheduleTab({
   const { setNotice } = useNotice();
   const [isLoading, setIsLoading] = useState(true);
   const [isFixedModalOpen, setIsFixedModalOpen] = useState(false);
+  const [fixedEditPurpose, setFixedEditPurpose] = useState<"edit" | "resume">("edit");
+  const [resumePlan, setResumePlan] = useState<"keep" | "change">("keep");
   const [isTemporaryModalOpen, setIsTemporaryModalOpen] = useState(false);
   const [isSavingFixed, setIsSavingFixed] = useState(false);
   const [isSavingTemporary, setIsSavingTemporary] = useState(false);
@@ -219,10 +221,28 @@ export function ClassScheduleTab({
       )}`;
 
   function openFixedScheduleModal() {
+    setFixedEditPurpose("edit");
     fixedCheck.clear();
     setFixedForm(
       buildFixedFormFromSchedule(overview?.latestFixedSchedule ?? null),
     );
+    setIsFixedModalOpen(true);
+  }
+
+  function openResumeScheduleModal() {
+    setResumePlan("keep");
+    fixedCheck.clear();
+    setIsResumeConfirmOpen(true);
+  }
+
+  function openResumeEditor() {
+    if (!overview?.latestFixedSchedule) return;
+    setFixedEditPurpose("resume");
+    setFixedForm({
+      effectiveFrom: resumeFrom,
+      schedules: overview.latestFixedSchedule.schedules.map((slot) => ({ ...slot })),
+    });
+    setIsResumeConfirmOpen(false);
     setIsFixedModalOpen(true);
   }
 
@@ -332,14 +352,23 @@ export function ClassScheduleTab({
     setIsSavingFixed(true);
 
     try {
-      const saved = await schoolApi.saveFixedSchedule(classroom.id, fixedForm);
+      const saved = fixedEditPurpose === "resume"
+        ? await schoolApi.resumeFixedSchedule(classroom.id, {
+          resumeFrom: fixedForm.effectiveFrom,
+          schedules: fixedForm.schedules,
+        })
+        : await schoolApi.saveFixedSchedule(classroom.id, fixedForm);
+      const successText = fixedEditPurpose === "resume"
+        ? "Đã khôi phục lịch cố định với lịch học mới."
+        : "Đã lưu thời khóa biểu cố định.";
       setNotice({
         type: "success",
         text: saved.warnings?.length
-          ? `Đã lưu lịch cố định. Có ${saved.warnings.length} lịch tạm trùng cần điều chỉnh.`
-          : "Đã lưu thời khóa biểu cố định.",
+          ? `${successText} Có ${saved.warnings.length} lịch tạm trùng cần điều chỉnh.`
+          : successText,
       });
       setIsFixedModalOpen(false);
+      setFixedEditPurpose("edit");
       setConfirmAction(null);
       await loadSchedules();
       await onScheduleChanged?.();
@@ -624,6 +653,12 @@ export function ClassScheduleTab({
     e?.preventDefault();
     if (!resumeFrom) return;
 
+    if (resumePlan === "change") {
+      fixedCheck.clear();
+      openResumeEditor();
+      return;
+    }
+
     setIsResuming(true);
     try {
       if (overview?.latestFixedSchedule) {
@@ -634,19 +669,19 @@ export function ClassScheduleTab({
           })
         );
         if (!result) {
-          setIsResumeConfirmOpen(false);
-          setFixedForm({ effectiveFrom: resumeFrom, schedules: overview.latestFixedSchedule!.schedules });
-          setIsFixedModalOpen(true);
-          setNotice({ type: "warning", text: "Khung giờ cũ đã bị trùng. Vui lòng chọn giờ mới để khôi phục." });
+          openResumeEditor();
+          setNotice({ type: "warning", text: "Lịch cũ chưa thể khôi phục. Hãy kiểm tra và điều chỉnh lịch trước khi khôi phục." });
           setIsResuming(false);
           return;
         }
       }
 
-      await schoolApi.resumeFixedSchedule(classroom.id, {
+      const saved = await schoolApi.resumeFixedSchedule(classroom.id, {
         resumeFrom,
       });
-      setNotice({ type: "success", text: "Đã khôi phục lịch cố định." });
+      setNotice({ type: "success", text: saved.warnings?.length
+        ? `Đã khôi phục lịch cố định. Có ${saved.warnings.length} lịch tạm trùng cần điều chỉnh.`
+        : "Đã khôi phục lịch cố định." });
       setIsResumeConfirmOpen(false);
       await loadSchedules();
       if (onScheduleChanged) await onScheduleChanged();
@@ -698,9 +733,9 @@ export function ClassScheduleTab({
   function getConfirmCopy(action: ScheduleConfirmAction) {
     if (action.type === "fixed") {
       return {
-        confirmText: "Lưu lịch",
-        description: `Bạn sắp lưu thời khóa biểu cố định cho lớp ${classroom.name}. Lịch mới sẽ áp dụng từ ngày ${formatDate(fixedForm.effectiveFrom)}.${fixedCheck.result?.warnings.length ? ` Có lịch tạm trùng cần điều chỉnh: ${fixedCheck.result.warnings.map((item) => item.message).join(" ")} Bạn vẫn muốn lưu?` : ""}`,
-        title: "Xác nhận lưu lịch cố định",
+        confirmText: fixedEditPurpose === "resume" ? "Khôi phục" : "Lưu lịch",
+        description: `Bạn sắp ${fixedEditPurpose === "resume" ? "khôi phục lịch cố định với lịch học mới" : "lưu thời khóa biểu cố định"} cho lớp ${classroom.name}. Lịch mới sẽ áp dụng từ ngày ${formatDate(fixedForm.effectiveFrom)}.${fixedCheck.result?.warnings.length ? ` Có lịch tạm trùng cần điều chỉnh: ${fixedCheck.result.warnings.map((item) => item.message).join(" ")} Bạn vẫn muốn tiếp tục?` : ""}`,
+        title: fixedEditPurpose === "resume" ? "Xác nhận khôi phục lịch" : "Xác nhận lưu lịch cố định",
         tone: "default" as const,
       };
     }
@@ -915,7 +950,7 @@ export function ClassScheduleTab({
         schedule={overview?.latestFixedSchedule ?? null} 
         isSuspended={overview?.isFixedScheduleSuspended}
         onSuspend={() => setIsSuspendModalOpen(true)}
-        onResume={() => setIsResumeConfirmOpen(true)}
+        onResume={openResumeScheduleModal}
       />
 
       <section className={styles.calendarFrame}>
@@ -946,7 +981,7 @@ export function ClassScheduleTab({
             fixedCheck.clear();
             setIsFixedModalOpen(false);
           }}
-          title="Sửa lịch cố định"
+          title={fixedEditPurpose === "resume" ? "Điều chỉnh lịch khi khôi phục" : "Sửa lịch cố định"}
         >
           <form
             className={styles.modalForm}
@@ -954,7 +989,7 @@ export function ClassScheduleTab({
             onChange={() => fixedCheck.clear()}
           >
             <DateField
-              label="Ngày áp dụng"
+              label={fixedEditPurpose === "resume" ? "Ngày khôi phục" : "Ngày áp dụng"}
               onChange={(value) =>
                 setFixedForm((current) => ({
                   ...current,
@@ -1057,7 +1092,7 @@ export function ClassScheduleTab({
                   }
                   type="submit"
                 >
-                  {fixedCheck.isChecking ? "Đang kiểm tra..." : "Lưu lịch"}
+                  {fixedCheck.isChecking ? "Đang kiểm tra..." : fixedEditPurpose === "resume" ? "Khôi phục lịch" : "Lưu lịch"}
                 </PrimaryAction>
               </div>
             </div>
@@ -1082,6 +1117,19 @@ export function ClassScheduleTab({
                 value={resumeFrom}
               />
             </div>
+            <fieldset className={styles.resumeChoices}>
+              <legend>Bạn có muốn thay đổi lịch học khi khôi phục không?</legend>
+              <div className={styles.resumeChoiceGrid}>
+                <label className={styles.resumeChoice} data-selected={resumePlan === "keep"}>
+                  <input checked={resumePlan === "keep"} disabled={isResuming} name="resume-plan" onChange={() => setResumePlan("keep")} type="radio" value="keep" />
+                  <span><strong>Không, giữ lịch cũ</strong><small>Khôi phục theo thứ và giờ học trước khi tạm hoãn.</small></span>
+                </label>
+                <label className={styles.resumeChoice} data-selected={resumePlan === "change"}>
+                  <input checked={resumePlan === "change"} disabled={isResuming} name="resume-plan" onChange={() => setResumePlan("change")} type="radio" value="change" />
+                  <span><strong>Có, thay đổi lịch</strong><small>Chỉnh thứ, giờ học và ca học trước khi khôi phục.</small></span>
+                </label>
+              </div>
+            </fieldset>
             <div className={styles.modalActionsEnd} style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <SecondaryAction onClick={() => setIsResumeConfirmOpen(false)} type="button">
                 Hủy
@@ -1097,7 +1145,7 @@ export function ClassScheduleTab({
                 }
                 type="submit"
               >
-                Xác nhận
+                {resumePlan === "change" ? "Tiếp tục chỉnh lịch" : "Khôi phục lịch"}
               </PrimaryAction>
             </div>
           </form>

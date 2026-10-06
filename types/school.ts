@@ -24,6 +24,7 @@ export type SuspendFixedSchedulePayload = {
 
 export type ResumeFixedSchedulePayload = {
   resumeFrom: string;
+  schedules?: ClassScheduleSlot[];
 };
 
 export type UpdateEnrollmentStatusPayload = {

@@ -1360,6 +1360,35 @@ export function ClassScheduleTab({
               value={temporaryForm.reason}
             />
 
+            {!editingTemporarySchedule && temporaryForm.action !== "cancel" ? (
+              <>
+                <TextInput
+                  label="Chủ đề"
+                  maxLength={160}
+                  onChange={(event) =>
+                    setTemporaryForm((current) => ({
+                      ...current,
+                      topic: event.target.value,
+                    }))
+                  }
+                  placeholder="VD: Ôn tập chương 1 (không bắt buộc)"
+                  value={temporaryForm.topic}
+                />
+                <TextArea
+                  label="Nội dung buổi học"
+                  maxLength={1200}
+                  onChange={(event) =>
+                    setTemporaryForm((current) => ({
+                      ...current,
+                      content: event.target.value,
+                    }))
+                  }
+                  placeholder="Nhập nội dung buổi học (không bắt buộc)"
+                  value={temporaryForm.content}
+                />
+              </>
+            ) : null}
+
             <div className={styles.modalActions}>
               {editingTemporarySchedule ? (
                 <SecondaryAction

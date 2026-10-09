@@ -54,6 +54,8 @@ export type TemporaryScheduleForm = {
   startTime: string;
   endTime: string;
   reason: string;
+  topic: string;
+  content: string;
 };
 
 export type LessonContentForm = {
@@ -101,6 +103,8 @@ export const initialTemporaryForm: TemporaryScheduleForm = {
   startTime: "",
   endTime: "",
   reason: "",
+  topic: "",
+  content: "",
 };
 
 export const initialLessonForm: LessonContentForm = {
@@ -979,6 +983,8 @@ export function buildTemporaryFormFromSchedule(
     startTime: schedule.startTime ?? "",
     endTime: schedule.endTime ?? "",
     reason: schedule.reason ?? "",
+    topic: "",
+    content: "",
   };
 }
 
@@ -1012,6 +1018,8 @@ export function buildTemporaryFormFromEvent(
         ? (event.originalEndTime ?? event.endTime)
         : event.endTime) ?? "",
     reason: event.reason ?? "",
+    topic: "",
+    content: "",
   };
 }
 
@@ -1095,6 +1103,8 @@ export function buildTemporaryPayload(
     startTime: form.startTime,
     endTime: form.endTime,
     reason: form.reason.trim() || undefined,
+    topic: form.topic.trim() || undefined,
+    content: form.content.trim() || undefined,
   };
 }
 

@@ -3,6 +3,7 @@ import type {
   AttendanceResponse,
   Classroom,
   ClassroomDetail,
+  ClassPriceHistoryEntry,
   ClassScheduleOverview,
   ClassSessionContent,
   ClassTemporarySchedule,
@@ -186,6 +187,12 @@ export const schoolApi = {
 
   getClassDetail(classId: string) {
     return apiRequest<ClassroomDetail>(`/classes/${classId}`, {
+      token: getToken(),
+    });
+  },
+
+  getClassPriceHistory(classId: string) {
+    return apiRequest<ClassPriceHistoryEntry[]>(`/classes/${classId}/price-history`, {
       token: getToken(),
     });
   },

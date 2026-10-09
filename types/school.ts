@@ -164,6 +164,13 @@ export type ClassroomDetail = Classroom & {
   students: Student[];
 };
 
+export type ClassPriceHistoryEntry = {
+  id: string | null;
+  regularPrice: number;
+  makeupPrice: number;
+  effectiveFrom: string | null;
+};
+
 export type CreateClassPayload = {
   name: string;
   description?: string;
@@ -193,9 +200,14 @@ export type CreateTemporarySchedulePayload = {
   startTime?: string;
   endTime?: string;
   reason?: string;
+  topic?: string;
+  content?: string;
 };
 
-export type UpdateTemporarySchedulePayload = CreateTemporarySchedulePayload;
+export type UpdateTemporarySchedulePayload = Omit<
+  CreateTemporarySchedulePayload,
+  "topic" | "content"
+>;
 
 export type ClassSessionScheduleType =
   | "fixed"

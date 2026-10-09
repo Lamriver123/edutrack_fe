@@ -52,7 +52,9 @@
 
 .scheduleHero {
   position: relative;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 16px;
   overflow: hidden;
   border: 1px solid #dbe3f0;
@@ -71,6 +73,7 @@
 }
 
 .scheduleHeroMain {
+  flex: 1 1 260px;
   min-width: 0;
 }
 
@@ -105,6 +108,9 @@
 
 .scheduleHeroActions {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
@@ -921,11 +927,6 @@
 }
 
 @media (min-width: 900px) {
-  .scheduleHero {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-
   .temporaryFormGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Coins,
   FileText,
+  Filter,
   LoaderCircle,
   RefreshCw,
   Save,
@@ -18,6 +19,8 @@ import type { InvoiceTemplate } from "@/types/invoice-template";
 import { ReceiptHistory } from "./tuition/receipt-history";
 import { BillingStudentList } from "./tuition/billing-student-list";
 import { TuitionMetric } from "./tuition/tuition-metric";
+import { TuitionOptions } from "./tuition/tuition-options";
+import { PriceHistoryModal } from "./tuition/price-history-modal";
 import {
   BULK_RECEIPT_DOWNLOAD_ID,
   CurrencyField,
@@ -105,6 +108,8 @@ export function ClassTuitionTab({
   onInitialIssueHandled?: () => void;
 }) {
   const [filters, setFilters] = useState<BillingFilterState>(initialFilters);
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const [isPriceHistoryOpen, setIsPriceHistoryOpen] = useState(false);
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [receipts, setReceipts] = useState<ReceiptListItem[]>([]);
   const { setNotice, unwatchReceipt, watchReceipt } = useNotice();
@@ -809,40 +814,73 @@ export function ClassTuitionTab({
         regularPrice={classroom.regularPrice}
       />
 
-      <div className="grid min-w-0 gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
-        <TextInput
-          icon={<CalendarDays size={16} />}
-          label="Từ ngày"
-          onChange={(event) =>
-            setFilters((current) => ({
-              ...current,
-              fromDate: event.target.value,
-            }))
-          }
-          type="date"
-          value={filters.fromDate}
-        />
-        <TextInput
-          icon={<CalendarDays size={16} />}
-          label="Đến ngày"
-          onChange={(event) =>
-            setFilters((current) => ({
-              ...current,
-              toDate: event.target.value,
-            }))
-          }
-          type="date"
-          value={filters.toDate}
-        />
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+        {filters.fromDate || filters.toDate ? (
+          <span className="mr-auto text-[13px] font-semibold text-[var(--neutral-600)]">
+            Khoảng ngày:{" "}
+            {filters.fromDate ? formatDateInput(filters.fromDate) : "Tất cả"}
+            {" – "}
+            {filters.toDate ? formatDateInput(filters.toDate) : "Hiện tại"}
+          </span>
+        ) : null}
         <SecondaryAction
-          className="w-full lg:w-auto"
+          aria-controls={`billing-date-filters-${classroom.id}`}
+          aria-expanded={isDateFilterOpen}
+          icon={<Filter size={16} />}
+          onClick={() => setIsDateFilterOpen((current) => !current)}
+          type="button"
+        >
+          Lọc{filters.fromDate || filters.toDate ? " (đang áp dụng)" : ""}
+        </SecondaryAction>
+        <SecondaryAction
           icon={<RefreshCw size={16} />}
           onClick={() => void loadBillingData()}
           type="button"
         >
           Tải lại
         </SecondaryAction>
+        <TuitionOptions onPriceHistory={() => setIsPriceHistoryOpen(true)} />
       </div>
+
+      {isDateFilterOpen ? (
+        <div
+          id={`billing-date-filters-${classroom.id}`}
+          className="grid min-w-0 gap-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end"
+        >
+          <TextInput
+            icon={<CalendarDays size={16} />}
+            label="Từ ngày"
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                fromDate: event.target.value,
+              }))
+            }
+            type="date"
+            value={filters.fromDate}
+          />
+          <TextInput
+            icon={<CalendarDays size={16} />}
+            label="Đến ngày"
+            onChange={(event) =>
+              setFilters((current) => ({
+                ...current,
+                toDate: event.target.value,
+              }))
+            }
+            type="date"
+            value={filters.toDate}
+          />
+          <SecondaryAction
+            className="w-full lg:w-auto"
+            disabled={!filters.fromDate && !filters.toDate}
+            onClick={() => setFilters(initialFilters)}
+            type="button"
+          >
+            Xóa bộ lọc
+          </SecondaryAction>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <InlineLoading text="Đang tải dữ liệu học phí..." />
@@ -880,6 +918,14 @@ export function ClassTuitionTab({
           />
         </div>
       )}
+
+      {isPriceHistoryOpen ? (
+        <PriceHistoryModal
+          classId={classroom.id}
+          className={classroom.name}
+          onClose={() => setIsPriceHistoryOpen(false)}
+        />
+      ) : null}
 
       {selectedStudent ? (
         <IssueReceiptModal

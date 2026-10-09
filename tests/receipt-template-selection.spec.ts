@@ -198,11 +198,12 @@ for (const merged of [false, true]) {
     });
     await expect(picker).toContainText("My invoice · V3");
     await chooseTemplate(page, picker, "Previous invoice · V2");
-    const popupPromise = page.waitForEvent("popup");
     await page.getByRole("button", { name: "Xem trước", exact: true }).click();
-    const popup = await popupPromise;
-    await expect(popup.getByRole("heading")).toHaveText("Previous invoice");
-    await popup.close();
+    await expect(
+      page.frameLocator('iframe[title="Bản xem trước hóa đơn"]').getByRole("heading"),
+    ).toHaveText("Previous invoice");
+    await page.locator('iframe[title="Bản xem trước hóa đơn"]').locator("..")
+      .getByRole("button", { name: "Đóng", exact: true }).click();
     expect(requests[0].body.templateId).toBe(oldId);
     await page
       .getByRole("button", { name: "Phát hành hóa đơn", exact: true })
